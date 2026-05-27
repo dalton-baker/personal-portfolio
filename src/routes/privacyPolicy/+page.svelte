@@ -18,7 +18,7 @@
 
     <h5 class="mt-4">Use of Information</h5>
     <p>Any data collected is used only to improve site performance, monitor traffic, or fix problems. I don’t
-        sell, rent, or share your data with anyone, and frankly, I wouldn’t want your browsing habits anyway.
+        sell, rent, or share your data with anyone, and frankly, I don't want to know about your browsing habits
     </p>
 
     <h5 class="mt-4">Cookies</h5>
