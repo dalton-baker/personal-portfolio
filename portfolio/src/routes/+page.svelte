@@ -149,7 +149,8 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">8" Dobsonian Telescope</h5>
                     <p class="card-text">A fully custom 8-inch Dobsonian reflector telescope I designed from scratch and 3D printed. Built for deep-sky observing on a budget.</p>
-                    <span class="badge bg-secondary mt-auto align-self-start">Coming Soon</span>
+                    <a href="/telescope"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
                 </div>
             </div>
         </div>
