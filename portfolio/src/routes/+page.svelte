@@ -27,7 +27,7 @@
 
 <section class="mb-5 pb-3">
     <h2 class="h3 mb-4 text-center">My Businesses</h2>
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
@@ -35,7 +35,7 @@
                     <p class="card-text">Integrated registration, timing, and results platform designed for small to
                         mid-sized races.</p>
                     <a href="https://regxtiming.com" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">View Site</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">View Site</a>
                 </div>
             </div>
         </div>
@@ -46,7 +46,7 @@
                     <h5 class="card-title">Best Choice Pawn</h5>
                     <p class="card-text">Pawn shop located in Rapid City, South Dakota. Buying, selling, and loaning on a wide variety of items.</p>
                     <a href="https://bestchoicepawn.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Visit Site</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Visit Site</a>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@
 
 <section class="mb-5 pb-3">
     <h2 class="h3 mb-4 text-center">My Websites</h2>
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
@@ -63,7 +63,7 @@
                     <p class="card-text">Custom website for a South Dakota-based tire tank manufacturer. Built for
                         simplicity, performance, and easy maintenance.</p>
                     <a href="https://heartlandtanks.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Visit Site</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Visit Site</a>
                 </div>
             </div>
         </div>
@@ -74,7 +74,7 @@
                     <h5 class="card-title">Blog: Dalton's Department of Truth</h5>
                     <p class="card-text">A tongue-in-cheek conspiracy blog exploring absurd ideas.</p>
                     <a href="https://truth.dalt.dev" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Read Blog</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read Blog</a>
                 </div>
             </div>
         </div>
@@ -85,7 +85,7 @@
                     <h5 class="card-title">dalt.dev Tools</h5>
                     <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
                     <a href="https://tools.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Open Tools</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
                 </div>
             </div>
         </div>
@@ -96,7 +96,7 @@
                     <h5 class="card-title">State Your Name</h5>
                     <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
                     <a href="https://state-your-name.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Play Game</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
                 </div>
             </div>
         </div>
@@ -107,7 +107,7 @@
                     <h5 class="card-title">Metals Market Display</h5>
                     <p class="card-text">Displays live gold and silver prices with automatic updates. Designed for display in coin and pawn shops. Powered by Cloudflare Workers and R2 storage.</p>
                     <a href="https://metalsmarketdisplay.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">See Live Display</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">See Live Display</a>
                 </div>
             </div>
         </div>
@@ -116,14 +116,14 @@
 
 <section class="mb-5 pb-3">
     <h2 class="h3 mb-4 text-center">My Packages</h2>
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Cosmos DB Query Converter</h5>
                     <p class="card-text">A lightweight NuGet package for writing native Cosmos DB SQL queries with automatic parameterization.</p>
                     <a href="https://www.nuget.org/packages/DBaker.CosmosDbQueryConverter" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Explore Package</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Explore Package</a>
                 </div>
             </div>
         </div>
@@ -134,7 +134,7 @@
                     <h5 class="card-title">Dependency Registration Attributes</h5>
                     <p class="card-text">A lightweight NuGet package that simplifies dependency injection by letting you register services using C# attributes.</p>
                     <a href="https://www.nuget.org/packages/DBaker.DepRegAttributes" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto">Explore Package</a>
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Explore Package</a>
                 </div>
             </div>
         </div>
@@ -143,7 +143,7 @@
 
 <section class="mb-5 pb-3">
     <h2 class="h3 mb-4 text-center">My Projects</h2>
-    <div class="row g-4 justify-content-center">
+    <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
