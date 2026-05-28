@@ -164,10 +164,12 @@
         </div>
     </div>
 
-    <div class="my-3">
-        <video class="w-100 rounded" controls>
-            <source src="/telescope-build/alt-az-example.mp4" type="video/mp4">
-        </video>
+    <div class="row justify-content-center my-3">
+		<div class="col-sm-6 col-md-4">
+			<video class="rounded" style="max-width: 20rem;" controls>
+	            <source src="/telescope-build/alt-az-example.mp4" type="video/mp4">
+	        </video>
+		</div>
     </div>
 
     <h2 class="h3 mt-4 mb-3">First Field Test</h2>
