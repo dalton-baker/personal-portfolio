@@ -2,7 +2,30 @@
 	<title>3D-Printed Telescope | Dalton Baker</title>
 </svelte:head>
 
+<script>
+    let lightboxSrc = $state('');
+    let lightboxAlt = $state('');
+
+    function openLightbox(src, alt) {
+        lightboxSrc = src;
+        lightboxAlt = alt;
+    }
+
+    function closeLightbox() {
+        lightboxSrc = '';
+    }
+</script>
+
+{#if lightboxSrc}
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div class="lightbox-overlay" onclick={closeLightbox}>
+        <img src={lightboxSrc} alt={lightboxAlt} class="lightbox-img">
+    </div>
+{/if}
+
 <div class="card mx-auto p-4 mb-5" style="max-width: 900px;">
+    <img src="/telescope-build/assembled-in-field.jpeg" class="img-fluid rounded mb-4" alt="Telescope assembled in the field">
+
     <h1 class="mb-4 text-center">Building a 3D-Printed Telescope</h1>
 
     <p>Around 2020, I acquired an old Optical Craftsman telescope on a cast iron equatorial mount. It was my first real
@@ -17,10 +40,14 @@
 
     <div class="row g-3 my-3">
         <div class="col-sm-6">
-            <img src="/telescope-build/original_scope.JPG" class="img-fluid rounded" alt="Original Optical Craftsman telescope">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/original_scope.JPG', 'Original Optical Craftsman telescope')}>
+                <img src="/telescope-build/original_scope.JPG" class="thumb-img rounded" alt="Original Optical Craftsman telescope">
+            </button>
         </div>
         <div class="col-sm-6">
-            <img src="/telescope-build/origina_scope_in_car.jpeg" class="img-fluid rounded" alt="Original telescope in car">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/origina_scope_in_car.jpeg', 'Original telescope in car')}>
+                <img src="/telescope-build/origina_scope_in_car.jpeg" class="thumb-img rounded" alt="Original telescope in car">
+            </button>
         </div>
     </div>
 
@@ -39,10 +66,14 @@
 
     <div class="row g-3 my-3">
         <div class="col-sm-6">
-            <img src="/telescope-build/onshape-mirror-box.png" class="img-fluid rounded" alt="Onshape mirror box design">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/onshape-mirror-box.png', 'Onshape mirror box design')}>
+                <img src="/telescope-build/onshape-mirror-box.png" class="thumb-img rounded" alt="Onshape mirror box design">
+            </button>
         </div>
         <div class="col-sm-6">
-            <img src="/telescope-build/onshape-tube.png" class="img-fluid rounded" alt="Onshape tube design">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/onshape-tube.png', 'Onshape tube design')}>
+                <img src="/telescope-build/onshape-tube.png" class="thumb-img rounded" alt="Onshape tube design">
+            </button>
         </div>
     </div>
 
@@ -62,47 +93,81 @@
 
     <div class="row g-3 my-3">
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/printing-mirror-box.jpeg" class="img-fluid rounded" alt="Printing the mirror box">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/printing-mirror-box.jpeg', 'Printing the mirror box')}>
+                <img src="/telescope-build/printing-mirror-box.jpeg" class="thumb-img rounded" alt="Printing the mirror box">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/printing-mirror-cell.jpeg" class="img-fluid rounded" alt="Printing the mirror cell">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/printing-mirror-cell.jpeg', 'Printing the mirror cell')}>
+                <img src="/telescope-build/printing-mirror-cell.jpeg" class="thumb-img rounded" alt="Printing the mirror cell">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/test-fit-mirrorbox.jpeg" class="img-fluid rounded" alt="Test fitting the mirror box">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/test-fit-mirrorbox.jpeg', 'Test fitting the mirror box')}>
+                <img src="/telescope-build/test-fit-mirrorbox.jpeg" class="thumb-img rounded" alt="Test fitting the mirror box">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/test-fit-mirror-box-2.jpeg" class="img-fluid rounded" alt="Test fitting the mirror box (2)">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/test-fit-mirror-box-2.jpeg', 'Test fitting the mirror box (2)')}>
+                <img src="/telescope-build/test-fit-mirror-box-2.jpeg" class="thumb-img rounded" alt="Test fitting the mirror box (2)">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/test-fit-mirror-box-4.jpeg" class="img-fluid rounded" alt="Test fitting the mirror box (4)">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/test-fit-mirror-box-4.jpeg', 'Test fitting the mirror box (4)')}>
+                <img src="/telescope-build/test-fit-mirror-box-4.jpeg" class="thumb-img rounded" alt="Test fitting the mirror box (4)">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/test-fit-mirror-box-mirror.jpeg" class="img-fluid rounded" alt="Test fitting the mirror in the mirror box">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/test-fit-mirror-box-mirror.jpeg', 'Test fitting the mirror in the mirror box')}>
+                <img src="/telescope-build/test-fit-mirror-box-mirror.jpeg" class="thumb-img rounded" alt="Test fitting the mirror in the mirror box">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/test-fit-truss.jpeg" class="img-fluid rounded" alt="Test fitting the truss">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/test-fit-truss.jpeg', 'Test fitting the truss')}>
+                <img src="/telescope-build/test-fit-truss.jpeg" class="thumb-img rounded" alt="Test fitting the truss">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/first-assembly.jpeg" class="img-fluid rounded" alt="First assembly">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/first-assembly.jpeg', 'First assembly')}>
+                <img src="/telescope-build/first-assembly.jpeg" class="thumb-img rounded" alt="First assembly">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-truss.jpeg" class="img-fluid rounded" alt="Assembled truss">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-truss.jpeg', 'Assembled truss')}>
+                <img src="/telescope-build/assembled-truss.jpeg" class="thumb-img rounded" alt="Assembled truss">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-truss-size-compare.jpeg" class="img-fluid rounded" alt="Assembled truss size comparison">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-truss-size-compare.jpeg', 'Assembled truss size comparison')}>
+                <img src="/telescope-build/assembled-truss-size-compare.jpeg" class="thumb-img rounded" alt="Assembled truss size comparison">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-upper-cage-close.jpeg" class="img-fluid rounded" alt="Assembled upper cage close-up">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-upper-cage-close.jpeg', 'Assembled upper cage close-up')}>
+                <img src="/telescope-build/assembled-upper-cage-close.jpeg" class="thumb-img rounded" alt="Assembled upper cage close-up">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-top-cage.jpeg" class="img-fluid rounded" alt="Assembled top cage">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-top-cage.jpeg', 'Assembled top cage')}>
+                <img src="/telescope-build/assembled-top-cage.jpeg" class="thumb-img rounded" alt="Assembled top cage">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-on-balcony.jpeg" class="img-fluid rounded" alt="Assembled telescope on balcony">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-on-balcony.jpeg', 'Assembled telescope on balcony')}>
+                <img src="/telescope-build/assembled-on-balcony.jpeg" class="thumb-img rounded" alt="Assembled telescope on balcony">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-on-balcony-2.jpeg" class="img-fluid rounded" alt="Assembled telescope on balcony (2)">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-on-balcony-2.jpeg', 'Assembled telescope on balcony (2)')}>
+                <img src="/telescope-build/assembled-on-balcony-2.jpeg" class="thumb-img rounded" alt="Assembled telescope on balcony (2)">
+            </button>
         </div>
+    </div>
+
+    <div class="my-3">
+        <video class="w-100 rounded" controls>
+            <source src="/telescope-build/alt-az-example.mp4" type="video/mp4">
+        </video>
     </div>
 
     <h2 class="h3 mt-4 mb-3">First Field Test</h2>
@@ -117,13 +182,19 @@
 
     <div class="row g-3 my-3">
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/assembled-in-field.jpeg" class="img-fluid rounded" alt="Telescope assembled in the field">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/assembled-in-field.jpeg', 'Telescope assembled in the field')}>
+                <img src="/telescope-build/assembled-in-field.jpeg" class="thumb-img rounded" alt="Telescope assembled in the field">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/lunar-eclipse-in-field.jpeg" class="img-fluid rounded" alt="Lunar eclipse in the field">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/lunar-eclipse-in-field.jpeg', 'Lunar eclipse in the field')}>
+                <img src="/telescope-build/lunar-eclipse-in-field.jpeg" class="thumb-img rounded" alt="Lunar eclipse in the field">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/moon-pics-in-field.jpeg" class="img-fluid rounded" alt="Moon pictures in the field">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/moon-pics-in-field.jpeg', 'Moon pictures in the field')}>
+                <img src="/telescope-build/moon-pics-in-field.jpeg" class="thumb-img rounded" alt="Moon pictures in the field">
+            </button>
         </div>
     </div>
 
@@ -142,20 +213,20 @@
 
     <div class="row g-3 my-3">
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/az-rail-stiffening-upgrade.jpeg" class="img-fluid rounded" alt="Azimuth rail stiffening upgrade">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/az-rail-stiffening-upgrade.jpeg', 'Azimuth rail stiffening upgrade')}>
+                <img src="/telescope-build/az-rail-stiffening-upgrade.jpeg" class="thumb-img rounded" alt="Azimuth rail stiffening upgrade">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/alt-measurments-upgrade.jpeg" class="img-fluid rounded" alt="Altitude measurements upgrade">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/alt-measurments-upgrade.jpeg', 'Altitude measurements upgrade')}>
+                <img src="/telescope-build/alt-measurments-upgrade.jpeg" class="thumb-img rounded" alt="Altitude measurements upgrade">
+            </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <img src="/telescope-build/az-measurment-upgrade.jpeg" class="img-fluid rounded" alt="Azimuth measurement upgrade">
+            <button class="thumb-btn" onclick={() => openLightbox('/telescope-build/az-measurment-upgrade.jpeg', 'Azimuth measurement upgrade')}>
+                <img src="/telescope-build/az-measurment-upgrade.jpeg" class="thumb-img rounded" alt="Azimuth measurement upgrade">
+            </button>
         </div>
-    </div>
-
-    <div class="my-3">
-        <video class="w-100 rounded" controls>
-            <source src="/telescope-build/alt-az-example.mp4" type="video/mp4">
-        </video>
     </div>
 
     <h2 class="h3 mt-4 mb-3">Final Result</h2>
@@ -171,3 +242,46 @@
         <a href="/" class="btn btn-outline-light btn-sm">&larr; Back to Portfolio</a>
     </div>
 </div>
+
+<style>
+    .thumb-btn {
+        display: block;
+        width: 100%;
+        padding: 0;
+        background: none;
+        border: none;
+        cursor: zoom-in;
+    }
+
+    .thumb-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+        transition: opacity 0.15s ease;
+    }
+
+    .thumb-btn:hover .thumb-img {
+        opacity: 0.85;
+    }
+
+    .lightbox-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1050;
+        cursor: zoom-out;
+        padding: 1rem;
+    }
+
+    .lightbox-img {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 0.375rem;
+        object-fit: contain;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    }
+</style>
