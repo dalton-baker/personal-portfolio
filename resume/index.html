@@ -49,10 +49,10 @@
     }
 
     .qr {
-      width: 0.78in;
-      height: 0.78in;
+      width: 0.95in;
+      height: 0.95in;
       display: block;
-      margin-bottom: 0.22in;
+      flex-shrink: 0;
     }
 
     .sidebar-section {
@@ -109,6 +109,12 @@
     /* ---- Main Content ---- */
     .main-content {
       padding: 0.45in 0.45in 0.4in 0.3in;
+    }
+
+    .main-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 0.1in;
     }
 
     .main-section {
@@ -173,8 +179,6 @@
         <div>dalton.s.baker@gmail.com</div>
         <div>https://daltonsbaker.com/</div>
       </div>
-      <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
-
       <div class="sidebar-section">
         <div class="section-label">Education</div>
         <div class="edu-degree">B.S. in Computer Science</div>
@@ -209,6 +213,9 @@
 
     <!-- RIGHT MAIN CONTENT -->
     <div class="main-content">
+      <div class="main-header">
+        <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
+      </div>
       <div class="main-section">
         <div class="section-label">Experience</div>
 
