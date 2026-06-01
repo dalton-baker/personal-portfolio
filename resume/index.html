@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dalton Baker Resume</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: letter; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
+      font-family: Carlito, Calibri, 'Liberation Sans', Arial, sans-serif;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    main {
+      width: 8.5in;
+      height: 11in;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2.5in 1fr;
+      overflow: hidden;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      background: #ffffff;
+      padding: 0.45in 0.3in 0.45in 0.35in;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .name {
+      font-size: 22pt;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 0.1in;
+    }
+
+    .contact {
+      font-size: 8pt;
+      line-height: 1.55;
+      margin-bottom: 0.18in;
+    }
+
+    .qr {
+      width: 0.95in;
+      height: 0.95in;
+      display: block;
+      margin-top: auto;
+      align-self: center;
+    }
+
+    .sidebar-section {
+      margin-bottom: 0.22in;
+    }
+
+    .section-label {
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.8px;
+      border-bottom: 1.5px solid #555;
+      padding-bottom: 0.03in;
+      margin-bottom: 0.1in;
+      color: #333;
+    }
+
+    .edu-degree {
+      font-size: 8.5pt;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .edu-school {
+      font-size: 8.5pt;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .edu-date {
+      font-size: 8pt;
+      color: #444;
+      line-height: 1.4;
+      margin-bottom: 0.04in;
+    }
+
+    .edu-bullets {
+      font-size: 8pt;
+      line-height: 1.4;
+    }
+
+    .skill-category {
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #444;
+      margin-top: 0.07in;
+    }
+
+    .skill-category:first-child {
+      margin-top: 0;
+    }
+
+    .skill-badges {
+      margin-top: 0.03in;
+    }
+
+    .badge {
+      display: inline-block;
+      margin: 0 3px 4px 0;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 9px;
+      line-height: 1.2;
+      white-space: nowrap;
+      background: #e8e8e8;
+    }
+
+    /* ---- Main Content ---- */
+    .main-content {
+      padding: 0.45in 0.45in 0.4in 0.3in;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 0.1in;
+    }
+
+    .main-section {
+      margin-bottom: 0.18in;
+    }
+
+    .entry {
+      margin-bottom: 0.1in;
+    }
+
+    .entry:last-child {
+      margin-bottom: 0;
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.1in;
+      font-size: 8.5pt;
+      line-height: 1.4;
+    }
+
+    .entry-date {
+      font-style: italic;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: 8pt;
+    }
+
+    .bullets {
+      margin-top: 0.02in;
+      font-size: 8.5pt;
+      line-height: 1.4;
+    }
+
+    .bullet {
+      display: flex;
+    }
+
+    .dash {
+      flex-shrink: 0;
+      width: 0.2in;
+    }
+
+    .references {
+      text-align: center;
+      font-weight: 700;
+      font-size: 8.5pt;
+      margin-top: auto;
+      padding-top: 0.14in;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+      <div class="name">Dalton Baker</div>
+      <div class="contact">
+        <div>Rapid City, SD</div>
+        <div>dalton.s.baker@gmail.com</div>
+        <div>https://daltonsbaker.com/</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">Education</div>
+        <div class="edu-degree">B.S. in Computer Science</div>
+        <div class="edu-school">SD School of Mines &amp; Technology</div>
+        <div class="edu-date">Graduated May 2022</div>
+        <div class="edu-bullets">
+          <div class="bullet"><span class="dash">-</span><span>Magna Cum Laude (3.71 GPA)</span></div>
+          <div class="bullet"><span class="dash">-</span><span>Dean&rsquo;s List, six semesters</span></div>
+          <div class="bullet"><span class="dash">-</span><span>Tau Beta Pi &amp; NSLS member</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Skills</div>
+        <div class="skill-category">Languages</div>
+        <div class="skill-badges">
+          <span class="badge">C#</span><span class="badge">JavaScript</span><span class="badge">SQL</span><span class="badge">HTML</span><span class="badge">CSS</span>
+        </div>
+        <div class="skill-category">Application Development</div>
+        <div class="skill-badges">
+          <span class="badge">ASP.NET Core</span><span class="badge">Blazor</span><span class="badge">SvelteKit</span><span class="badge">Bootstrap</span>
+        </div>
+        <div class="skill-category">Architecture</div>
+        <div class="skill-badges">
+          <span class="badge">Distributed systems</span><span class="badge">Background services</span><span class="badge">Queues</span><span class="badge">TDD</span>
+        </div>
+        <div class="skill-category">Cloud &amp; DevOps</div>
+        <div class="skill-badges">
+          <span class="badge">Azure</span><span class="badge">Cloudflare Workers</span><span class="badge">Cloudflare D1/R2/Queues</span><span class="badge">Docker</span><span class="badge">CI/CD</span>
+        </div>
+        <div class="skill-category">Data</div>
+        <div class="skill-badges">
+          <span class="badge">SQL Server</span><span class="badge">PostgreSQL</span><span class="badge">Cosmos DB</span><span class="badge">Entity Framework</span><span class="badge">DbUp</span>
+        </div>
+        <div class="skill-category">Source Control</div>
+        <div class="skill-badges">
+          <span class="badge">Git</span><span class="badge">GitHub</span><span class="badge">Azure DevOps</span><span class="badge">GitHub Actions</span><span class="badge">Azure Pipelines</span>
+        </div>
+        <div class="skill-category">AI-Assisted Dev</div>
+        <div class="skill-badges">
+          <span class="badge">Issue planning</span><span class="badge">Rapid prototyping/iterating</span><span class="badge">GitHub Copilot</span><span class="badge">Claude Code</span><span class="badge">Codex</span>
+        </div>
+      </div>
+      <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
+    </div>
+
+    <!-- RIGHT MAIN CONTENT -->
+    <div class="main-content">
+      <div class="main-section">
+        <div class="section-label">Experience</div>
+
+        <div class="entry">
+          <div class="entry-header">
+            <div><strong>Omnitech Inc.,</strong> Software Engineer</div>
+            <div class="entry-date">Aug 2024 - Present</div>
+          </div>
+          <div class="bullets">
+            <div class="bullet"><span class="dash">-</span><span>Contracted across <strong>multiple simultaneous</strong> client projects and domains</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Onboarded to <strong>unfamiliar codebases</strong> quickly and contributed immediately</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Built <strong>full-stack applications</strong> from scratch across varied tech stacks</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Maintained and modernized <strong>legacy systems</strong> for multiple clients</span></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="entry-header">
+            <div><strong>Innovative Systems,</strong> Software Developer</div>
+            <div class="entry-date">June 2022 - Jul 2024</div>
+          </div>
+          <div class="bullets">
+            <div class="bullet"><span class="dash">-</span><span>Spearheaded <strong>Blazor</strong> integration</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Created several full stack applications with <strong>ASP.NET</strong> backends</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Maintained several <strong>Azure DevOps</strong> CI/CD pipelines</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Practiced <strong>agile</strong> development with three week sprints</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Created internal <strong>reusable packages</strong> for use in several projects</span></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="entry-header">
+            <div><strong>patientMoon Wellness Marketing,</strong> Software Developer</div>
+            <div class="entry-date">Aug 2021 - Aug 2023</div>
+          </div>
+          <div class="bullets">
+            <div class="bullet"><span class="dash">-</span><span>Worked as a <strong>freelance</strong> developer through Upwork</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Coordinated with <strong>fully remote</strong> team</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Helped define a <strong>GIT</strong> branching strategy</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Introduced and implemented <strong>SOLID</strong> practices</span></div>
+            <div class="bullet"><span class="dash">-</span><span><strong>Adapted</strong> seamlessly to both internal and client applications</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-section">
+        <div class="section-label">Projects</div>
+
+        <div class="entry">
+          <div class="entry-header">
+            <div><strong>Client Configurable Web Apps</strong></div>
+            <div class="entry-date">Full Stack Dev &amp; DevOps</div>
+          </div>
+          <div class="bullets">
+            <div class="bullet"><span class="dash">-</span><span>Designed and written with the <strong>ASP.NET</strong> and <strong>Blazor</strong> frameworks</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Fully <strong>configurable</strong> and <strong>rebrandable</strong> after deployment by clients</span></div>
+            <div class="bullet"><span class="dash">-</span><span><strong>Removed dependency</strong> on developers to customize applications for clients</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Designed and implemented <strong>SQL</strong> database with <strong>Entity Framework</strong></span></div>
+            <div class="bullet"><span class="dash">-</span><span><strong>Integrated</strong> with several other applications</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Successfully <strong>decreased deployment time</strong> from ~400 hrs to ~8 hrs</span></div>
+          </div>
+        </div>
+
+        <div class="entry">
+          <div class="entry-header">
+            <div><strong>patientMoon Portal</strong></div>
+            <div class="entry-date">Full Stack Developer</div>
+          </div>
+          <div class="bullets">
+            <div class="bullet"><span class="dash">-</span><span>Maintained <strong>ASP.NET</strong> backend and <strong>Blazor</strong> frontend</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Integrated with <strong>Airtable</strong> database</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Added many <strong>new features</strong> in the UI and API</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Introduced <strong>automated testing</strong> and wrote many tests</span></div>
+            <div class="bullet"><span class="dash">-</span><span><strong>Streamlined architecture</strong> for easier future changes</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="references">References Upon Request</div>
+    </div>
+  </main>
+</body>
+</html>

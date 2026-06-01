@@ -1,0 +1,45 @@
+name: Build Resume PDF
+
+on:
+  pull_request:
+    paths:
+      - 'resume/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build-resume:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install fonts
+        run: sudo apt-get install -y fonts-crosextra-carlito
+
+      - name: Install dependencies
+        working-directory: resume
+        run: npm ci
+
+      - name: Build PDF to portfolio static
+        working-directory: resume
+        run: |
+          node build.mjs ../portfolio/static/DaltonBakerResume.pdf
+          cp ../portfolio/static/DaltonBakerResume.pdf ../portfolio/src/lib/assets/DaltonBakerResume.pdf
+
+      - name: Commit and push PDF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add portfolio/static/DaltonBakerResume.pdf portfolio/src/lib/assets/DaltonBakerResume.pdf
+          git diff --cached --quiet && echo "No changes to commit" || (git commit -m "build: update resume PDF" && git push)
