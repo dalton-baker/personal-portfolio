@@ -19,25 +19,6 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Find or create PR comment
-        uses: peter-evans/find-comment@v3
-        id: find-comment
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '<!-- resume-build-status -->'
-
-      - name: Post building status comment
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          edit-mode: replace
-          body: |
-            <!-- resume-build-status -->
-            ## 📄 Resume PDF Build
-            **Status:** ⏳ Building...
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -62,31 +43,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add portfolio/static/DaltonBakerResume.pdf portfolio/src/lib/assets/DaltonBakerResume.pdf
           git diff --cached --quiet && echo "No changes to commit" || (git commit -m "build: update resume PDF" && git push)
-
-      - name: Update comment with success
-        if: success()
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          edit-mode: replace
-          body: |
-            <!-- resume-build-status -->
-            ## 📄 Resume PDF Build
-            **Status:** ✅ Built successfully
-
-            📎 [View PDF](https://github.com/${{ github.repository }}/blob/${{ github.head_ref }}/portfolio/static/DaltonBakerResume.pdf)
-
-      - name: Update comment with failure
-        if: failure()
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          edit-mode: replace
-          body: |
-            <!-- resume-build-status -->
-            ## 📄 Resume PDF Build
-            **Status:** ❌ Build failed
-
-            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
