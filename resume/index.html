@@ -1,270 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dalton Baker - Resume</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Calibri, 'Carlito', sans-serif;
-            font-size: 10.5pt;
-            line-height: 1.15;
-            color: #000;
-            padding: 0.4in 0.6in;
-            max-width: 8.5in;
-            margin: 0 auto;
-        }
-
-        a {
-            color: #000;
-            text-decoration: none;
-        }
-
-        /* Header */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6pt;
-            padding-bottom: 4pt;
-            border-bottom: 1.5pt solid #000;
-        }
-
-        .header-left h1 {
-            font-size: 24pt;
-            font-weight: bold;
-            margin-bottom: 2pt;
-        }
-
-        .header-left .contact-line {
-            font-size: 10pt;
-            line-height: 1.4;
-        }
-
-        .header-left .contact-line a {
-            color: #1155cc;
-        }
-
-        .header-right {
-            flex-shrink: 0;
-            margin-left: 12pt;
-        }
-
-        .header-right img {
-            width: 60pt;
-            height: 60pt;
-        }
-
-        /* Sections */
-        section {
-            margin-bottom: 6pt;
-        }
-
-        section h2 {
-            font-size: 13pt;
-            font-weight: bold;
-            border-bottom: 0.75pt solid #000;
-            padding-bottom: 1pt;
-            margin-bottom: 4pt;
-        }
-
-        /* Experience entries */
-        .entry {
-            margin-bottom: 4pt;
-        }
-
-        .entry-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        .entry-title {
-            font-weight: bold;
-            font-size: 11pt;
-        }
-
-        .entry-date {
-            font-size: 10pt;
-            font-style: italic;
-            white-space: nowrap;
-        }
-
-        .entry-subtitle {
-            font-style: italic;
-            font-size: 10.5pt;
-            margin-bottom: 2pt;
-        }
-
-        .entry ul {
-            margin-top: 2pt;
-            padding-left: 18pt;
-        }
-
-        .entry ul li {
-            margin-bottom: 1.5pt;
-            font-size: 10.5pt;
-            line-height: 1.25;
-        }
-
-        /* Skills */
-        .skills-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10.5pt;
-        }
-
-        .skills-table td {
-            padding: 1pt 6pt 1pt 0;
-            vertical-align: top;
-        }
-
-        .skills-table td:first-child {
-            font-weight: bold;
-            white-space: nowrap;
-            width: 1%;
-            padding-right: 12pt;
-        }
-
-        /* Projects */
-        .project-entry {
-            margin-bottom: 3pt;
-            font-size: 10.5pt;
-        }
-
-        /* Education */
-        .education-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        @media print {
-            body {
-                padding: 0;
-            }
-        }
-
-        @page {
-            size: letter;
-            margin: 0.4in 0.6in;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dalton Baker Resume</title>
 </head>
-<body>
-    <header>
-        <div class="header-left">
-            <h1>Dalton Baker</h1>
-            <div class="contact-line">
-                <a href="mailto:dalton.s.baker@gmail.com">dalton.s.baker@gmail.com</a> |
-                <a href="https://www.linkedin.com/in/dalton-baker">linkedin.com/in/dalton-baker</a> |
-                <a href="https://github.com/dalton-baker">github.com/dalton-baker</a> |
-                <a href="https://dalt.dev">dalt.dev</a>
-            </div>
+<body style="margin:0; padding:0; background:#f2f2f2; font-family:Arial, Helvetica, sans-serif; color:#111;">
+  <main style="box-sizing:border-box; width:8.5in; min-height:11in; margin:0 auto; padding:0.43in 0.52in 0.55in 0.52in; background:#fff;">
+    <header style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:0.25in;">
+      <div style="font-size:68pt; font-weight:400; line-height:0.95; letter-spacing:1px; white-space:nowrap;">Dalton Baker</div>
+      <div style="display:flex; align-items:flex-start; gap:0.14in; padding-top:0.04in;">
+        <div style="font-size:14.5pt; line-height:1.26; text-align:right; white-space:nowrap;">
+          <div>Mitchell, SD</div>
+          <div>(605) 209-2293</div>
+          <div>dalton.s.baker@gmail.com</div>
+          <div>https://daltonsbaker.com/</div>
         </div>
-        <div class="header-right">
-            <img src="qr-code.svg" alt="QR Code - dalt.dev">
+        <div aria-label="QR code placeholder" style="width:0.82in; height:0.82in; box-sizing:border-box; border:5px solid #111; display:grid; place-items:center; font-size:7pt; line-height:1.05; text-align:center; font-weight:700; color:#111; background:#fff;">
+          QR<br>CODE
         </div>
+      </div>
     </header>
 
-    <section>
-        <h2>Summary</h2>
-        <p>Software engineer with a passion for building <b>practical, performant applications</b>. Experienced in <b>full-stack development</b>, <b>cloud architecture</b>, and <b>entrepreneurship</b>. Equally comfortable designing APIs, crafting frontends, and tinkering with hardware projects.</p>
-    </section>
+    <section style="display:grid; grid-template-columns:1.18in 1fr; column-gap:0.11in;">
+      <aside style="border-right:3px solid #111; padding-right:0.08in;">
+        <div style="height:0.86in; display:flex; align-items:flex-start; justify-content:flex-end; padding-top:0.02in; font-size:18pt; font-weight:700;">Education</div>
+        <div style="height:1.27in; display:flex; align-items:flex-start; justify-content:flex-end; padding-top:0.26in; font-size:18pt; font-weight:700;">Skills</div>
+        <div style="height:2.95in; display:flex; align-items:flex-start; justify-content:flex-end; padding-top:0.16in; font-size:18pt; font-weight:700;">Experience</div>
+        <div style="height:3.08in; display:flex; align-items:flex-start; justify-content:flex-end; padding-top:0.20in; font-size:18pt; font-weight:700;">Projects</div>
+      </aside>
 
-    <section>
-        <h2>Experience</h2>
+      <div style="padding-left:0.02in; font-size:14.8pt; line-height:1.26;">
+        <section style="height:0.86in; box-sizing:border-box;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.15in;">
+            <div style="white-space:nowrap;"><strong>B.S. in Computer Science,</strong> SD School of Mines &amp; Technology</div>
+            <div style="font-style:italic; white-space:nowrap; padding-top:0.01in;">Graduated May 2022</div>
+          </div>
+          <div style="margin-left:0.18in; margin-top:0.02in;">
+            <div><span style="display:inline-block; width:0.25in;">-</span>Magna Cum Laude (3.71 GPA)</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Dean&rsquo;s List for six consecutive semesters</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Member of Tau Beta Pi and NSLS</div>
+          </div>
+        </section>
 
-        <div class="entry">
-            <div class="entry-header">
-                <span class="entry-title">Owner &amp; Software Engineer</span>
-                <span class="entry-date">2020 &ndash; Present</span>
+        <section style="height:1.27in; box-sizing:border-box; padding-top:0.23in;">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; column-gap:0.28in;">
+            <div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:0.95in;">C#</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:0.95in;">HTML</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:0.95in;">CSS</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:0.95in;">JavaScript</span><span style="letter-spacing:1px;">★★☆</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:0.95in;">Python</span><span style="letter-spacing:1px;">★☆☆</span></div>
             </div>
-            <div class="entry-subtitle">Reg X Timing &mdash; Rapid City, SD</div>
-            <ul>
-                <li>Built and operate <b>Reg X Timing</b>, an integrated registration, timing, and results platform designed for <b>small to mid-sized races</b></li>
-                <li>Developed the full stack using <b>C#/.NET</b>, <b>Azure Cosmos DB</b>, and <b>SvelteKit</b>, deployed on <b>Cloudflare Pages</b> and <b>Azure</b></li>
-                <li>Implemented <b>real-time chip timing</b> with hardware integration and live results publishing</li>
-                <li>Created <b>Metals Market Display</b>, a live precious metals price display using <b>Cloudflare Workers</b> and <b>R2 storage</b></li>
-                <li>Published <b>NuGet packages</b> including <b>Cosmos DB Query Converter</b> (automatic SQL parameterization) and <b>Dependency Registration Attributes</b> (DI via C# attributes)</li>
-                <li>Built custom websites for local businesses including <b>Heartland Tanks</b> and <b>Best Choice Pawn</b></li>
-            </ul>
-        </div>
-
-        <div class="entry">
-            <div class="entry-header">
-                <span class="entry-title">Software Engineer</span>
-                <span class="entry-date">2018 &ndash; 2020</span>
+            <div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.05in;">ASP.NET</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.05in;">Blazor</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.05in;">WPF</span><span style="letter-spacing:1px;">★★☆</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.05in;">Bash</span><span style="letter-spacing:1px;">★★☆</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.05in;">Powershell</span><span style="letter-spacing:1px;">★☆☆</span></div>
             </div>
-            <div class="entry-subtitle">Previous Role</div>
-            <ul>
-                <li>Developed and maintained <b>full-stack web applications</b> using <b>.NET</b> and modern <b>JavaScript frameworks</b></li>
-                <li>Implemented <b>RESTful APIs</b> and integrated with cloud services including <b>Azure Cosmos DB</b></li>
-                <li>Collaborated with <b>cross-functional teams</b> to deliver features on schedule</li>
-            </ul>
-        </div>
-    </section>
+            <div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.25in;">Azure DevOps</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.25in;">GitHub Actions</span><span style="letter-spacing:1px;">★★☆</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.25in;">Git</span><span style="letter-spacing:1px;">★★★</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.25in;">TFS</span><span style="letter-spacing:1px;">★☆☆</span></div>
+              <div style="display:flex;"><span style="width:0.25in;">-</span><span style="width:1.25in;">Docker</span><span style="letter-spacing:1px;">★★☆</span></div>
+            </div>
+          </div>
+        </section>
 
-    <section>
-        <h2>Skills</h2>
-        <table class="skills-table">
-            <tr>
-                <td>Languages:</td>
-                <td>C#, JavaScript/TypeScript, Python, HTML/CSS, SQL</td>
-            </tr>
-            <tr>
-                <td>Frameworks:</td>
-                <td>ASP.NET, Svelte/SvelteKit, Node.js, Vite</td>
-            </tr>
-            <tr>
-                <td>Cloud &amp; Infrastructure:</td>
-                <td>Azure, Cloudflare Workers/R2/Pages, Docker, GitHub Actions</td>
-            </tr>
-            <tr>
-                <td>Databases:</td>
-                <td>Azure Cosmos DB, SQL Server, SQLite</td>
-            </tr>
-            <tr>
-                <td>Other:</td>
-                <td>3D Printing, Electronics, Hardware Prototyping, Git, NuGet, npm</td>
-            </tr>
-        </table>
-    </section>
+        <section style="height:2.95in; box-sizing:border-box; padding-top:0.08in;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.15in;">
+            <div><strong>Innovative Systems,</strong> Software Developer</div>
+            <div style="font-style:italic; white-space:nowrap;">June 2022 - Present</div>
+          </div>
+          <div style="margin-left:0.18in; margin-top:0.02in;">
+            <div><span style="display:inline-block; width:0.25in;">-</span>Spearheaded <strong>Blazor</strong> integration</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Created several full stack applications with <strong>ASP.NET</strong> backends</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Maintained several <strong>Azure DevOps</strong> CI/CD pipelines</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Practiced <strong>agile</strong> development with three week sprints</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Created internal <strong>reusable packages</strong> for use in several projects</div>
+          </div>
 
-    <section>
-        <h2>Projects</h2>
-        <div class="project-entry">
-            <b>Reg X Timing</b> &mdash; Full-stack race management platform with registration, chip timing, and live results
-        </div>
-        <div class="project-entry">
-            <b>Cosmos DB Query Converter</b> &mdash; NuGet package for writing native Cosmos DB SQL queries with <b>automatic parameterization</b>
-        </div>
-        <div class="project-entry">
-            <b>Dependency Registration Attributes</b> &mdash; NuGet package simplifying DI registration via <b>C# attributes</b>
-        </div>
-        <div class="project-entry">
-            <b>dalt.dev Tools</b> &mdash; Browser-based web dev utilities for image processing, icon generation, and WebP conversions
-        </div>
-        <div class="project-entry">
-            <b>Custom 8" Dobsonian Telescope</b> &mdash; Fully custom reflector telescope <b>designed from scratch</b> and <b>3D printed</b>
-        </div>
-        <div class="project-entry">
-            <b>Metals Market Display</b> &mdash; Live gold and silver price display for coin and pawn shops, powered by <b>Cloudflare Workers</b>
-        </div>
-    </section>
+          <div style="height:0.27in;"></div>
 
-    <section>
-        <h2>Education</h2>
-        <div class="education-row">
-            <span><b>Bachelor of Science in Computer Science</b></span>
-            <span class="entry-date">2018</span>
-        </div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.15in;">
+            <div><strong>patientMoon Wellness Marketing,</strong> Software Developer</div>
+            <div style="font-style:italic; white-space:nowrap;">Aug 2021 - Aug 2023</div>
+          </div>
+          <div style="margin-left:0.18in; margin-top:0.02in;">
+            <div><span style="display:inline-block; width:0.25in;">-</span>Worked as a <strong>freelance</strong> developer through Upwork</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Coordinated with <strong>fully remote</strong> team</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Helped define a <strong>GIT</strong> branching strategy</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Introduced and implemented <strong>SOLID</strong> practices</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span><strong>Adapted</strong> seamlessly to both internal and client applications</div>
+          </div>
+        </section>
+
+        <section style="height:3.08in; box-sizing:border-box; padding-top:0.10in;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.15in;">
+            <div><strong>Client Configurable Web Apps</strong></div>
+            <div style="font-style:italic; white-space:nowrap;">Full Stack Dev &amp; DevOps</div>
+          </div>
+          <div style="margin-left:0.18in; margin-top:0.02in;">
+            <div><span style="display:inline-block; width:0.25in;">-</span>Designed and written with the <strong>ASP.NET</strong> and <strong>Blazor</strong> frameworks</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Fully <strong>configurable</strong> and <strong>rebrandable</strong> after deployment by clients</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span><strong>Removed dependency</strong> on developers to customize applications for clients</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Designed and implemented <strong>SQL</strong> database with <strong>Entity Framework</strong></div>
+            <div><span style="display:inline-block; width:0.25in;">-</span><strong>Integrated</strong> with several other applications</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Successfully <strong>decreased deployment time</strong> from ~400 hrs to ~8 hrs</div>
+          </div>
+
+          <div style="height:0.23in;"></div>
+
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.15in;">
+            <div><strong>patientMoon Portal</strong></div>
+            <div style="font-style:italic; white-space:nowrap;">Full Stack Developer</div>
+          </div>
+          <div style="margin-left:0.18in; margin-top:0.02in;">
+            <div><span style="display:inline-block; width:0.25in;">-</span>Maintained <strong>ASP.NET</strong> backend and <strong>Blazor</strong> frontend</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Integrated with <strong>Airtable</strong> database</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Added many <strong>new features</strong> in the UI and API</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span>Introduced <strong>automated testing</strong> and wrote many tests</div>
+            <div><span style="display:inline-block; width:0.25in;">-</span><strong>Streamlined architecture</strong> for easier future changes</div>
+          </div>
+        </section>
+
+        <footer style="text-align:center; font-weight:700; font-size:14.8pt; padding-top:0.02in;">
+          References Upon Request
+        </footer>
+      </div>
     </section>
+  </main>
 </body>
 </html>
