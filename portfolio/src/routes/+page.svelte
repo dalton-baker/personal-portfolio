@@ -171,7 +171,8 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Scrolling LED Price Sign</h5>
                     <p class="card-text">A scrolling LED sign built for a coin shop that displays live precious metal price data, keeping customers informed in real time.</p>
-                    <span class="badge bg-secondary mt-auto align-self-start">Coming Soon</span>
+                    <a href="/led-sign"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
                 </div>
             </div>
         </div>
