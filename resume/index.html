@@ -97,16 +97,22 @@
       line-height: 1.4;
     }
 
-    .skill {
-      display: flex;
-      justify-content: space-between;
-      font-size: 8pt;
-      line-height: 1.52;
+    .skill-category {
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #444;
+      margin-top: 0.06in;
     }
 
-    .stars {
-      color: #333;
-      letter-spacing: 0;
+    .skill-category:first-child {
+      margin-top: 0;
+    }
+
+    .skill-items {
+      font-size: 7.5pt;
+      line-height: 1.4;
     }
 
     /* ---- Main Content ---- */
@@ -198,21 +204,20 @@
 
       <div class="sidebar-section">
         <div class="section-label">Skills</div>
-        <div class="skill"><span>C#</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>HTML</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>CSS</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>JavaScript</span><span class="stars">★★☆</span></div>
-        <div class="skill"><span>Python</span><span class="stars">★☆☆</span></div>
-        <div class="skill"><span>ASP.NET</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>Blazor</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>WPF</span><span class="stars">★★☆</span></div>
-        <div class="skill"><span>Bash</span><span class="stars">★★☆</span></div>
-        <div class="skill"><span>Powershell</span><span class="stars">★☆☆</span></div>
-        <div class="skill"><span>Azure DevOps</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>GitHub Actions</span><span class="stars">★★☆</span></div>
-        <div class="skill"><span>Git</span><span class="stars">★★★</span></div>
-        <div class="skill"><span>TFS</span><span class="stars">★☆☆</span></div>
-        <div class="skill"><span>Docker</span><span class="stars">★★☆</span></div>
+        <div class="skill-category">Languages</div>
+        <div class="skill-items">C#, JavaScript, SQL, HTML, CSS</div>
+        <div class="skill-category">Web Apps</div>
+        <div class="skill-items">ASP.NET Core, Blazor, SvelteKit, Bootstrap, REST APIs</div>
+        <div class="skill-category">Architecture</div>
+        <div class="skill-items">Distributed systems, queues, background services, TDD</div>
+        <div class="skill-category">Cloud / DevOps</div>
+        <div class="skill-items">Azure, Cloudflare Workers, D1, R2, Cloudflare Queues, Docker, CI/CD</div>
+        <div class="skill-category">Data</div>
+        <div class="skill-items">SQL Server, PostgreSQL, Cosmos DB, EF Core, DbUp</div>
+        <div class="skill-category">Tools</div>
+        <div class="skill-items">Git, GitHub, Azure DevOps, GitHub Actions, Azure Pipelines</div>
+        <div class="skill-category">AI Development</div>
+        <div class="skill-items">Copilot, Claude Code, Codex, issue planning, rapid prototyping</div>
       </div>
       <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
     </div>
@@ -228,10 +233,10 @@
             <div class="entry-date">Aug 2024 - Present</div>
           </div>
           <div class="bullets">
-            <div class="bullet"><span class="dash">-</span><span>Contracted across multiple client projects, adapting to new domains and tech stacks</span></div>
-            <div class="bullet"><span class="dash">-</span><span>Consistently onboarded to unfamiliar codebases and delivered results with minimal ramp-up</span></div>
-            <div class="bullet"><span class="dash">-</span><span>Designed and built new applications and systems from scratch across varied environments</span></div>
-            <div class="bullet"><span class="dash">-</span><span>Performed maintenance and modernization on existing legacy systems</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Contracted across <strong>multiple simultaneous</strong> client projects and domains</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Onboarded to <strong>unfamiliar codebases</strong> quickly and contributed immediately</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Built <strong>full-stack applications</strong> from scratch across varied tech stacks</span></div>
+            <div class="bullet"><span class="dash">-</span><span>Maintained and modernized <strong>legacy systems</strong> for multiple clients</span></div>
           </div>
         </div>
 
