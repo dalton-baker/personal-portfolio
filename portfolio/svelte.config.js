@@ -8,8 +8,7 @@ const config = {
 		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 		adapter: adapter({
 			pages: 'dist',
-			assets: 'dist',
-			fallback: 'index.html' // IMPORTANT for SPA routing
+			assets: 'dist'
 		})
 	}
 };
