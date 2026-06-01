@@ -35,13 +35,13 @@
     <p>I wanted a push-to system: a device that tracks where the telescope is pointing and displays live
         coordinates, so I can look up a target on my phone, push the scope until the numbers match, and be
         in the neighborhood instead of searching blind. Commercial push-to options exist, but they tend to be
-        expensive, hard to source, and — critically — several of them require drilling into or otherwise
+        expensive, hard to source, and <i>critically</i> several of them require drilling into or otherwise
         modifying the telescope. I decided building something custom would be easier and probably faster than
         tracking down a pre-built solution.</p>
 
     <p>The result attaches to the AD8 entirely without permanent modifications. Everything mounts via command
         strips and snap-in 3D-printed parts. The system is also intentionally simpler than most push-to
-        setups — there is no Stellarium integration, no onboard catalog, no object selection. It is a screen
+        setups. There is no Stellarium integration, no onboard catalog, no object selection. It is a screen
         that shows where you are pointing, nothing more.</p>
 
     <h2 class="h3 mt-4 mb-3">The Workflow</h2>
@@ -51,7 +51,7 @@
         <li>Power on the device and connect to its Wi-Fi setup server.</li>
         <li>Enter your location, sync the time, and align on one or two known stars.</li>
         <li>Setup finishes, Wi-Fi shuts off, and the OLED shows live Alt/Az and RA/Dec.</li>
-        <li>Look up your target's coordinates on your phone — Telescopius works well for this.</li>
+        <li>Look up your target's coordinates on your phone. (<a href="https://telescopius.com/" target="_blank">Telescopius</a>, <a href="https://stellarium-web.org/" target="_blank">Stellarium</a>, or <a href="https://theskylive.com/" target="_blank">The Sky Live</a> works well for this)</li>
         <li>Push the telescope until the displayed coordinates match.</li>
         <li>Use the finder or eyepiece to finish centering. You will be close.</li>
     </ol>
@@ -64,12 +64,13 @@
 
     <p>The system started as a breadboard prototype to validate the sensors and coordinate math. Once
         everything checked out, I soldered each component onto its own perf board. Each board got a small
-        ceramic capacitor and a larger electrolytic across power — 1 nF and roughly 100 µF respectively —
-        to stabilize power at each node and keep things clean over the I2C cable runs.</p>
+        ceramic capacitor (1 nF) and a larger electrolytic capacitor (100 µF) across power and ground
+        to stabilize voltage at each node and keep things clean over the I2C cable runs.</p>
 
-    <p>All components communicate over I2C, wired with CAT5 cable. SCL, SDA, and power each run twisted
-        with a ground wire, which helps with noise rejection and makes the telescope wiring manageable in
-        the field.</p>
+    <p>All components communicate over I2C using short CAT5 cable runs. CAT5 was cheap, easy to find, and 
+		gave me enough wires to run everything through a single cable. SCL, SDA, and power each run twisted with a ground 
+		wire, which helped keep the signals stable enough for this setup while making the telescope wiring more 
+		manageable in the field</p>
 
     <h3 class="h5 mt-4 mb-2">ESP32-S3 Controller</h3>
 
@@ -91,10 +92,10 @@
         </div>
     </div>
 
-    <h3 class="h5 mt-4 mb-2">Altitude Sensor — MPU-6050</h3>
+    <h3 class="h5 mt-4 mb-2">Altitude Sensor: MPU-6050</h3>
 
     <p>Altitude is measured by an MPU-6050 accelerometer/gyro module mounted on the telescope tube. Only
-        the accelerometer is used — it reads the tilt angle directly. The firmware averages the last ten
+        the accelerometer is used (it reads the tilt angle directly). The firmware averages the last ten
         readings to smooth out jitter and keep the display stable enough to aim by.</p>
 
     <div class="row g-3 my-3">
@@ -110,10 +111,10 @@
         </div>
     </div>
 
-    <h3 class="h5 mt-4 mb-2">Azimuth Encoder — AS5600</h3>
+    <h3 class="h5 mt-4 mb-2">Azimuth Encoder: AS5600</h3>
 
-    <p>Azimuth uses an AS5600 absolute magnetic rotary encoder. A small magnet attaches to the rotating
-        base of the telescope; the AS5600 reads its angle directly. Because it is an absolute encoder, it
+    <p>Azimuth uses an AS5600 absolute magnetic rotary encoder. A small magnet attaches to azumuth friction adjustment knob; 
+		the AS5600 reads its angle directly. Because it is an absolute encoder, it
         reports the full current position rather than counting incremental movement, so there is no drift to
         accumulate between power cycles. The firmware calculates an offset during alignment so the reported
         azimuth is relative to north rather than the magnet's arbitrary starting position.</p>
@@ -135,7 +136,7 @@
 
     <p>The display is a 0.96-inch 128x64 OLED running an SSD1306 controller over I2C. Bright enough to
         read easily, small enough to mount out of the way. I layered green gel filters over the screen to
-        soften the white OLED light — harsh white at the eyepiece destroys night vision, and the green shift
+        soften the white OLED light. Harsh white at the eyepiece destroys night vision, and the green shift
         makes glancing at coordinates much more comfortable after dark.</p>
 
     <div class="row g-3 my-3">
@@ -153,9 +154,9 @@
 
     <h2 class="h3 mt-4 mb-3">3D-Printed Cases</h2>
 
-    <p>Every component got its own 3D-printed PLA enclosure. The cases protect the boards, provide clean
-        mounting surfaces, and keep the installed telescope looking like a finished product rather than a
-        wiring experiment.</p>
+    <p>Every component got its own 3D-printed PLA enclosure. The cases protect the boards, provide clean mounting '
+		surfaces, and keep the scope looking like a finished tool instead of a science fair victim. Also, the 
+		components just look cool as hell in 3D-printed cases.</p>
 
     <h3 class="h5 mt-4 mb-2">ESP32 Controller</h3>
 
@@ -225,13 +226,13 @@
     <h3 class="h5 mt-4 mb-2">Azimuth Encoder</h3>
 
     <p>The azimuth assembly was the hardest mechanical part of the whole project. The AS5600 needs to sit
-        at a precise distance from the magnet — too far and readings get unreliable, too close and there is
+        at a precise distance from the magnet. Too far and readings get unreliable, too close and there is
         a risk of contact. The mount also needed to be height-adjustable, hold the sensor aligned with the
         magnet's axis, and attach to the AD8 base without wobbling. It took several design iterations to
         get all of that right simultaneously.</p>
 
     <p>The magnet itself sits in a knob adapter that fits over the existing azimuth friction knob on the
-        AD8 base, so the magnet rotates with the base while the sensor stays fixed — no drilling, no
+        AD8 base, so the magnet rotates with the base while the sensor stays fixed. No drilling, no
         permanent changes to the scope.</p>
 
     <div class="row g-3 my-3">
@@ -280,7 +281,7 @@
     <h2 class="h3 mt-4 mb-3">Fully Assembled System</h2>
 
     <p>With all four boards soldered and cased, I wired everything together before mounting anything on the
-        telescope. The ESP32 acts as the hub — all three peripheral boards plug into it via CAT5 runs. This
+        telescope. The ESP32 acts as the hub. All three peripheral boards plug into it via CAT5 runs. This
         was the first time the complete system ran as a unit outside of the breadboard stage.</p>
 
     <div class="row g-3 my-3">
@@ -333,25 +334,25 @@
     </div>
 
     <p>Once everything was on the scope and I started testing, I hit the most painful bug of the entire
-        project. The coordinate readouts were wrong — badly wrong — in a way that looked like a serious
-        error in the spherical geometry or the sensor fusion. I spent two days going back through the math,
+        project. The coordinate readouts were wrong, <i><b>badly wrong</b></i>, in a way that looked like a serious
+        error in the spherical geometry or the sensor readings. I spent two days going back through the math,
         the time sync, the alignment code, all of it.</p>
 
-    <p>The problem was my longitude. I had entered it with the wrong sign. The system had been doing the
-        math correctly the entire time. Nothing like being betrayed by geography.</p>
+    <p>The problem was my longitude. I'm at -103, but I had enetered positive 103 early on in testing. The system had been doing the
+        math correctly the entire time. Rememebr to check all of your inputs before you assume the code is wrong!!</p>
 
     <h2 class="h3 mt-4 mb-3">Setup and Calibration</h2>
 
     <p>When the device powers on, it hosts a Wi-Fi access point and a small setup server accessible at
         <code>setup.local</code>. From a phone, you enter your latitude and longitude, sync the current
         time, and select alignment stars from a dropdown. The onboard database holds around 450 bright,
-        fixed stars — it exists purely for calibration, not browsing, so planets and deep-sky objects are
+        fixed stars. Iit exists purely for calibration, not browsing, so planets and deep-sky objects are
         intentionally excluded.</p>
 
     <p>There are two alignment modes. One-star alignment does a simple offset and works well when the base
         is reasonably level. Two-star alignment does a spherical calculation from two reference points,
-        making it much more forgiving when the base is not perfectly flat — which is most of the time in
-        real observing conditions. Once alignment is saved, the Wi-Fi server shuts off to conserve battery
+        making it much more forgiving when the base is not level. I hate leveling my scope in the 
+		field, so I solved that problem in code. Once alignment is saved, the Wi-Fi server shuts off to conserve battery
         and the OLED takes over.</p>
 
     <h2 class="h3 mt-4 mb-3">First Real Use — May 14, 2026</h2>
@@ -359,20 +360,20 @@
     <p>The first real observing session used Pollux as the alignment star. From there I put the system
         through its paces:</p>
 
-    <p><strong>Jupiter</strong> — looked up its coordinates on Telescopius and pushed the scope into
+    <p><strong>Jupiter</strong>: looked up its coordinates on Telescopius and pushed the scope into
         position. Found it in around 20 seconds. Jupiter was fairly close to Pollux, so it was a good
         confidence builder but not a brutal test.</p>
 
-    <p><strong>Capella</strong> — much farther from Pollux. Looked up the coordinates, moved the scope,
+    <p><strong>Capella</strong>: much farther from Pollux. Looked up the coordinates, moved the scope,
         found it in under a minute. A stronger proof that the system was tracking the sky correctly across
         a wider range of motion.</p>
 
-    <p><strong>M81 and M82</strong> — looked up M81's coordinates and moved the scope. Did not see the
+    <p><strong>M81 and M82</strong>: looked up M81's coordinates and moved the scope. Did not see the
         galaxy immediately; I scanned the area briefly and let my eyes adjust. M81 appeared, and M82 was
-        visible nearby. First real use, and the system found a planet and two galaxies.</p>
+        visible nearby.</p>
 
-    <p>The following night I used it to locate M53, a globular cluster in Coma Berenices — the first
-        globular cluster I had ever observed. The push-to system turned what would have been a difficult
+    <p>The following night I used it to locate M53, a globular cluster in Coma Berenices (the first
+        globular cluster I had ever observed!) The push-to system turned what would have been a difficult
         star hop into a matter of moving the scope to the right numbers.</p>
 
     <div class="row g-3 my-3">
