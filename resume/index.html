@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dalton Baker - Resume</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.3;
+            color: #1a1a1a;
+            padding: 0.4in 0.5in;
+            max-width: 8.5in;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 0.2in;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 0.1in;
+        }
+
+        header h1 {
+            font-size: 22pt;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        header .contact-info {
+            font-size: 10pt;
+            color: #555;
+        }
+
+        header .contact-info a {
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        header .contact-info span {
+            margin: 0 6px;
+        }
+
+        section {
+            margin-bottom: 0.15in;
+        }
+
+        section h2 {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 2px;
+            margin-bottom: 6px;
+        }
+
+        .job {
+            margin-bottom: 10px;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .job-title {
+            font-weight: 700;
+            font-size: 11pt;
+        }
+
+        .job-date {
+            font-size: 10pt;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .job-company {
+            font-style: italic;
+            color: #444;
+            font-size: 10.5pt;
+        }
+
+        .job ul {
+            margin-top: 3px;
+            padding-left: 18px;
+        }
+
+        .job ul li {
+            margin-bottom: 2px;
+            font-size: 10.5pt;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 3px 12px;
+            font-size: 10.5pt;
+        }
+
+        .skills-grid dt {
+            font-weight: 600;
+        }
+
+        .skills-grid dd {
+            margin: 0;
+        }
+
+        .education-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .education-entry .degree {
+            font-weight: 700;
+        }
+
+        .education-entry .school {
+            font-style: italic;
+            color: #444;
+        }
+
+        .education-entry .date {
+            font-size: 10pt;
+            color: #555;
+        }
+
+        .projects-list {
+            font-size: 10.5pt;
+        }
+
+        .projects-list .project {
+            margin-bottom: 4px;
+        }
+
+        .projects-list .project-name {
+            font-weight: 600;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+
+        @page {
+            size: letter;
+            margin: 0.4in 0.5in;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dalton Baker</h1>
+        <div class="contact-info">
+            <a href="mailto:dalton.s.baker@gmail.com">dalton.s.baker@gmail.com</a>
+            <span>|</span>
+            <a href="https://www.linkedin.com/in/dalton-baker">linkedin.com/in/dalton-baker</a>
+            <span>|</span>
+            <a href="https://github.com/dalton-baker">github.com/dalton-baker</a>
+            <span>|</span>
+            <a href="https://dalt.dev">dalt.dev</a>
+        </div>
+    </header>
+
+    <section>
+        <h2>Summary</h2>
+        <p>Software engineer with a passion for building practical, performant applications. Experienced in full-stack development, cloud architecture, and entrepreneurship. Equally comfortable designing APIs, crafting frontends, and tinkering with hardware projects.</p>
+    </section>
+
+    <section>
+        <h2>Experience</h2>
+
+        <div class="job">
+            <div class="job-header">
+                <span class="job-title">Software Engineer</span>
+                <span class="job-date">2020 &ndash; Present</span>
+            </div>
+            <div class="job-company">Self-Employed / Freelance</div>
+            <ul>
+                <li>Built and operate Reg X Timing, an integrated registration, timing, and results platform for small to mid-sized races</li>
+                <li>Developed Metals Market Display, a live precious metals price display system using Cloudflare Workers and R2 storage</li>
+                <li>Created and published NuGet packages including Cosmos DB Query Converter and Dependency Registration Attributes</li>
+                <li>Built custom websites for local businesses including Heartland Tanks and Best Choice Pawn</li>
+                <li>Designed and 3D-printed a custom 8-inch Dobsonian reflector telescope from scratch</li>
+            </ul>
+        </div>
+
+        <div class="job">
+            <div class="job-header">
+                <span class="job-title">Software Engineer</span>
+                <span class="job-date">2018 &ndash; 2020</span>
+            </div>
+            <div class="job-company">Previous Role</div>
+            <ul>
+                <li>Developed and maintained full-stack web applications using .NET and modern JavaScript frameworks</li>
+                <li>Implemented RESTful APIs and integrated with cloud services including Azure Cosmos DB</li>
+                <li>Collaborated with cross-functional teams to deliver features on schedule</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Skills</h2>
+        <dl class="skills-grid">
+            <dt>Languages</dt>
+            <dd>C#, JavaScript/TypeScript, Python, HTML/CSS, SQL</dd>
+            <dt>Frameworks</dt>
+            <dd>ASP.NET, Svelte/SvelteKit, Node.js</dd>
+            <dt>Cloud & Infra</dt>
+            <dd>Azure, Cloudflare Workers/R2/Pages, Docker</dd>
+            <dt>Databases</dt>
+            <dd>Azure Cosmos DB, SQL Server, SQLite</dd>
+            <dt>Tools</dt>
+            <dd>Git, GitHub Actions, Vite, NuGet, npm</dd>
+            <dt>Other</dt>
+            <dd>3D Printing, Electronics, Hardware Prototyping</dd>
+        </dl>
+    </section>
+
+    <section>
+        <h2>Projects</h2>
+        <div class="projects-list">
+            <div class="project">
+                <span class="project-name">Reg X Timing</span> &mdash; Full-stack race management platform with registration, chip timing, and live results
+            </div>
+            <div class="project">
+                <span class="project-name">Cosmos DB Query Converter</span> &mdash; NuGet package for writing native Cosmos DB SQL queries with automatic parameterization
+            </div>
+            <div class="project">
+                <span class="project-name">Dependency Registration Attributes</span> &mdash; NuGet package simplifying DI registration via C# attributes
+            </div>
+            <div class="project">
+                <span class="project-name">dalt.dev Tools</span> &mdash; Browser-based web dev utilities for image processing, icon generation, and WebP conversions
+            </div>
+            <div class="project">
+                <span class="project-name">Custom Dobsonian Telescope</span> &mdash; Fully custom 8" reflector telescope designed from scratch and 3D printed
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Education</h2>
+        <div class="education-entry">
+            <div>
+                <span class="degree">Bachelor of Science in Computer Science</span>
+            </div>
+            <span class="date">2018</span>
+        </div>
+    </section>
+</body>
+</html>
