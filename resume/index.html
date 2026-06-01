@@ -33,6 +33,8 @@
     .sidebar {
       background: #ffffff;
       padding: 0.45in 0.3in 0.45in 0.35in;
+      display: flex;
+      flex-direction: column;
     }
 
     .name {
@@ -52,7 +54,7 @@
       width: 0.95in;
       height: 0.95in;
       display: block;
-      flex-shrink: 0;
+      margin-top: auto;
     }
 
     .sidebar-section {
@@ -109,6 +111,8 @@
     /* ---- Main Content ---- */
     .main-content {
       padding: 0.45in 0.45in 0.4in 0.3in;
+      display: flex;
+      flex-direction: column;
     }
 
     .main-header {
@@ -164,6 +168,7 @@
       text-align: center;
       font-weight: 700;
       font-size: 8.5pt;
+      margin-top: auto;
       padding-top: 0.14in;
     }
   </style>
@@ -208,13 +213,11 @@
         <div class="skill"><span>TFS</span><span class="stars">★☆☆</span></div>
         <div class="skill"><span>Docker</span><span class="stars">★★☆</span></div>
       </div>
+      <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
     </div>
 
     <!-- RIGHT MAIN CONTENT -->
     <div class="main-content">
-      <div class="main-header">
-        <img class="qr" src="qr-code.svg" alt="QR code linking to daltonsbaker.com">
-      </div>
       <div class="main-section">
         <div class="section-label">Experience</div>
 
