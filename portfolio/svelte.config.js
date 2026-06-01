@@ -9,7 +9,7 @@ const config = {
 		adapter: adapter({
 			pages: 'dist',
 			assets: 'dist',
-			fallback: 'index.html' // IMPORTANT for SPA routing
+			fallback: '404.html'
 		})
 	}
 };
