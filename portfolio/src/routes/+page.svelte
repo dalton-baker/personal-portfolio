@@ -7,7 +7,7 @@
 </script>
 
 <section class="text-center mt-4">
-    <img src="logo.svg" style="height: 5rem;">
+    <img src="logo.svg" style="height: 6.25rem;">
     <h1 class="display-4">Hi, I'm Dalton</h1>
     <p class="lead">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 </section>
@@ -82,7 +82,7 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">dalt.dev Tools</h5>
+                    <h5 class="card-title">Web Tools</h5>
                     <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
                     <a href="https://tools.dalt.dev/" target="_blank"
                         class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
@@ -160,7 +160,8 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Telescope Push-To System</h5>
                     <p class="card-text">A custom push-to navigation system designed for the Apertura AD8 Dobsonian. Uses encoders to help point the telescope at any object in the sky.</p>
-                    <span class="badge bg-secondary mt-auto align-self-start">Coming Soon</span>
+                    <a href="/push-to"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
                 </div>
             </div>
         </div>
