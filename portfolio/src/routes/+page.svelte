@@ -160,7 +160,8 @@
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Telescope Push-To System</h5>
                     <p class="card-text">A custom push-to navigation system designed for the Apertura AD8 Dobsonian. Uses encoders to help point the telescope at any object in the sky.</p>
-                    <span class="badge bg-secondary mt-auto align-self-start">Coming Soon</span>
+                    <a href="/push-to"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
                 </div>
             </div>
         </div>
