@@ -26,7 +26,7 @@
 </section>
 
 <section class="mb-5 pb-3">
-    <h2 class="h3 mb-4 text-center">My Featured Projects</h2>
+    <h2 class="h3 mb-4 text-center">Featured Projects</h2>
     <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
@@ -70,22 +70,11 @@
                 </div>
             </div>
         </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">State Your Name</h5>
-                    <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
-                    <a href="https://state-your-name.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
-                </div>
-            </div>
-        </div>
     </div>
 </section>
 
 <section class="mb-5 pb-3">
-    <h2 class="h3 mb-4 text-center">My Businesses</h2>
+    <h2 class="h3 mb-4 text-center">Businesses</h2>
     <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
@@ -113,7 +102,7 @@
 </section>
 
 <section class="mb-5 pb-3">
-    <h2 class="h3 mb-4 text-center">My Websites</h2>
+    <h2 class="h3 mb-4 text-center">Websites</h2>
     <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
@@ -148,11 +137,22 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">State Your Name</h5>
+                    <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
+                    <a href="https://state-your-name.dalt.dev/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
 <section class="mb-5 pb-3">
-    <h2 class="h3 mb-4 text-center">My Packages</h2>
+    <h2 class="h3 mb-4 text-center">Packages</h2>
     <div class="row g-4">
         <div class="col-md-4">
             <div class="card text-light h-100">
