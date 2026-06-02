@@ -253,9 +253,9 @@
 		It has just enough moving pieces to resemble a larger distributed application, without requiring me 
 		to migrate a huge amount of complex code. It is the perfect testbed.</p>
 
-	<p>I was very lucky to have a boss who took a gamble and let me build this system in the first place. 
-		He funded the whole thing, paid me to do it, and trusted me to figure it out. I was happy to build 
-		it, and I am happy to keep maintaining it for years to come. Thanks, Lou.</p>
+	<p>I was lucky to have a boss who took a gamble and let me build this system in the first place. He paid 
+		for the hardware, gave me time to work on it, and trusted me to figure it out. I was happy to build it, 
+		and I am still happy to keep it running. Thanks, Lou.</p>
 
 	<p>The Dakota Coin LED sign has been running in some form for years now. It started as a COVID-era project 
 		at a coin shop and turned into a real production system that serves live metals data to an in-store LED 
