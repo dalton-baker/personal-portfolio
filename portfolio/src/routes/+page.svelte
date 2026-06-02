@@ -169,10 +169,10 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Scrolling LED Price Sign</h5>
-                    <p class="card-text">A scrolling LED sign built for a coin shop that displays live precious metal price data, keeping customers informed in real time.</p>
-                    <span class="badge bg-secondary mt-auto align-self-start">Coming Soon</span>
-                </div>
+    				<h5 class="card-title">Dakota Coin LED Sign</h5>
+    				<p class="card-text">A live gold and silver price display that started as a Raspberry Pi shop project and grew into one of my longest-running production systems.</p>
+   					<a href="/led-sign" class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
+				</div>
             </div>
         </div>
     </div>
