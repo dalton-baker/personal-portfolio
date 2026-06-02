@@ -59,17 +59,6 @@
 				</div>
             </div>
         </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Web Tools</h5>
-                    <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
-                    <a href="https://tools.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
-                </div>
-            </div>
-        </div>
     </div>
 </section>
 
@@ -118,11 +107,10 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Heartland Tanks Website</h5>
-                    <p class="card-text">Custom website for a South Dakota-based tire tank manufacturer. Built for
-                        simplicity, performance, and easy maintenance.</p>
-                    <a href="https://heartlandtanks.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Visit Site</a>
+                    <h5 class="card-title">Web Tools</h5>
+                    <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
+                    <a href="https://tools.dalt.dev/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
                 </div>
             </div>
         </div>
@@ -145,6 +133,18 @@
                     <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
                     <a href="https://state-your-name.dalt.dev/" target="_blank"
                         class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Heartland Tanks Website</h5>
+                    <p class="card-text">Custom website for a South Dakota-based tire tank manufacturer. Built for
+                        simplicity, performance, and easy maintenance.</p>
+                    <a href="https://heartlandtanks.com/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Visit Site</a>
                 </div>
             </div>
         </div>
