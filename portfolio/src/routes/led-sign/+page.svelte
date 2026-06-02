@@ -30,15 +30,15 @@
 
     <h1 class="mb-4 text-center">The Dakota Coin LED Metals Sign</h1>
 
-    <p>Several years ago, while I was still a student at South Dakota Mines, I built an LED sign for Dakota Coin
-        that displayed live precious metals prices.</p>
+	<p>While I was a student at South Dakota Mines, I worked at <a href="https://share.google/nWOCdpi2C4yJDDUMh" target="_blank">Dakota Coin</a>, 
+		a small coin shop in downtown Rapid City. I was a part-time student and spent most of my days at the shop. During COVID, 
+		the pace at the shop slowed down, so I built a scrolling LED sign to display live gold and silver prices. If you’ve driven 
+		through downtown Rapid City, there’s a good chance you’ve seen it.</p>
 
-    <p>It started as a fun shop project during COVID and slowly evolved into one of my longest-running production
-        systems. What began as a Raspberry Pi scraping a website and pushing pixels to an LED board eventually
-        turned into a small distributed system, then a paid-API-backed service, then a Dockerized home-hosted
-        API, and finally a nearly compute-less Cloudflare Workers and R2 setup.</p>
-
-    <p>Not bad for something that started because we had too much time on our hands at the coin shop.</p>
+	<p>That small shop project slowly evolved into one of my longest-running production systems. What began as a 
+		Raspberry Pi scraping a website and running an LED array eventually turned into a small distributed system, 
+		then a paid-API-backed service, then a Dockerized home-hosted API, and finally a nearly compute-less Cloudflare 
+		Workers and R2 setup.</p>
 
     <h2 class="h3 mt-4 mb-3">The First Prototype</h2>
 
@@ -58,7 +58,7 @@
     <p>That worked too, right up until our IP got blocked.</p>
 
     <p>Turns out, when multiple devices in the same building scrape the same website every few minutes, the website
-        eventually notices. Shocking.</p>
+        eventually notices.</p>
 
     <div class="row g-3 my-3">
         <div class="col-sm-6">
@@ -99,17 +99,15 @@
 
     <p>By then, I was making more money than I had as a college student, so instead of duct-taping the scraper
         back together, I replaced it with a real paid metals API. It was cleaner, more reliable, and much less
-        "please don't ban me, mysterious website."</p>
+        "please don't ban me."</p>
 
     <p>While I was doing that upgrade, I also switched from writing a JSON file to storing the data in MySQL. It
         came with the hosting plan, so I figured I might as well use it.</p>
 
-    <p>That version ran for a while too.</p>
+    <p>That version ran for a while too. Until I had a falling out with Domain.com.</p>
 
-    <p>Then I had a falling out with Domain.com.</p>
-
-    <p>They were charging me for domains I had already turned off, bumping things into higher tiers without making
-        it clear, and generally giving off strong "ancient billing system held together by mold and spite" energy.
+    <p>They were charging me for domains I had turned off, bumping things into higher tiers without making
+        it clear, and generally giving off strong "ancient billing system and bad sales tactics" energy.
         Their tooling felt old, clunky, and weirdly predatory.</p>
 
     <p>By that point, I had several years of software experience and a much better idea of how I wanted to run
@@ -119,29 +117,28 @@
 
     <h2 class="h3 mt-4 mb-3">The Docker Era</h2>
 
-    <p>The next version ran as a Docker container.</p>
+	<p>The next version ran as a Docker container on my home server.</p>
 
-    <p>The backend was a small API service with a Python script that pulled live metals data from the paid API.
-        Since I only had a limited number of API calls per month, the system fetched the data once and served it
-        to every consumer from my own API.</p>
+	<p>The backend was a small service that pulled live metals data from the paid API using a Python script. 
+		Since I only had a limited number of API calls per month, the system fetched the data once, stored it 
+		as a JSON file, and served that cached data through a tiny Go server running in the same container. I 
+		exposed the service using a Cloudflare Tunnel.</p>
 
-    <p>I exposed the service using a Cloudflare Tunnel.</p>
+	<p>I also rewrote the website in Blazor WebAssembly and deployed it to Azure Static Web Apps. This was 
+		a big upgrade over the old PHP page. Instead of refreshing the entire page every five minutes, the 
+		site could fetch new data dynamically and update the UI in place.</p>
 
-    <p>I also rewrote the website in Blazor WebAssembly and deployed it to Azure Static Web Apps. This was a big
-        upgrade over the old PHP page. Instead of refreshing the entire page every five minutes, the site could
-        fetch new data dynamically and update the UI in place.</p>
+	<p>This version was much cleaner. But it still had one huge problem: my apartment internet was now part 
+		of the production architecture.</p>
 
-    <p>This version was much cleaner.</p>
+	<p>And my ISP sucked.</p>
 
-    <p>But it still had one huge problem: my apartment internet was now part of the production architecture.</p>
+	<p>When my home internet went down, the API went down. When the API went down, the LED sign and website 
+		stopped updating. Hosting a production service out of an apartment is cool right up until you are 
+		relying on it during business hours. It is especially bad when your apartment complex has signed 
+		an exclusivity deal with Bluepeak.</p>
 
-    <p>And my ISP sucked.</p>
-
-    <p>When my home internet went down, the API went down. When the API went down, the LED sign and website
-        stopped updating. Hosting a production service out of an apartment is cool right up until you remember
-        that residential internet is basically a raccoon wearing a Comcast badge.</p>
-
-    <p>So it was time for another rebuild.</p>
+	<p>So it was time for another rebuild.</p>
 
     <div class="row g-3 my-3">
         <div class="col-sm-6">
@@ -158,10 +155,7 @@
 
     <h2 class="h3 mt-4 mb-3">The Cloudflare Version</h2>
 
-    <p>In June 2025, almost exactly a year after the previous major version, I rebuilt the system again. This
-        time, I used Cloudflare Workers and R2.</p>
-
-    <p>The backend became dramatically simpler.</p>
+    <p>In June 2025, I rebuilt the system again. This time, I used Cloudflare Workers and R2. The backend became dramatically simpler.</p>
 
     <p>A cron-triggered Worker runs every five minutes. It pulls the current prices for silver, gold, platinum,
         and palladium from the paid API. Then it writes the results to R2 blob storage.</p>
@@ -176,14 +170,16 @@
         historical values for charts. The public API is really just R2 serving those blobs directly.</p>
 
     <p>The best part is that Cloudflare lets you hide that implementation detail cleanly. The blobs do not need
-        file extensions. I set the content type and cache headers myself, route
+        file extensions. I set the content type and cache headers when writting the blobs, route
         <code>api.metalsmarketdisplay.com</code> to the storage, and the outside world sees what looks like a
         normal API.</p>
 
     <p>In reality, most requests are just retrieving static objects from Cloudflare's edge.</p>
 
-    <p>That is the kind of boring architecture I love. Boring means reliable. Boring means cheap. Boring means I
-        am not getting a text because my apartment modem shit itself.</p>
+    <p>This strategy was so effective, cost-saving, and simple that I ended up moving nearly all of my other 
+		websites into Cloudflare. For small- to medium-sized websites and services, edge compute hits a sweet 
+		spot: low cost, low maintenance, high availability, and very little infrastructure to babysit. 
+		It can also work well as a front door for larger systems. I really cannot recommend it enough.</p>
 
     <h2 class="h3 mt-4 mb-3">The Current Frontend</h2>
 
@@ -214,16 +210,12 @@
     <p>Once the backend and frontend were upgraded, I also replaced the old laptop connected to the shop TV.</p>
 
     <p>That laptop had been running an ancient version of Ubuntu for years. If it shut down or lost the page,
-        someone at the shop had to mess with it to get the display working again. It was exactly the kind of
-        fragile setup that works fine until a normal human has to touch it.</p>
-
-    <p>So I replaced it with an old Raspberry Pi 4.</p>
+        someone at the shop had to mess with it to get the display working again. So I replaced it with an old 
+		Raspberry Pi 4.</p>
 
     <p>I configured the Pi in kiosk mode, pointed it at the metals display site, and added a few quality-of-life
         improvements like automatic nightly reboots. Now the shop display boots directly into the site and does
         its job without anyone needing to know or care what is running underneath.</p>
-
-    <p>That is the ideal state for business software: invisible, reliable, and boring.</p>
 
     <div class="row g-3 my-3">
         <div class="col-sm-6">
@@ -240,31 +232,34 @@
 
     <h2 class="h3 mt-4 mb-3">What I Like About This Project</h2>
 
-    <p>This project is still one of my favorites because it shows my growth as a developer in a very concrete
-        way.</p>
+    <p>This project is still one of my favorites because it shows my growth as a developer in a very concrete way.</p>
 
-    <p>The first version was a student project: scrape a page, generate an image, scroll it across an LED board,
-        and pray.</p>
+	<p>The first version was a student project: scrape a page, generate an image, and scroll it across an LED board.</p>
 
-    <p>The second version centralized the scraping and turned it into a crude API.</p>
+	<p>The second version centralized the scraping and turned it into a crude API.</p>
 
-    <p>The third version replaced scraping with a real paid data source and introduced a database.</p>
+	<p>The third version replaced scraping with a real paid data source and introduced a database.</p>
 
-    <p>The fourth version containerized the API and used Cloudflare Tunnel.</p>
+	<p>The fourth version containerized the API and used Cloudflare Tunnel.</p>
 
-    <p>The current version uses Workers, R2, static hosting, edge caching, and a frontend that is faster and
-        simpler than anything before it.</p>
+	<p>The current version uses Workers, R2, static hosting, edge caching, and a frontend that is faster and 
+		simpler than anything before it.</p>
 
-    <p>Every version solved the biggest problem with the version before it.</p>
+	<p>Every version solved the biggest problem with the version before it. That is basically software 
+		engineering in miniature. Build the thing. Watch it fail in a specific and annoying way. 
+		Then make it less stupid.</p>
 
-    <p>That is basically software engineering in miniature. Build the thing. Watch it fail in a specific and
-        annoying way. Then make it less stupid.</p>
+	<p>This project also became a simple place where I can test infrastructure ideas in a real environment. 
+		It has just enough moving pieces to resemble a larger distributed application, without requiring me 
+		to migrate a huge amount of complex code. It is the perfect testbed.</p>
 
-    <p>The Dakota Coin LED sign has been running in some form for years now. It started as a COVID-era project at
-        a coin shop and turned into a real production system that serves live metals data to an in-store LED sign,
-        a shop TV display, and a public website.</p>
+	<p>I was very lucky to have a boss who took a gamble and let me build this system in the first place. 
+		He funded the whole thing, paid me to do it, and trusted me to figure it out. I was happy to build 
+		it, and I am happy to keep maintaining it for years to come. Thanks, Lou.</p>
 
-    <p>And the final version is exactly what I wanted it to become: simple, cheap, fast, and reliable.</p>
+	<p>The Dakota Coin LED sign has been running in some form for years now. It started as a COVID-era project 
+		at a coin shop and turned into a real production system that serves live metals data to an in-store LED 
+		sign, a shop TV display, and a public website.</p>
 
     <div class="mt-4">
         <a href="/" class="btn btn-outline-light btn-sm">&larr; Back to Portfolio</a>
