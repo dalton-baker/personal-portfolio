@@ -26,6 +26,65 @@
 </section>
 
 <section class="mb-5 pb-3">
+    <h2 class="h3 mb-4 text-center">My Featured Projects</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">8" Dobsonian Telescope</h5>
+                    <p class="card-text">A fully custom 8-inch Dobsonian reflector telescope I designed from scratch and 3D printed. Built for deep-sky observing on a budget.</p>
+                    <a href="/telescope"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Telescope Push-To System</h5>
+                    <p class="card-text">A custom push-to navigation system designed for the Apertura AD8 Dobsonian. Uses encoders to help point the telescope at any object in the sky.</p>
+                    <a href="/push-to"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+    				<h5 class="card-title">Dakota Coin LED Sign</h5>
+    				<p class="card-text">A live gold and silver price display that started as a Raspberry Pi shop project and grew into one of my longest-running production systems.</p>
+   					<a href="/led-sign" class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
+				</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Web Tools</h5>
+                    <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
+                    <a href="https://tools.dalt.dev/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">State Your Name</h5>
+                    <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
+                    <a href="https://state-your-name.dalt.dev/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mb-5 pb-3">
     <h2 class="h3 mb-4 text-center">My Businesses</h2>
     <div class="row g-4">
         <div class="col-md-4">
@@ -59,6 +118,17 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Metals Market Display</h5>
+                    <p class="card-text">Displays live gold and silver prices with automatic updates. Designed for display in coin and pawn shops. Powered by Cloudflare Workers and R2 storage.</p>
+                    <a href="https://metalsmarketdisplay.com/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">See Live Display</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Heartland Tanks Website</h5>
                     <p class="card-text">Custom website for a South Dakota-based tire tank manufacturer. Built for
                         simplicity, performance, and easy maintenance.</p>
@@ -75,39 +145,6 @@
                     <p class="card-text">A tongue-in-cheek conspiracy blog exploring absurd ideas.</p>
                     <a href="https://truth.dalt.dev" target="_blank"
                         class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read Blog</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Web Tools</h5>
-                    <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
-                    <a href="https://tools.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">State Your Name</h5>
-                    <p class="card-text">A space exploration idle game, currently in development. Explore the cosmos at your own pace.</p>
-                    <a href="https://state-your-name.dalt.dev/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Play Game</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Metals Market Display</h5>
-                    <p class="card-text">Displays live gold and silver prices with automatic updates. Designed for display in coin and pawn shops. Powered by Cloudflare Workers and R2 storage.</p>
-                    <a href="https://metalsmarketdisplay.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">See Live Display</a>
                 </div>
             </div>
         </div>
@@ -136,43 +173,6 @@
                     <a href="https://www.nuget.org/packages/DBaker.DepRegAttributes" target="_blank"
                         class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Explore Package</a>
                 </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="mb-5 pb-3">
-    <h2 class="h3 mb-4 text-center">My Projects</h2>
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">8" Dobsonian Telescope</h5>
-                    <p class="card-text">A fully custom 8-inch Dobsonian reflector telescope I designed from scratch and 3D printed. Built for deep-sky observing on a budget.</p>
-                    <a href="/telescope"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Telescope Push-To System</h5>
-                    <p class="card-text">A custom push-to navigation system designed for the Apertura AD8 Dobsonian. Uses encoders to help point the telescope at any object in the sky.</p>
-                    <a href="/push-to"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
-    				<h5 class="card-title">Dakota Coin LED Sign</h5>
-    				<p class="card-text">A live gold and silver price display that started as a Raspberry Pi shop project and grew into one of my longest-running production systems.</p>
-   					<a href="/led-sign" class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Read More</a>
-				</div>
             </div>
         </div>
     </div>
