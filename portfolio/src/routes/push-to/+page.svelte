@@ -28,9 +28,9 @@
 
     <h1 class="mb-4 text-center">Push-To Telescope System</h1>
 
-    <p>After spending time with a home-built Dobsonian, I upgraded to an Apertura AD8 — a solid, well-regarded
-        8-inch Dobsonian that I did not have to design and print myself. It is a great scope, but like any
-        manual Dobsonian, finding objects in the dark still comes down to star hopping and patience.</p>
+    <p>After spending time with a home-built Dobsonian, I upgraded to an Apertura AD8. I wanted a really 
+		solid scope that I didn't need to redesign to get a nice experience. It is a great scope, but like any
+        manual Dobsonian, finding objects in the ocean of stars still comes down to star hopping and patience.</p>
 
     <p>I wanted a push-to system: a device that tracks where the telescope is pointing and displays live
         coordinates, so I can look up a target on my phone, push the scope until the numbers match, and be
@@ -56,7 +56,7 @@
         <li>Use the finder or eyepiece to finish centering. You will be close.</li>
     </ol>
 
-    <p>The accuracy is good enough that I end up very close to the target most of the time. The last bit of
+    <p>The accuracy is good enough that I end up very close to the target. The last bit of
         centering takes seconds. Compared to searching an unfamiliar patch of sky from scratch, it is a
         completely different experience.</p>
 
