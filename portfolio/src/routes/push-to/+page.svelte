@@ -28,9 +28,9 @@
 
     <h1 class="mb-4 text-center">Push-To Telescope System</h1>
 
-    <p>After spending time with a home-built Dobsonian, I upgraded to an Apertura AD8 — a solid, well-regarded
-        8-inch Dobsonian that I did not have to design and print myself. It is a great scope, but like any
-        manual Dobsonian, finding objects in the dark still comes down to star hopping and patience.</p>
+    <p>After spending time with a home-built Dobsonian, I upgraded to an Apertura AD8. I wanted a really 
+		solid scope that I didn't need to redesign to get a nice experience. It is a great scope, but like any
+        manual Dobsonian, finding objects in the ocean of stars still comes down to star hopping and patience.</p>
 
     <p>I wanted a push-to system: a device that tracks where the telescope is pointing and displays live
         coordinates, so I can look up a target on my phone, push the scope until the numbers match, and be
@@ -56,7 +56,7 @@
         <li>Use the finder or eyepiece to finish centering. You will be close.</li>
     </ol>
 
-    <p>The accuracy is good enough that I end up very close to the target most of the time. The last bit of
+    <p>The accuracy is good enough that I end up very close to the target. The last bit of
         centering takes seconds. Compared to searching an unfamiliar patch of sky from scratch, it is a
         completely different experience.</p>
 
@@ -317,8 +317,8 @@
             </button>
         </div>
         <div class="col-sm-6 col-md-4">
-            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/telescope-install-3-alt-blury.jpeg', 'Altitude sensor mounted on the tube')}>
-                <img src="/push-to-esp-32/telescope-install-3-alt-blury.jpeg" class="thumb-img rounded" alt="Altitude sensor mounted on the tube">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/telescope-install-3-alt.jpeg', 'Altitude sensor mounted on the tube')}>
+                <img src="/push-to-esp-32/telescope-install-3-alt.jpeg" class="thumb-img rounded" alt="Altitude sensor mounted on the tube">
             </button>
         </div>
         <div class="col-sm-6 col-md-4">
@@ -354,6 +354,50 @@
         making it much more forgiving when the base is not level. I hate leveling my scope in the 
 		field, so I solved that problem in code. Once alignment is saved, the Wi-Fi server shuts off to conserve battery
         and the OLED takes over.</p>
+
+    <h2 class="h3 mt-4 mb-3">Web Interface</h2>
+
+    <p>The setup server is a small web app served from the ESP32 itself. It handles location entry, time sync,
+        and star alignment. Once setup is complete, it shuts off and the OLED takes over for the rest of the
+        session.</p>
+
+    <div class="row g-3 my-3">
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-0-screen-display.jpeg', 'Web UI screen display')}>
+                <img src="/push-to-esp-32/web-ui-0-screen-display.jpeg" class="thumb-img rounded" alt="Web UI screen display">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-1.jpeg', 'Web UI, view 1')}>
+                <img src="/push-to-esp-32/web-ui-1.jpeg" class="thumb-img rounded" alt="Web UI, view 1">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-2.jpeg', 'Web UI, view 2')}>
+                <img src="/push-to-esp-32/web-ui-2.jpeg" class="thumb-img rounded" alt="Web UI, view 2">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-3.jpeg', 'Web UI, view 3')}>
+                <img src="/push-to-esp-32/web-ui-3.jpeg" class="thumb-img rounded" alt="Web UI, view 3">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-4.jpeg', 'Web UI, view 4')}>
+                <img src="/push-to-esp-32/web-ui-4.jpeg" class="thumb-img rounded" alt="Web UI, view 4">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-5.jpeg', 'Web UI, view 5')}>
+                <img src="/push-to-esp-32/web-ui-5.jpeg" class="thumb-img rounded" alt="Web UI, view 5">
+            </button>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <button class="thumb-btn" onclick={() => openLightbox('/push-to-esp-32/web-ui-6.jpeg', 'Web UI, view 6')}>
+                <img src="/push-to-esp-32/web-ui-6.jpeg" class="thumb-img rounded" alt="Web UI, view 6">
+            </button>
+        </div>
+    </div>
 
     <h2 class="h3 mt-4 mb-3">First Real Use — May 14, 2026</h2>
 
