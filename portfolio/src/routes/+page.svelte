@@ -118,6 +118,17 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Lottery Pool Tracker</h5>
+                    <p class="card-text">Tracks contributions, winnings, and payouts for lottery pools shared across clubs. Svelte SSR running on Cloudflare Workers.</p>
+                    <a href="https://lotterypooltracker.com/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open App</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Blog: Dalton's Department of Truth</h5>
                     <p class="card-text">A tongue-in-cheek conspiracy blog exploring absurd ideas.</p>
                     <a href="https://truth.dalt.dev" target="_blank"
