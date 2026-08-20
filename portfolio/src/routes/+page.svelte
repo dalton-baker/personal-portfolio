@@ -96,17 +96,6 @@
         <div class="col-md-4">
             <div class="card text-light h-100">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Lottery Pool Tracker</h5>
-                    <p class="card-text">Tracks contributions, winnings, and payouts for lottery pools shared across clubs. Features Google sign-in, shareable invite links, and live charts, built on SvelteKit with Cloudflare Workers, D1, and R2.</p>
-                    <a href="https://lotterypooltracker.com/" target="_blank"
-                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open App</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card text-light h-100">
-                <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Metals Market Display</h5>
                     <p class="card-text">Displays live gold and silver prices with automatic updates. Designed for display in coin and pawn shops. Powered by Cloudflare Workers and R2 storage.</p>
                     <a href="https://metalsmarketdisplay.com/" target="_blank"
@@ -122,6 +111,17 @@
                     <p class="card-text">A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.</p>
                     <a href="https://tools.dalt.dev/" target="_blank"
                         class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open Tools</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-light h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Lottery Pool Tracker</h5>
+                    <p class="card-text">Tracks contributions, winnings, and payouts for lottery pools shared across clubs. Svelte SSR running on Cloudflare Workers.</p>
+                    <a href="https://lotterypooltracker.com/" target="_blank"
+                        class="btn btn-outline-light btn-sm stretched-link mt-auto align-self-start">Open App</a>
                 </div>
             </div>
         </div>
