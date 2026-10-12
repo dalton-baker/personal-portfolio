@@ -1,7 +1,8 @@
 <script>
 	import '$lib/orbit/system-map.css';
 	import { onMount, tick, untrack } from 'svelte';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { afterNavigate, goto, replaceState } from '$app/navigation';
+	import { page } from '$app/state';
 	import { OrbitEngine } from '$lib/orbit/engine.js';
 	import { all, byId, hole, orbiters, moons, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
@@ -26,8 +27,16 @@
 	let readX = $state(0);
 	let readY = $state(0);
 
+	/**
+	 * Landing on the home page opens the About card as a starting point. Closing it (or coming back to
+	 * the map from elsewhere on the site) marks that history entry as the plain map, so back/forward
+	 * restore whichever view the visitor left.
+	 */
+	const homeAbout = $derived(!slug && page.state.home !== 'map');
+	const toMap = () => goto('/', { noScroll: true, state: { home: 'map' } });
+
 	const sel = $derived.by(() => {
-		if (!slug) return null;
+		if (!slug) return homeAbout ? hole.id : null;
 		if (isMoon(slug)) return slug;
 		if (slug === blog.id && moonSel) return moonSel;
 		return slug;
@@ -123,20 +132,17 @@
 		if (progEl) progEl.style.transform = 'scaleX(0)';
 	}
 
-	/** Go to a path, stepping back through history instead when that is where we just came from. */
-	function leaveTo(path) {
-		if (cameFrom === path) history.back();
-		else goto(path, { noScroll: true });
-	}
-
 	function closeCard() {
 		if (isMoon(sel) && !reading) moonSel = null;
-		else leaveTo('/');
+		else if (homeAbout) replaceState('', { home: 'map' });
+		else toMap();
 	}
 
+	/** Back to The Log, stepping back through history when that is where the post was opened from. */
 	function closeRead() {
 		if (!reading || closing) return;
-		leaveTo('/' + blog.id);
+		if (cameFrom === '/' + blog.id) history.back();
+		else goto('/' + blog.id, { noScroll: true });
 	}
 
 	/** Moon links preview the post in a card; modified clicks still open the post itself. */
@@ -185,7 +191,7 @@
 			class:is-sel={sel === hole.id}
 			href="/{hole.id}"
 			aria-label={hole.aria}
-			aria-current={sel === hole.id ? 'page' : undefined}
+			aria-current={slug === hole.id ? 'page' : undefined}
 		>
 			<span class="fb"></span>
 			<span class="hole-label">{scan ? 'Event horizon // about' : 'About'}</span>
@@ -210,6 +216,7 @@
 					</span>
 				</span>
 				<span class="label" style={b.labelStyle}><span class="lname">{b.name}</span></span>
+				<span class="tip" aria-hidden="true">{b.name}</span>
 			</a>
 		{/each}
 	</nav>
@@ -219,15 +226,10 @@
 		<h1>Dalton<br />Baker</h1>
 		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 		<p class="sub">rapid city, sd // reg x timing // best choice pawn</p>
-		<p class="hint">
-			{inBlog
-				? `In orbit around The Log. ${posts.length} posts, pick a moon.`
-				: 'Click anything in orbit, or scan to see what’s underneath.'}
-		</p>
 		<div class="hdr-actions">
 			{@render scanToggle()}
 			{#if inBlog}
-				<button class="back" onclick={() => leaveTo('/')}>
+				<button class="back" onclick={toMap}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Exit orbit
 				</button>
 			{/if}
@@ -253,7 +255,6 @@
 			<h1>Dalton Baker</h1>
 			<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 			<p class="sub">rapid city, sd</p>
-			<p class="hint">Tap anything in orbit, or turn on <b>scan mode</b> to see what's underneath.</p>
 		</section>
 	{/if}
 

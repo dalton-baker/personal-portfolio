@@ -284,7 +284,12 @@ export class OrbitEngine {
 		const mob = this.isMobile, isBlog = st.blog;
 		const L = this.layout();
 		const ts = this.timeScale * (this.reduced ? 0.25 : 1);
-		const target = isBlog ? 0.03 : st.sel ? 0.3 : 1;
+		const g = blog;
+		// The camera zooms in on The Log while orbiting it, otherwise on whatever is selected. The black
+		// hole is the centre of everything, so selecting it only zooms in gently and keeps the system moving.
+		const selB = st.sel ? byId[st.sel] : null;
+		const focus = isBlog ? g : selB && selB.kind !== 'hole' ? selB : null;
+		const target = focus ? 0.03 : st.sel ? 0.3 : 1;
 		this.spd += (target - this.spd) * Math.min(1, dt * 2.5);
 		this.simT += dt * this.spd * ts;
 		this.moonT += dt * ts * (st.reading ? 0 : isBlog ? 1 : 0.6);
@@ -300,7 +305,6 @@ export class OrbitEngine {
 			b.px = b.r * b.c;
 			b.py = b.r * L.ty * b.s;
 		}
-		const g = blog;
 		for (const m of moons) {
 			m.r = L.moonR * m.mt;
 			m.th = m.phase + m.mspeed * this.moonT;
@@ -310,10 +314,12 @@ export class OrbitEngine {
 			m.py = g.py + m.r * L.ty * m.s;
 		}
 		let tz = 1, tfx = 0, tfy = 0, tcx = L.cx, tcy = L.cy;
-		if (isBlog) {
+		if (focus) {
 			tz = mob ? 2.4 : 2.7;
-			tfx = g.px;
-			tfy = g.py;
+			tfx = focus.px;
+			tfy = focus.py;
+		} else if (selB) {
+			tz = mob ? 1.2 : 1.3;
 		}
 		if (!mob && st.sel) tcx = (this.W - 412) / 2;
 		if (st.reading && byId[st.reading]) {
@@ -353,29 +359,42 @@ export class OrbitEngine {
 			let zi = Math.round(200 + depth * 100);
 			if (b.kind === 'moon') {
 				sc = bz * (isBlog ? 1.25 : 0.55);
-				if (!isBlog) op = 0.45;
+				if (!isBlog) op = focus ? 0.16 : 0.45;
 				zi = blogZ + 2;
-			} else if (isBlog && b !== g) op *= 0.35;
+			} else if (focus && b !== focus) op *= 0.35;
 			el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)';
 			el.style.opacity = op.toFixed(3);
 			el.style.zIndex = String(zi);
 			const p = this.partsOf(el);
 			if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
+			// Drawn radius, so the hover label sits just below the body at any zoom.
+			const rad = (b.ring ? b.size : b.size / 2) * sc;
+			if (!(Math.abs(rad - p.r) < 0.3)) {
+				p.r = rad;
+				el.style.setProperty('--r', rad.toFixed(1) + 'px');
+			}
 			if (b.shaded && p.shade) {
 				const an = Math.atan2(y - oy, x - ox);
 				p.shade.style.transform = 'rotate(' + an.toFixed(3) + 'rad)';
 			}
 		}
 		if (this.holeEl) {
-			const hs = (L.disk * Z) / 108;
-			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0) scale(' + hs.toFixed(3) + ')';
+			// Sized to the visible disk, so the hover brackets frame it and its label sits underneath.
+			const size = Math.round(L.disk * Z * 1.6);
+			if (size !== this.holeSize) {
+				this.holeSize = size;
+				const s = this.holeEl.style;
+				s.width = s.height = size + 'px';
+				s.left = s.top = -size / 2 + 'px';
+			}
+			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0)';
 		}
 		if (this.clockEl && this.frame % 15 === 0) {
 			const s = Math.floor(this.realT);
 			this.clockEl.textContent = 'T+ ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 		}
 
-		this.drawFx(L, Z, ox, oy, bz, isBlog, st, mob);
+		this.drawFx(L, Z, ox, oy, bz, isBlog, focus, st, mob);
 
 		if (this.gl) {
 			const gl = this.gl, qq = this.qGL;
@@ -390,7 +409,7 @@ export class OrbitEngine {
 		if (this.frame === 1) this.onReady();
 	}
 
-	drawFx(L, Z, ox, oy, bz, isBlog, st, mob) {
+	drawFx(L, Z, ox, oy, bz, isBlog, focus, st, mob) {
 		const ctx = this.ctx;
 		if (!ctx) return;
 		const W = this.W, H = this.H, TAU = Math.PI * 2, sv = this.scanV, sel = st.sel;
@@ -429,7 +448,7 @@ export class OrbitEngine {
 			} else {
 				ctx.setLineDash([2, 7]);
 				ctx.lineWidth = 1;
-				ctx.strokeStyle = sv > 0.5 ? 'rgba(200,255,46,0.32)' : isBlog ? 'rgba(241,238,247,0.07)' : 'rgba(241,238,247,0.2)';
+				ctx.strokeStyle = sv > 0.5 ? 'rgba(200,255,46,0.32)' : focus ? 'rgba(241,238,247,0.07)' : 'rgba(241,238,247,0.2)';
 			}
 			ctx.beginPath();
 			ctx.ellipse(ox, oy, b.r * Z, b.r * L.ty * Z, 0, 0, TAU);
@@ -445,7 +464,7 @@ export class OrbitEngine {
 			const th = p.ph + p.sp * this.simT;
 			const x = ox + r * Math.cos(th), y = oy + r * L.ty * Math.sin(th);
 			if (x < -4 || y < -4 || x > W + 4 || y > H + 4) continue;
-			ctx.globalAlpha = (0.3 + 0.5 * p.b) * (isBlog ? 0.4 : 1) * (sv > 0.5 ? 0.6 : 1);
+			ctx.globalAlpha = (0.3 + 0.5 * p.b) * (focus ? 0.4 : 1) * (sv > 0.5 ? 0.6 : 1);
 			const sz = p.s * bsz * (mob ? 0.8 : 1);
 			ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
 		}
@@ -463,7 +482,7 @@ export class OrbitEngine {
 		const px = pulsar.sx, py = pulsar.sy;
 		const a = this.realT * 4.4;
 		const len = 150 * bz, w = 5 * bz;
-		ctx.globalAlpha = isBlog ? 0.3 : 0.95;
+		ctx.globalAlpha = focus && focus !== pulsar ? 0.3 : 0.95;
 		for (let j = 0; j < 2; j++) {
 			const an = a + j * Math.PI;
 			const dx = Math.cos(an), dy = Math.sin(an);
