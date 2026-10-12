@@ -1,4 +1,4 @@
-import { kep, all, byId, moons, blog, pulsar } from './system.js';
+import { kep, all, byId, moons, blog, pulsar, belt } from './system.js';
 
 /** WebGL pixels per CSS pixel: starts at 60% of the device's pixel ratio (never below 1:1) and can drop to MIN_SCALE. */
 const BASE_SCALE = 0.6;
@@ -59,7 +59,7 @@ export class OrbitEngine {
 		this.belt = [];
 		for (let i = 0; i < 360; i++) {
 			const g = (rnd() + rnd() + rnd() - 1.5) / 1.5;
-			const t = 0.44 + g * 0.065;
+			const t = belt.t + g * belt.spread;
 			this.belt.push({ t, ph: rnd() * Math.PI * 2, sp: kep(t) * (0.94 + rnd() * 0.12), s: 1 + rnd() * 1.6, b: 0.35 + rnd() * 0.65 });
 		}
 	}

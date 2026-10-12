@@ -1,4 +1,4 @@
-import { bodies } from '$lib/site.js';
+import { bodies, belt } from '$lib/site.js';
 import { posts } from '$lib/posts';
 
 /**
@@ -16,6 +16,8 @@ const KIND_LABEL = {
 	pulsar: 'Pulsar'
 };
 const MOON_SIZES = [8, 9, 8, 10];
+/** A few craters and a highlight over the base colour, for the inner rocky planets. */
+const CRATERS = 'radial-gradient(circle at 30% 34%,rgba(0,0,0,.24) 0 13%,transparent 14%),radial-gradient(circle at 60% 64%,rgba(0,0,0,.2) 0 10%,transparent 11%),radial-gradient(circle at 36% 76%,rgba(0,0,0,.17) 0 7%,transparent 8%),radial-gradient(circle at 70% 30%,rgba(0,0,0,.15) 0 6%,transparent 7%),radial-gradient(circle at 22% 56%,rgba(255,255,255,.16) 0 5%,transparent 6%),';
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 
 /** Card text as paragraphs of { text, href? } segments; [text](/slug) becomes a link. */
@@ -78,7 +80,7 @@ function decorate(b) {
 	if (b.kind === 'giant') b.swatch = '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
 	let bg = '';
-	if (b.kind === 'planet' || b.kind === 'moon') bg = 'background:' + b.base;
+	if (b.kind === 'planet' || b.kind === 'moon') bg = 'background:' + (b.rocky ? CRATERS : '') + b.base;
 	else if (b.kind === 'rock') bg = 'background:' + b.base + ';border-radius:44% 56% 38% 62% / 58% 40% 60% 42%';
 	else if (b.kind === 'giant') bg = 'background:repeating-linear-gradient(24deg,#ff2e88 0 5px,#ff8ac1 5px 8px,#c2187a 8px 13px,#ff5aa5 13px 16px)';
 	else if (b.kind === 'star') bg = 'background:#e8f4ff;box-shadow:0 0 0 3px #9fd0ff,0 0 22px 6px rgba(159,208,255,.55)';
@@ -90,7 +92,7 @@ function decorate(b) {
 
 const main = bodies.map((b, i) => {
 	const num = String(i).padStart(2, '0');
-	const kindLabel = b.ring ? 'Ringed planet' : KIND_LABEL[b.kind];
+	const kindLabel = b.ring ? 'Ringed planet' : b.rocky ? 'Rocky planet' : KIND_LABEL[b.kind];
 	return { ...b, id: b.slug, num, tag: `OBJ ${num} // ${kindLabel} // ${b.category}` };
 });
 
@@ -101,6 +103,7 @@ export const orbiters = all.filter((b) => b.kind !== 'hole');
 export const moons = all.filter((b) => b.kind === 'moon');
 export const blog = all.find((b) => b.isBlog);
 export const pulsar = all.find((b) => b.kind === 'pulsar');
+export { belt };
 
 if (Object.keys(byId).length !== all.length) {
 	throw new Error('A post file name collides with a body slug in $lib/site.js');
