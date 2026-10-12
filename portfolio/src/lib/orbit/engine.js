@@ -19,7 +19,6 @@ export class OrbitEngine {
 	 * @param {HTMLCanvasElement} o.glCanvas
 	 * @param {HTMLCanvasElement} o.fxCanvas
 	 * @param {HTMLElement} o.holeEl
-	 * @param {HTMLElement} o.clockEl
 	 * @param {Record<string, HTMLElement>} o.els body id -> element
 	 * @param {() => {sel: string|null, host: string|null, reading: string|null, closing: boolean, scan: boolean}} o.getState
 	 * `host` is the giant whose moons are in play (it, or one of its moons, is selected).
@@ -429,11 +428,6 @@ export class OrbitEngine {
 			}
 			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0)';
 		}
-		if (this.clockEl && this.frame % 15 === 0) {
-			const s = Math.floor(this.realT);
-			this.clockEl.textContent = 'T+ ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-		}
-
 		this.drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob);
 
 		if (this.gl) {

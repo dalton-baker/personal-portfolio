@@ -51,7 +51,7 @@
 		};
 	});
 
-	let root, glCanvas, fxCanvas, holeEl, clockEl;
+	let root, glCanvas, fxCanvas, holeEl;
 	let readerEl = $state();
 	let progEl = $state();
 	const els = {};
@@ -63,7 +63,7 @@
 
 	onMount(() => {
 		engine = new OrbitEngine({
-			root, glCanvas, fxCanvas, holeEl, clockEl, els,
+			root, glCanvas, fxCanvas, holeEl, els,
 			getState: () => ({ sel, host: hostId, reading, closing, scan }),
 			onGLChange: (ok) => (noGL = !ok),
 			onReady: () => (ready = true)
@@ -252,11 +252,6 @@
 		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 		<div class="hdr-actions">{@render scanToggle()}</div>
 	</header>
-	<div class="readout">
-		<div bind:this={clockEl}>T+ 00:00</div>
-		<div>{all.length} objects tracked</div>
-		<div>{scan ? 'mode: scan // telemetry live' : 'mode: visual'}</div>
-	</div>
 
 	<!-- `primary` turns the first link into a "Visit site" button (or its `cta`), like a post's "Read post"; the address is already shown above it. -->
 	{#snippet linkButtons(links, primary = false)}
