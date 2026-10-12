@@ -485,24 +485,26 @@ export class OrbitEngine {
 			ctx.stroke();
 		}
 		ctx.setLineDash([]);
-		const px = pulsar.sx, py = pulsar.sy;
-		const a = this.realT * 4.4;
-		const len = 150 * bz, w = 5 * bz;
-		ctx.globalAlpha = focus && focus !== pulsar ? 0.3 : 0.95;
-		for (let j = 0; j < 2; j++) {
-			const an = a + j * Math.PI;
-			const dx = Math.cos(an), dy = Math.sin(an);
-			const ex = px + dx * len, ey = py + dy * len;
-			const gr = ctx.createLinearGradient(px, py, ex, ey);
-			gr.addColorStop(0, 'rgba(200,255,46,0.7)');
-			gr.addColorStop(1, 'rgba(200,255,46,0)');
-			ctx.fillStyle = gr;
-			ctx.beginPath();
-			ctx.moveTo(px, py);
-			ctx.lineTo(ex - dy * w, ey + dx * w);
-			ctx.lineTo(ex + dy * w, ey - dx * w);
-			ctx.closePath();
-			ctx.fill();
+		if (pulsar) {
+			const px = pulsar.sx, py = pulsar.sy;
+			const a = this.realT * 4.4;
+			const len = 150 * bz, w = 5 * bz;
+			ctx.globalAlpha = focus && focus !== pulsar ? 0.3 : 0.95;
+			for (let j = 0; j < 2; j++) {
+				const an = a + j * Math.PI;
+				const dx = Math.cos(an), dy = Math.sin(an);
+				const ex = px + dx * len, ey = py + dy * len;
+				const gr = ctx.createLinearGradient(px, py, ex, ey);
+				gr.addColorStop(0, 'rgba(200,255,46,0.7)');
+				gr.addColorStop(1, 'rgba(200,255,46,0)');
+				ctx.fillStyle = gr;
+				ctx.beginPath();
+				ctx.moveTo(px, py);
+				ctx.lineTo(ex - dy * w, ey + dx * w);
+				ctx.lineTo(ex + dy * w, ey - dx * w);
+				ctx.closePath();
+				ctx.fill();
+			}
 		}
 		ctx.globalAlpha = 1;
 		const P = this.ptr;

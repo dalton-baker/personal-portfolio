@@ -16,6 +16,22 @@ const KIND_LABEL = {
 	pulsar: 'Pulsar'
 };
 const MOON_SIZES = [8, 9, 8, 10];
+const LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+/** Card text as paragraphs of { text, href? } segments; [text](/slug) becomes a link. */
+function toParas(body) {
+	return [].concat(body).map((text) => {
+		const segs = [];
+		let last = 0;
+		for (const m of text.matchAll(LINK)) {
+			if (m.index > last) segs.push({ text: text.slice(last, m.index) });
+			segs.push({ text: m[1], href: m[2] });
+			last = m.index + m[0].length;
+		}
+		if (last < text.length) segs.push({ text: text.slice(last) });
+		return segs;
+	});
+}
 
 /** Orbital speed for an orbit radius t in [0, 1]. */
 export function kep(t) {
@@ -51,12 +67,14 @@ function decorate(b) {
 	b.shaded = b.kind === 'planet' || b.kind === 'rock' || b.kind === 'giant' || b.kind === 'moon';
 	b.ring = !!b.ring;
 	b.rays = !!b.rays;
+	b.paras = toParas(b.body);
+	b.summary = b.paras[0].map((seg) => seg.text).join('');
 	b.facts = b.facts || [];
 	b.links = b.links || [];
 	b.wrapStyle = `width:${s}px;height:${s}px`;
 	b.ringStyle = `width:${Math.round(s * 2)}px;height:${Math.round(s * 2)}px`;
 	b.labelStyle = `margin-left:${Math.round(s / 2 + 12)}px`;
-	b.aria = b.kind === 'moon' ? 'Post: ' + b.name : b.kind === 'hole' ? b.name + ': about' : b.name;
+	b.aria = b.kind === 'moon' ? 'Post: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
 	if (b.kind === 'giant') b.swatch = '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
 	let bg = '';

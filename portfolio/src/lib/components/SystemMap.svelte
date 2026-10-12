@@ -1,8 +1,7 @@
 <script>
 	import '$lib/orbit/system-map.css';
 	import { onMount, tick, untrack } from 'svelte';
-	import { afterNavigate, goto, replaceState } from '$app/navigation';
-	import { page } from '$app/state';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { OrbitEngine } from '$lib/orbit/engine.js';
 	import { all, byId, hole, orbiters, moons, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
@@ -27,16 +26,8 @@
 	let readX = $state(0);
 	let readY = $state(0);
 
-	/**
-	 * Landing on the home page opens the About card as a starting point. Closing it (or coming back to
-	 * the map from elsewhere on the site) marks that history entry as the plain map, so back/forward
-	 * restore whichever view the visitor left.
-	 */
-	const homeAbout = $derived(!slug && page.state.home !== 'map');
-	const toMap = () => goto('/', { noScroll: true, state: { home: 'map' } });
-
 	const sel = $derived.by(() => {
-		if (!slug) return homeAbout ? hole.id : null;
+		if (!slug) return null;
 		if (isMoon(slug)) return slug;
 		if (slug === blog.id && moonSel) return moonSel;
 		return slug;
@@ -133,9 +124,10 @@
 		if (progEl) progEl.style.transform = 'scaleX(0)';
 	}
 
+	/** Back to the plain map, stepping back through history when that is where we came from. */
 	function closeCard() {
-		if (homeAbout) replaceState('', { home: 'map' });
-		else toMap();
+		if (cameFrom === '/') history.back();
+		else goto('/', { noScroll: true });
 	}
 
 	/** Back to The Log, stepping back through history when that is where the post was opened from. */
@@ -252,7 +244,6 @@
 		<div class="kicker">sys://daltonsbaker.com — system map</div>
 		<h1>Dalton<br />Baker</h1>
 		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
-		<p class="sub">rapid city, sd // reg x timing // best choice pawn</p>
 		<div class="hdr-actions">{@render scanToggle()}</div>
 	</header>
 	<div class="readout">
@@ -274,7 +265,6 @@
 			<div class="kicker">sys://daltonsbaker.com</div>
 			<h1>Dalton Baker</h1>
 			<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
-			<p class="sub">rapid city, sd</p>
 		</section>
 	{/if}
 
@@ -289,14 +279,16 @@
 					</button>
 				</div>
 				<h2>{card.name}</h2>
-				<p class="desc">{card.body}</p>
+				{#each card.paras as para, i (i)}
+					<p class="desc">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>
+				{/each}
 				{#if card.facts.length}
 					<dl class="facts">
 						{#each card.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
 					</dl>
 				{/if}
 				{#if card.isBlog}
-					<div class="posts-h">Posts in orbit</div>
+					<div class="card-h">Posts in orbit</div>
 					<ul class="posts">
 						{#each moons as m (m.id)}
 							{@const open = moonSel === m.id}
@@ -314,13 +306,17 @@
 						{/each}
 					</ul>
 				{/if}
+				{#if card.contact}
+					<div class="card-h">Contact</div>
+					<p class="desc contact">{card.contact}</p>
+				{/if}
 				{#if card.links.length}
 					<div class="links">
 						{#each card.links as l (l.href)}
 							{#if l.internal}
 								<a class="lnk" href={l.href}>{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
 							{:else}
-								<a class="lnk" href={l.href} target="_blank" rel="noopener">{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+								<a class="lnk" href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
 							{/if}
 						{/each}
 					</div>

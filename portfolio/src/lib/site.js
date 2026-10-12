@@ -5,6 +5,9 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  *
  * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ...
  *
+ * `body` is the card text: a string, or an array of paragraphs. [Text](/slug) inside it links to
+ * another body or post. `contact` adds a Contact section above the card's links.
+ *
  * Orbit fields: `t` is the orbit radius from 0 (innermost) to 1 (outermost),
  * `phase` is the starting angle in radians, `size` is the diameter in px.
  * Rocks sit in the asteroid belt, so keep their `t` between about 0.40 and 0.49.
@@ -20,15 +23,21 @@ const email = L('Email', 'mailto:dalton.s.baker@gmail.com');
 
 export const bodies = [
 	{
-		slug: 'about', kind: 'hole', name: 'Dalton Baker', category: 'About',
-		body: 'Hi, I’m Dalton. Software engineer. Maker. Builder of things both useful and ridiculous.',
+		slug: 'about', kind: 'hole', name: 'About', category: 'About',
+		body: [
+			'I grew up in Rapid City, South Dakota, and spent nine years working in pawn shops and precious metals before making the jump into software.',
+			'I graduated from South Dakota Mines in 2022, spent two and a half years at Innovative Systems in Mitchell, and eventually moved back home to work at Omnitech.',
+			'Along the way, I’ve done a lot of freelance work for small businesses. I also co-founded [Reg X Timing](/reg-x-timing), started timing races, and bought [Best Choice Pawn](/best-choice-pawn) with my best friend.',
+			'I have a lot of hobbies and probably way too many side projects. Quite a few of them are floating around this site, so click around and see what you find!'
+		],
 		facts: [
 			F('Day job', 'Software engineer, Omnitech Inc.'),
 			F('Based', 'Rapid City, SD'),
 			F('Degree', 'B.S. Computer Science, SD Mines'),
 			F('Stack', 'C# · ASP.NET Core · Blazor · SvelteKit · Cloudflare')
 		],
-		links: [github, linkedin, resume]
+		contact: 'Want to get in touch? Find me on GitHub or LinkedIn, grab my résumé, or send an email.',
+		links: [email, github, linkedin, resume]
 	},
 	{
 		slug: 'best-choice-pawn', kind: 'planet', name: 'Best Choice Pawn', category: 'Business',
@@ -82,26 +91,20 @@ export const bodies = [
 	},
 	{
 		slug: 'log', kind: 'giant', isBlog: true, name: 'The Log', category: 'Blog',
-		t: 0.71, phase: 2.2, size: 34, dark: 'rgba(40,6,40,.72)',
+		t: 0.73, phase: 2.2, size: 34, dark: 'rgba(40,6,40,.72)',
 		body: 'Write-ups of things I’ve built. Every moon is a post: pick one below, or tap the moons directly while you’re in orbit.',
 		links: []
 	},
 	{
 		slug: 'department-of-truth', kind: 'planet', name: 'Dalton’s Department of Truth', category: 'Blog',
-		t: 0.82, phase: 0.3, size: 14, base: '#3ddbc4', dark: '#0e6b5f',
+		t: 0.86, phase: 0.3, size: 14, base: '#3ddbc4', dark: '#0e6b5f',
 		body: 'A tongue-in-cheek conspiracy blog exploring absurd ideas.',
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]
 	},
 	{
 		slug: 'state-your-name', kind: 'star', rays: true, name: 'State Your Name', category: 'Game',
-		t: 0.91, phase: 5.9, size: 14, swatch: '#9fd0ff',
+		t: 1, phase: 5.9, size: 14, swatch: '#9fd0ff',
 		body: 'A space exploration idle game, currently in development. Explore the cosmos at your own pace.',
 		links: [L('Play the game', 'https://state-your-name.dalt.dev/')]
-	},
-	{
-		slug: 'contact', kind: 'pulsar', name: 'Signal', category: 'Contact',
-		t: 1, phase: 4.1, size: 9, swatch: '#c8ff2e',
-		body: 'Want to get in touch? Find me on GitHub or LinkedIn, grab my résumé, or send an email.',
-		links: [email, github, linkedin, resume]
 	}
 ];

@@ -59,7 +59,6 @@
 @keyframes glitch{0%,90%,100%{text-shadow:none;transform:none}91%{text-shadow:-3px 0 #ff2e88,3px 0 #c8ff2e;transform:translateX(2px)}93%{text-shadow:4px 0 #ff2e88,-3px 0 #c8ff2e;transform:translateX(-3px) skewX(-8deg)}95%{text-shadow:-1px 0 #ff2e88,1px 0 #c8ff2e;transform:none}}
 @media (prefers-reduced-motion:reduce){.hdr h1,.mpanel h1,.rays{animation:none}}
 .tagline{margin:14px 0 0;font:500 16px/1.4 'Geist',system-ui,sans-serif;color:#f1eef7}
-.sub{margin:6px 0 0;font:400 11.5px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.04em;color:rgba(241,238,247,.6)}
 .hud{position:absolute;right:28px;top:28px;display:flex;align-items:center;gap:14px;z-index:420;font:400 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;color:rgba(241,238,247,.55)}
 .hdr-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
 /* The notched outline is a clipped layer behind the label (outer layer = stroke, inner = fill), so the
@@ -88,12 +87,15 @@
 .x:hover{color:#c8ff2e}
 .card h2{margin:10px 0 0;font:800 30px/1.02 'Unbounded',system-ui,sans-serif;letter-spacing:-.025em;color:#f1eef7}
 .desc{margin:16px 0 0;font:400 15px/1.6 'Geist',system-ui,sans-serif;color:rgba(241,238,247,.86)}
+.desc+.desc{margin-top:12px}
+.desc a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.desc.contact{margin-top:8px}
 .facts{margin:20px 0 0;padding:0}
 .fact{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:9px 0;border-top:1px dashed rgba(241,238,247,.14)}
 .fact:last-child{border-bottom:1px dashed rgba(241,238,247,.14)}
 .fact dt{font:400 10.5px/1.6 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(241,238,247,.5)}
 .fact dd{margin:0;font:500 13.5px/1.4 'Geist',system-ui,sans-serif;text-align:right;color:#f1eef7}
-.posts-h{margin-top:22px;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,238,247,.5)}
+.card-h{margin-top:22px;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,238,247,.5)}
 .posts{list-style:none;margin:8px -10px 0;padding:0}
 .post{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr);gap:4px 8px;padding:11px 10px;min-height:44px;border:0;background:transparent;text-align:left;text-decoration:none;cursor:pointer;border-left:2px solid transparent}
 .post:hover{background:rgba(241,238,247,.05);border-left-color:#ff2e88}
