@@ -51,14 +51,24 @@
 .hint{margin:18px 0 0;font:400 11px/1.5 'Geist Mono',ui-monospace,monospace;color:rgba(241,238,247,.5)}
 .hint b{color:#c8ff2e;font-weight:500}
 .hud{position:absolute;right:28px;top:28px;display:flex;align-items:center;gap:14px;z-index:420;font:400 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;color:rgba(241,238,247,.55)}
-.scanbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid rgba(200,255,46,.5);border-radius:0;background:rgba(7,6,11,.6);cursor:pointer;font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;color:#c8ff2e;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)}
-.scanbtn:hover{background:rgba(200,255,46,.1)}
-.scanbtn.on{background:#c8ff2e;color:#07060b}
-.led{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5}
+.hdr-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+/* The notched outline is a clipped layer behind the label (outer layer = stroke, inner = fill), so the
+   diagonal corner gets a stroke too and the focus outline isn't clipped away. */
+.bh .scanbtn{position:relative;isolation:isolate;pointer-events:auto;display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 22px 0 14px;border:0;background:transparent;cursor:pointer;font:500 11.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c8ff2e}
+.scanbtn .frame{position:absolute;inset:0;z-index:-1;background:#67821c;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);transition:background .15s}
+.scanbtn .frame::before{content:"";position:absolute;inset:1.5px;background:#07060b;clip-path:polygon(0 0,calc(100% - 11.1px) 0,100% 11.1px,100% 100%,0 100%);transition:background .15s}
+.scanbtn:hover .frame{background:#c8ff2e}
+.scanbtn:hover .frame::before{background:#161c0b}
+.bh .scanbtn.on{color:#07060b}
+.scanbtn.on .frame,.scanbtn.on .frame::before{background:#c8ff2e}
+.led{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45}
+.scanbtn:not(.on) .led{animation:standby 2.4s ease-in-out infinite}
+@keyframes standby{50%{opacity:1;box-shadow:0 0 8px currentColor}}
 .scanbtn.on .led{opacity:1;background:#07060b}
+@media (prefers-reduced-motion:reduce){.scanbtn .led{animation:none}}
 .readout{position:absolute;right:28px;bottom:24px;z-index:400;text-align:right;font:400 10.5px/1.6 'Geist Mono',ui-monospace,monospace;letter-spacing:.06em;color:rgba(241,238,247,.5);pointer-events:none}
 /* Sits in the header's flow (the mockup pinned it at top:250px, which collides with a two-line tagline). */
-.back{margin-top:16px;pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px 0 14px;border:1.5px solid #c8ff2e;background:rgba(7,6,11,.75);cursor:pointer;font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;z-index:450}
+.back{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px 0 14px;border:1.5px solid #c8ff2e;background:rgba(7,6,11,.75);cursor:pointer;font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;z-index:450}
 .back:hover{background:#c8ff2e;color:#07060b}
 .card{position:absolute;top:20px;right:20px;bottom:20px;width:392px;overflow:auto;padding:0 0 26px;background:#0e0d15;z-index:500;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));animation:cardin .3s cubic-bezier(.2,.9,.2,1)}
 @keyframes cardin{0%{opacity:0;transform:translateX(24px) skewX(-4deg)}60%{opacity:1}100%{opacity:1;transform:none}}
@@ -148,15 +158,15 @@
 	.bh{cursor:crosshair}
 	.bh .body,.bh .hole-btn{cursor:none}
 	.mpanel{display:none}
-	.card-open .hud{right:432px}
+	.hud{display:none}
 	.card-open .readout{display:none}
 }
 @media (max-width:759.98px){
 	.readout{display:none}
 	.hdr{left:12px;top:12px;z-index:450}
-	.hdr>:not(.back){display:none}
+	.hdr>:not(.hdr-actions),.hdr .scanbtn{display:none}
+	.hdr-actions{margin-top:0}
 	.hud{right:12px;top:12px;gap:10px}
-	.back{margin-top:0}
 	.card{top:auto;left:0;right:0;bottom:0;width:auto;height:50%;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%);animation-name:sheetin}
 	.card-in{padding:12px 20px 0}
 	.card h2{font-size:24px}

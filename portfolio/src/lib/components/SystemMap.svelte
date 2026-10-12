@@ -222,13 +222,16 @@
 		<p class="hint">
 			{inBlog
 				? `In orbit around The Log. ${posts.length} posts, pick a moon.`
-				: 'Click anything in orbit. Hit SCAN to see what’s underneath.'}
+				: 'Click anything in orbit, or scan to see what’s underneath.'}
 		</p>
-		{#if inBlog}
-			<button class="back" onclick={() => leaveTo('/')}>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Exit orbit
-			</button>
-		{/if}
+		<div class="hdr-actions">
+			{@render scanToggle()}
+			{#if inBlog}
+				<button class="back" onclick={() => leaveTo('/')}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Exit orbit
+				</button>
+			{/if}
+		</div>
 	</header>
 	<div class="readout">
 		<div bind:this={clockEl}>T+ 00:00</div>
@@ -236,11 +239,13 @@
 		<div>{scan ? 'mode: scan // telemetry live' : 'mode: visual'}</div>
 	</div>
 
-	<div class="hud">
+	{#snippet scanToggle()}
 		<button class="scanbtn" class:on={scan} onclick={() => (scan = !scan)} aria-pressed={scan}>
-			<span class="led"></span>SCAN
+			<span class="frame" aria-hidden="true"></span><span class="led"></span>Scan mode
 		</button>
-	</div>
+	{/snippet}
+	<!-- On desktop the toggle sits under the intro; phones keep it in the top-right corner. -->
+	<div class="hud">{@render scanToggle()}</div>
 
 	{#if !sel}
 		<section class="mpanel" aria-label="Intro">
@@ -248,7 +253,7 @@
 			<h1>Dalton Baker</h1>
 			<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 			<p class="sub">rapid city, sd</p>
-			<p class="hint">Tap anything in orbit. Hit <b>SCAN</b> to see what's underneath.</p>
+			<p class="hint">Tap anything in orbit, or turn on <b>scan mode</b> to see what's underneath.</p>
 		</section>
 	{/if}
 
