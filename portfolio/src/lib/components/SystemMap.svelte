@@ -60,7 +60,7 @@
 		engine = new OrbitEngine({
 			root, glCanvas, fxCanvas, holeEl, clockEl, els,
 			getState: () => ({ sel, blog: inBlog, reading, closing, scan }),
-			onNoGL: () => (noGL = true),
+			onGLChange: (ok) => (noGL = !ok),
 			onReady: () => (ready = true)
 		});
 		engine.start();
@@ -175,7 +175,7 @@
 	onpointerover={(e) => engine?.pointerOver(e)}
 	role="presentation"
 >
-	<canvas bind:this={glCanvas} aria-hidden="true"></canvas>
+	<canvas bind:this={glCanvas} class="glc" aria-hidden="true"></canvas>
 	<canvas bind:this={fxCanvas} class="fxc" aria-hidden="true"></canvas>
 
 	<nav class="orbits" aria-label="System map">

@@ -1,5 +1,12 @@
 import { kep, all, byId, moons, blog, pulsar } from './system.js';
 
+/** WebGL pixels per CSS pixel: starts at 60% of the device's pixel ratio (never below 1:1) and can drop to MIN_SCALE. */
+const BASE_SCALE = 0.6;
+const MIN_SCALE = 0.5;
+/** Frame-rate caps. The motion is slow orbits and a swirl, so lower rates look nearly identical. */
+const FPS_DESKTOP = 60;
+const FPS_TOUCH = 30;
+
 /**
  * Drives the system map every animation frame: orbits, camera, the WebGL
  * black hole and the 2D effects canvas. It writes transforms straight onto the
@@ -15,21 +22,23 @@ export class OrbitEngine {
 	 * @param {HTMLElement} o.clockEl
 	 * @param {Record<string, HTMLElement>} o.els body id -> element
 	 * @param {() => {sel: string|null, blog: boolean, reading: string|null, closing: boolean, scan: boolean}} o.getState
-	 * @param {() => void} o.onNoGL
+	 * @param {(ok: boolean) => void} o.onGLChange called when WebGL becomes unavailable (false) or comes back (true)
 	 * @param {() => void} o.onReady
 	 */
 	constructor(o) {
 		Object.assign(this, o);
 		this.timeScale = 2.2;
 		this.tiltY = 1;
-		this.quality = 0.95;
+		this.glScale = 1;
 		this.cam = { x: 0, y: 0, z: 1, cx: 0, cy: 0, init: false };
 		this.simT = 0;
 		this.moonT = 0;
 		this.realT = 0;
 		this.readT0 = 0;
 		this.spd = 1;
-		this.last = 0;
+		this.lastFrame = 0;
+		this.frameClock = 0;
+		this.perf = { n: 0, sum: 0, skip: 5 };
 		this.scanV = 0;
 		this.frame = 0;
 		this.W = 1440;
@@ -56,13 +65,31 @@ export class OrbitEngine {
 	}
 
 	start() {
-		this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+		this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		this.coarse = window.matchMedia('(pointer: coarse)').matches;
+		this.glScale = Math.max(1, Math.min(window.devicePixelRatio || 1, 2) * BASE_SCALE);
+		// Phones drop the GPU context when backgrounded for a while. Without handling this the canvas
+		// stays blank (Chrome shows a white "sad face" placeholder) until the page is reloaded.
+		this.onContextLost = (e) => {
+			e.preventDefault(); // allows the browser to restore the context
+			this.gl = null;
+			this.onGLChange(false);
+		};
+		this.onContextRestored = () => {
+			if (this.initGL()) this.sizeGL();
+		};
+		this.glCanvas.addEventListener('webglcontextlost', this.onContextLost);
+		this.glCanvas.addEventListener('webglcontextrestored', this.onContextRestored);
+		this.onVisible = () => {
+			if (!document.hidden) this.frameClock = this.lastFrame = performance.now();
+		};
+		document.addEventListener('visibilitychange', this.onVisible);
 		this.initGL();
 		if (this.fxCanvas) this.ctx = this.fxCanvas.getContext('2d');
 		this.measure();
 		this.ro = new ResizeObserver(() => this.measure());
 		this.ro.observe(this.root);
-		this.last = performance.now();
+		this.frameClock = this.lastFrame = performance.now();
 		const loop = (now) => {
 			this.raf = requestAnimationFrame(loop);
 			this.tick(now);
@@ -73,6 +100,9 @@ export class OrbitEngine {
 	destroy() {
 		cancelAnimationFrame(this.raf);
 		this.ro?.disconnect();
+		this.glCanvas.removeEventListener('webglcontextlost', this.onContextLost);
+		this.glCanvas.removeEventListener('webglcontextrestored', this.onContextRestored);
+		document.removeEventListener('visibilitychange', this.onVisible);
 	}
 
 	/** Where a body is on screen right now, in px relative to the map. */
@@ -141,9 +171,8 @@ export class OrbitEngine {
 
 	sizeGL() {
 		if (!this.gl || !this.glCanvas) return;
-		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		const w = Math.max(1, Math.round(this.W * dpr * this.quality));
-		const h = Math.max(1, Math.round(this.H * dpr * this.quality));
+		const w = Math.max(1, Math.round(this.W * this.glScale));
+		const h = Math.max(1, Math.round(this.H * this.glScale));
 		if (this.glCanvas.width !== w || this.glCanvas.height !== h) {
 			this.glCanvas.width = w;
 			this.glCanvas.height = h;
@@ -152,16 +181,21 @@ export class OrbitEngine {
 		this.gl.viewport(0, 0, w, h);
 	}
 
+	/** Builds the shader program; also runs again after a lost context is restored. Returns whether WebGL works. */
 	initGL() {
 		const c = this.glCanvas;
-		if (!c) return;
 		let gl = null;
 		try {
-			gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false });
+			gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false, powerPreference: 'low-power' });
 		} catch {
 			gl = null;
 		}
-		if (!gl) return this.onNoGL();
+		const fail = () => {
+			this.gl = null;
+			this.onGLChange(false);
+			return false;
+		};
+		if (!gl || gl.isContextLost()) return fail();
 		const mk = (type, src) => {
 			const s = gl.createShader(type);
 			gl.shaderSource(s, src);
@@ -174,12 +208,12 @@ export class OrbitEngine {
 		};
 		const vs = mk(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }');
 		const fs = mk(gl.FRAGMENT_SHADER, FRAG);
-		if (!vs || !fs) return this.onNoGL();
+		if (!vs || !fs) return fail();
 		const pr = gl.createProgram();
 		gl.attachShader(pr, vs);
 		gl.attachShader(pr, fs);
 		gl.linkProgram(pr);
-		if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return this.onNoGL();
+		if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return fail();
 		gl.useProgram(pr);
 		const buf = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -190,6 +224,31 @@ export class OrbitEngine {
 		const U = (n) => gl.getUniformLocation(pr, n);
 		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') };
 		this.gl = gl;
+		this.onGLChange(true);
+		return true;
+	}
+
+	/**
+	 * Adaptive quality: average the frame interval over 40 frames (or 1.5 s on very slow devices)
+	 * and, if the device can't keep up with the frame cap, render the shader at a lower resolution.
+	 */
+	samplePerf(elapsed, interval) {
+		const p = this.perf;
+		if (elapsed > 1000) return; // a stall (debugger, throttled tab), not a slow frame
+		if (p.skip > 0) {
+			p.skip--;
+			return;
+		}
+		p.sum += elapsed;
+		p.n++;
+		if (p.n < 40 && p.sum < 1500) return;
+		const mean = p.sum / p.n;
+		p.sum = p.n = 0;
+		if (mean > interval * 1.35 && this.glScale > MIN_SCALE) {
+			this.glScale = Math.max(MIN_SCALE, this.glScale * 0.75);
+			this.sizeGL();
+			p.skip = 3;
+		}
 	}
 
 	/** Cached .dotwrap / .shade children of a body element. */
@@ -203,13 +262,24 @@ export class OrbitEngine {
 	}
 
 	tick(now) {
-		let dt = (now - this.last) / 1000;
-		this.last = now;
-		if (!(dt > 0)) dt = 0.016;
-		dt = Math.min(dt, 0.05);
 		if (document.hidden) return;
 		const st = this.getState();
-		if (st.reading && !st.closing && this.realT - this.readT0 > 1.1) return;
+		if (st.reading && !st.closing && this.realT - this.readT0 > 1.1) {
+			// The reader covers the map, so stop rendering until it closes.
+			this.frameClock = this.lastFrame = now;
+			return;
+		}
+		const interval = 1000 / (this.isMobile || this.coarse ? FPS_TOUCH : FPS_DESKTOP);
+		const sinceClock = now - this.frameClock;
+		if (sinceClock < interval - 1.5) return;
+		// Keep a steady cadence on displays faster than the cap (120 Hz phones, 144 Hz monitors).
+		this.frameClock = sinceClock > interval * 3 ? now : now - (sinceClock % interval);
+		const elapsed = now - this.lastFrame;
+		this.lastFrame = now;
+		this.samplePerf(elapsed, interval);
+		let dt = elapsed / 1000;
+		if (!(dt > 0)) dt = 0.016;
+		dt = Math.min(dt, 0.05);
 		this.frame++;
 		const mob = this.isMobile, isBlog = st.blog;
 		const L = this.layout();
@@ -487,43 +557,47 @@ void main(){
   vec2 p = (f - uC)/uR;
   vec2 q = vec2(p.x, p.y/uTy);
   float rp = length(p); float rq = length(q);
-  float a = atan(q.y, q.x);
-  float rs = 0.24; float inner = 0.30;
-  float rqc = max(rq, 0.05);
-  float w = pow(inner/rqc, 1.5);
-  float edge = smoothstep(inner - 0.01, inner + 0.05, rq)*(1.0 - smoothstep(0.5, 1.0, rq));
-  float heat = pow(inner/max(rq, inner), 1.3);
-  float PER = 9.0;
-  float t1 = mod(uT, PER); float t2 = mod(uT + 0.5*PER, PER);
-  float w1 = 1.0 - abs(t1/PER*2.0 - 1.0);
-  float base = a + uT*0.35;
-  float d1 = dens(base, rqc, w*t1*0.8);
-  float d2 = dens(base, rqc, w*t2*0.8);
-  float dd = clamp(edge*mix(d2, d1, w1)*(0.4 + 0.8*heat), 0.0, 0.999);
-  float x = dd*5.5;
-  float k = floor(x);
-  float fill = step(1.0, k);
-  float fe = fract(x); float e = min(fe, 1.0 - fe);
-  float contour = smoothstep(0.09, 0.0, e)*step(0.12, dd);
-  vec3 filled = mix(col, band(k), fill);
-  vec3 scanC = col + lime*contour*0.85 + lime*0.04*edge;
-  col = mix(filled, scanC, uScan);
-  float hc = 7.0*uPx; vec2 cc = (floor(f/hc) + 0.5)*hc;
-  vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
-  float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
-  float hr = hc*0.36*sqrt(g);
-  float dotm = g > 0.003 ? 1.0 - smoothstep(hr - 0.75*uPx, hr + 0.75*uPx, length(f - cc)) : 0.0;
-  vec3 htc = mix(vec3(0.34,0.06,0.31), lime*0.3, uScan);
-  col = mix(col, htc, dotm*(1.0 - fill*(1.0 - uScan)));
-  float sh = step(rp, rs);
-  col = mix(col, vec3(0.0), sh*(1.0 - uScan*0.9));
-  float rr0 = rs + 0.014; float rw = 0.018; float off = 0.013;
-  float cr = smoothstep(rw, 0.0, abs(length(p + vec2(off, 0.0)) - rr0));
-  float cg = smoothstep(rw, 0.0, abs(rp - rr0));
-  float cb = smoothstep(rw, 0.0, abs(length(p - vec2(off, 0.0)) - rr0));
-  vec3 ringc = vec3(max(cr, cg), cg, max(cb, cg));
-  col = mix(col + ringc*1.3, col + lime*cg, uScan);
-  col += lime*uScan*smoothstep(0.008, 0.0, abs(rp - rs))*0.9;
+  // The disk, halftone and photon ring all fade to exactly zero before 1.75 disk radii (allowing for the
+  // halftone cell size), so most of the screen only needs the stars and grain.
+  if(rq < 1.75){
+    float a = atan(q.y, q.x);
+    float rs = 0.24; float inner = 0.30;
+    float rqc = max(rq, 0.05);
+    float w = pow(inner/rqc, 1.5);
+    float edge = smoothstep(inner - 0.01, inner + 0.05, rq)*(1.0 - smoothstep(0.5, 1.0, rq));
+    float heat = pow(inner/max(rq, inner), 1.3);
+    float PER = 9.0;
+    float t1 = mod(uT, PER); float t2 = mod(uT + 0.5*PER, PER);
+    float w1 = 1.0 - abs(t1/PER*2.0 - 1.0);
+    float base = a + uT*0.35;
+    float d1 = dens(base, rqc, w*t1*0.8);
+    float d2 = dens(base, rqc, w*t2*0.8);
+    float dd = clamp(edge*mix(d2, d1, w1)*(0.4 + 0.8*heat), 0.0, 0.999);
+    float x = dd*5.5;
+    float k = floor(x);
+    float fill = step(1.0, k);
+    float fe = fract(x); float e = min(fe, 1.0 - fe);
+    float contour = smoothstep(0.09, 0.0, e)*step(0.12, dd);
+    vec3 filled = mix(col, band(k), fill);
+    vec3 scanC = col + lime*contour*0.85 + lime*0.04*edge;
+    col = mix(filled, scanC, uScan);
+    float hc = 7.0*uPx; vec2 cc = (floor(f/hc) + 0.5)*hc;
+    vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
+    float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
+    float hr = hc*0.36*sqrt(g);
+    float dotm = g > 0.003 ? 1.0 - smoothstep(hr - 0.75*uPx, hr + 0.75*uPx, length(f - cc)) : 0.0;
+    vec3 htc = mix(vec3(0.34,0.06,0.31), lime*0.3, uScan);
+    col = mix(col, htc, dotm*(1.0 - fill*(1.0 - uScan)));
+    float sh = step(rp, rs);
+    col = mix(col, vec3(0.0), sh*(1.0 - uScan*0.9));
+    float rr0 = rs + 0.014; float rw = 0.018; float off = 0.013;
+    float cr = smoothstep(rw, 0.0, abs(length(p + vec2(off, 0.0)) - rr0));
+    float cg = smoothstep(rw, 0.0, abs(rp - rr0));
+    float cb = smoothstep(rw, 0.0, abs(length(p - vec2(off, 0.0)) - rr0));
+    vec3 ringc = vec3(max(cr, cg), cg, max(cb, cg));
+    col = mix(col + ringc*1.3, col + lime*cg, uScan);
+    col += lime*uScan*smoothstep(0.008, 0.0, abs(rp - rs))*0.9;
+  }
   col += (hash(f*0.73 + fract(uT*0.37)*91.0) - 0.5)*0.05;
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
