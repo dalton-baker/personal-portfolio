@@ -18,7 +18,7 @@
 	let scan = $state(false);
 	let noGL = $state(false);
 	let ready = $state(false);
-	/** A moon picked while orbiting The Log; it shows a preview card without changing the URL. */
+	/** A moon picked while orbiting The Log; its post expands inside The Log's card without changing the URL. */
 	let moonSel = $state(null);
 	/** The post open in the reader. Lags the URL while the close animation plays. */
 	let reading = $state(untrack(() => postSlug(slug)));
@@ -42,7 +42,8 @@
 		return slug;
 	});
 	const inBlog = $derived(sel === blog.id || isMoon(sel));
-	const card = $derived(sel ? byId[sel] : null);
+	/** A selected moon is shown as an expanded entry in The Log's card rather than a card of its own. */
+	const card = $derived(sel ? byId[isMoon(sel) ? blog.id : sel] : null);
 	const art = $derived.by(() => {
 		if (!reading) return null;
 		const p = byId[reading].post;
@@ -133,8 +134,7 @@
 	}
 
 	function closeCard() {
-		if (isMoon(sel) && !reading) moonSel = null;
-		else if (homeAbout) replaceState('', { home: 'map' });
+		if (homeAbout) replaceState('', { home: 'map' });
 		else toMap();
 	}
 
@@ -145,13 +145,40 @@
 		else goto('/' + blog.id, { noScroll: true });
 	}
 
-	/** Moon links preview the post in a card; modified clicks still open the post itself. */
-	function previewMoon(e, id) {
-		if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+	const plainClick = (e) => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
+	/**
+	 * Moon links select the moon and expand its post in The Log's card; `toggle` (the card's list) collapses
+	 * it again on a second click. Modified clicks still open the post itself.
+	 */
+	function previewMoon(e, id, toggle = false) {
+		if (!plainClick(e)) return;
 		e.preventDefault();
 		if (slug !== blog.id) goto('/' + blog.id, { noScroll: true });
-		moonSel = id;
+		moonSel = toggle && moonSel === id ? null : id;
 	}
+
+	/** Clicking The Log while one of its moons is selected goes back to The Log itself. */
+	function selectLog(e) {
+		if (slug !== blog.id || !moonSel || !plainClick(e)) return;
+		e.preventDefault();
+		moonSel = null;
+	}
+
+	// Keep the expanded post in view, e.g. on a phone where the card is a half-height sheet.
+	let cardEl = $state();
+	$effect(() => {
+		if (!moonSel || !cardEl) return;
+		tick().then(() => {
+			const item = cardEl?.querySelector('.post-item.on');
+			if (!item) return;
+			const c = cardEl.getBoundingClientRect();
+			const r = item.getBoundingClientRect();
+			const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+			if (r.bottom > c.bottom) cardEl.scrollBy({ top: r.bottom - c.bottom + 16, behavior });
+			else if (r.top < c.top) cardEl.scrollBy({ top: r.top - c.top - 16, behavior });
+		});
+	});
 
 	function onReadScroll(e) {
 		const el = e.currentTarget;
@@ -206,7 +233,7 @@
 				aria-label={b.aria}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && !inBlog ? -1 : 0}
-				onclick={b.kind === 'moon' ? (e) => previewMoon(e, b.id) : undefined}
+				onclick={b.kind === 'moon' ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
 			>
 				<span class="dotwrap" style={b.wrapStyle}>
 					{#if b.ring}<span class="ring" style={b.ringStyle}></span>{/if}
@@ -226,14 +253,7 @@
 		<h1>Dalton<br />Baker</h1>
 		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 		<p class="sub">rapid city, sd // reg x timing // best choice pawn</p>
-		<div class="hdr-actions">
-			{@render scanToggle()}
-			{#if inBlog}
-				<button class="back" onclick={toMap}>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Exit orbit
-				</button>
-			{/if}
-		</div>
+		<div class="hdr-actions">{@render scanToggle()}</div>
 	</header>
 	<div class="readout">
 		<div bind:this={clockEl}>T+ 00:00</div>
@@ -259,7 +279,7 @@
 	{/if}
 
 	{#if card && !reading}
-		<aside class="card" aria-live="polite">
+		<aside class="card" aria-live="polite" bind:this={cardEl}>
 			<div class="card-bar"></div>
 			<div class="card-in">
 				<div class="card-top">
@@ -269,7 +289,6 @@
 					</button>
 				</div>
 				<h2>{card.name}</h2>
-				{#if card.kind === 'moon'}<div class="date">{card.date}</div>{/if}
 				<p class="desc">{card.body}</p>
 				{#if card.facts.length}
 					<dl class="facts">
@@ -280,10 +299,17 @@
 					<div class="posts-h">Posts in orbit</div>
 					<ul class="posts">
 						{#each moons as m (m.id)}
-							<li>
-								<a class="post" href="/{m.id}" onclick={(e) => previewMoon(e, m.id)}>
+							{@const open = moonSel === m.id}
+							<li class="post-item" class:on={open}>
+								<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
 									<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.date}</span>
 								</a>
+								{#if open}
+									<div class="post-more">
+										<p class="post-dek">{m.body}</p>
+										<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+									</div>
+								{/if}
 							</li>
 						{/each}
 					</ul>
@@ -298,14 +324,6 @@
 							{/if}
 						{/each}
 					</div>
-				{/if}
-				{#if card.kind === 'moon'}
-					<div class="links">
-						<a class="lnk primary" href="/{card.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
-					</div>
-					<button class="ghost" onclick={() => (moonSel = null)}>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>All posts
-					</button>
 				{/if}
 			</div>
 		</aside>

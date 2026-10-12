@@ -379,13 +379,19 @@ export class OrbitEngine {
 			}
 		}
 		if (this.holeEl) {
-			// Sized to the visible disk, so the hover brackets frame it and its label sits underneath.
+			// Clickable across the visible disk; the frame and label hug the event horizon (--hr, the
+			// photon ring's outer radius in the shader).
 			const size = Math.round(L.disk * Z * 1.6);
+			const s = this.holeEl.style;
 			if (size !== this.holeSize) {
 				this.holeSize = size;
-				const s = this.holeEl.style;
 				s.width = s.height = size + 'px';
 				s.left = s.top = -size / 2 + 'px';
+			}
+			const hr = L.disk * Z * 0.29;
+			if (!(Math.abs(hr - this.holeR) < 0.3)) {
+				this.holeR = hr;
+				s.setProperty('--hr', hr.toFixed(1) + 'px');
 			}
 			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0)';
 		}

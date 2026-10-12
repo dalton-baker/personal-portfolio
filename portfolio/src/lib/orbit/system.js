@@ -34,7 +34,6 @@ function makeMoons() {
 			name: p.title,
 			date: p.displayDate,
 			body: p.dek,
-			tag: 'Moon of The Log // Post ' + p.n,
 			base: '#e9e4ff',
 			dark: '#6b5e99',
 			mt,
