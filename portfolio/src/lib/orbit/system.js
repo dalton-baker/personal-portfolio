@@ -98,7 +98,7 @@ function decorate(b) {
 	if (b.kind === 'giant') b.swatch ??= '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
 	let bg = '';
-	if (b.kind === 'planet' || b.kind === 'moon') bg = 'background:' + (b.rocky ? CRATERS : b.dwarf ? ICE : '') + b.base;
+	if (b.kind === 'planet' || b.kind === 'moon') bg = 'background:' + (b.surface ? b.surface + ',' : b.rocky ? CRATERS : b.dwarf ? ICE : '') + b.base;
 	else if (b.kind === 'rock') bg = 'background:' + b.base + ';border-radius:44% 56% 38% 62% / 58% 40% 60% 42%';
 	else if (b.kind === 'giant') bg = 'background:' + (b.surface ?? 'repeating-linear-gradient(24deg,#ff2e88 0 5px,#ff8ac1 5px 8px,#c2187a 8px 13px,#ff5aa5 13px 16px)');
 	else if (b.kind === 'star') bg = 'background:#e8f4ff;box-shadow:0 0 0 3px #9fd0ff,0 0 22px 6px rgba(159,208,255,.55)';
@@ -112,7 +112,7 @@ const main = bodies
 	.filter((b) => b.kind !== 'moon')
 	.map((b, i) => {
 		const num = String(i).padStart(2, '0');
-		const kindLabel = b.rings ? 'Ringed giant' : b.dwarf ? 'Dwarf planet' : b.rocky ? 'Rocky planet' : KIND_LABEL[b.kind];
+		const kindLabel = b.rings ? 'Ringed giant' : b.dwarf ? (b.barycenter ? 'Binary dwarf planet' : 'Dwarf planet') : b.rocky ? 'Rocky planet' : KIND_LABEL[b.kind];
 		return { ...b, id: b.slug, num, tag: `OBJ ${num} // ${kindLabel} // ${b.category}` };
 	});
 const siteMoons = bodies.filter((b) => b.kind === 'moon').map((b) => ({ ...b, id: b.slug }));

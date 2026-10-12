@@ -252,9 +252,12 @@ export class OrbitEngine {
 		}
 	}
 
-	/** World-space unit for a giant's moon orbits (`mt`): its radius when it has rings, else the layout's moon unit. */
+	/**
+	 * World-space unit for a host's moon orbits (`mt`): its radius when it has rings or is a binary pair,
+	 * else the layout's moon unit.
+	 */
 	moonUnit(h, L) {
-		return h.rings ? (h.size / 2) * L.bs : L.moonR;
+		return h.rings || h.barycenter ? (h.size / 2) * L.bs : L.moonR;
 	}
 
 	/** Cached children of a body element: its scaled wrapper, shading, and decorative moon. */
@@ -317,17 +320,22 @@ export class OrbitEngine {
 			b.py = b.r * L.ty * b.s;
 		}
 		for (const m of moons) {
-			const h = m.host;
-			m.r = this.moonUnit(h, L) * m.mt;
+			const h = m.host, u = this.moonUnit(h, L);
+			m.r = u * m.mt;
 			m.th = m.phase + m.mspeed * this.moonT;
 			m.c = Math.cos(m.th);
 			m.s = Math.sin(m.th);
 			m.px = h.px + m.r * m.c;
 			m.py = h.py + m.r * L.ty * m.s;
+			if (h.barycenter) {
+				// Binary pair: the host's orbit position is the barycenter, and the planet swings opposite its moon.
+				h.bx = -h.barycenter * u * m.c;
+				h.by = -h.barycenter * u * L.ty * m.s;
+			}
 		}
 		let tz = 1, tfx = 0, tfy = 0, tcx = L.cx, tcy = L.cy;
 		if (focus) {
-			tz = mob ? 2.4 : 2.7;
+			tz = (mob ? 2.4 : 2.7) * (focus.zoom ?? 1);
 			tfx = focus.px;
 			tfy = focus.py;
 		} else if (selB) {
@@ -359,17 +367,26 @@ export class OrbitEngine {
 
 		for (const b of all) {
 			if (b.kind === 'hole') continue;
-			const x = ox + b.px * Z, y = oy + b.py * Z;
+			// Orbit centre on screen (a binary pair's barycenter), and where the body itself is drawn.
+			b.csx = ox + b.px * Z;
+			b.csy = oy + b.py * Z;
+			const x = b.csx + (b.bx || 0) * Z, y = b.csy + (b.by || 0) * Z;
 			b.sx = x;
 			b.sy = y;
 			const el = this.els[b.id];
 			if (!el) continue;
 			const depth = L.ty < 0.98 ? b.s : 0;
-			// A ringed giant scales with the camera, like its rings and moon orbits, so they keep their proportions.
-			let sc = b.rings ? L.bs * Z : bz * (1 + 0.1 * depth);
+			// Ringed giants and binary pairs scale with the camera, like their rings and moon orbits, so they keep
+			// their proportions at any zoom.
+			let sc = b.rings || b.barycenter ? L.bs * Z : bz * (1 + 0.1 * depth);
 			let op = 0.7 + 0.3 * (depth * 0.5 + 0.5);
 			let zi = Math.round(200 + depth * 100);
-			if (b.kind === 'moon') {
+			if (b.kind === 'moon' && b.host.barycenter) {
+				// The second body of a binary pair is drawn like its partner, not as a small dim moon.
+				sc = L.bs * Z;
+				if (focus && focus !== b.host) op *= 0.35;
+				zi = Math.round(200 + b.host.s * 100) + 2;
+			} else if (b.kind === 'moon') {
 				const active = b.host === hostB;
 				sc = bz * (active ? 1.25 : 0.55);
 				if (!active) op = focus ? 0.16 : 0.45;
@@ -533,12 +550,31 @@ export class OrbitEngine {
 			const on = sel === m.id, active = m.host === hostB;
 			// Moons in a ring system only show an orbit line when selected; the gaps already show it.
 			if (m.host.rings && !on) continue;
-			const c = m.host.rings ? '232,206,150' : '255,46,136';
+			const h = m.host, c = h.rings ? '232,206,150' : h.barycenter ? '214,226,240' : '255,46,136';
 			ctx.setLineDash(on ? [] : [2, 5]);
 			ctx.strokeStyle = 'rgba(' + c + ',' + (on ? 0.9 : active ? 0.35 : 0.12) + ')';
 			ctx.beginPath();
-			ctx.ellipse(m.host.sx, m.host.sy, m.r * Z, m.r * L.ty * Z, 0, 0, TAU);
+			ctx.ellipse(h.csx, h.csy, m.r * Z, m.r * L.ty * Z, 0, 0, TAU);
 			ctx.stroke();
+			if (h.barycenter) {
+				// The planet's own small orbit, and a tick marking the barycenter both bodies circle.
+				const pr = h.barycenter * this.moonUnit(h, L) * Z;
+				ctx.setLineDash(sel === h.id ? [] : [2, 5]);
+				ctx.strokeStyle = 'rgba(' + c + ',' + (sel === h.id ? 0.9 : active ? 0.35 : 0.12) + ')';
+				ctx.beginPath();
+				ctx.ellipse(h.csx, h.csy, pr, pr * L.ty, 0, 0, TAU);
+				ctx.stroke();
+				if (active) {
+					ctx.setLineDash([]);
+					ctx.strokeStyle = 'rgba(' + c + ',0.55)';
+					ctx.beginPath();
+					ctx.moveTo(h.csx - 3, h.csy);
+					ctx.lineTo(h.csx + 3, h.csy);
+					ctx.moveTo(h.csx, h.csy - 3);
+					ctx.lineTo(h.csx, h.csy + 3);
+					ctx.stroke();
+				}
+			}
 		}
 		ctx.setLineDash([]);
 		if (pulsar) {

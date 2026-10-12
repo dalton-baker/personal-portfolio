@@ -258,7 +258,7 @@
 		<div>{scan ? 'mode: scan // telemetry live' : 'mode: visual'}</div>
 	</div>
 
-	<!-- `primary` turns the first link into a "Visit site" button, like a post's "Read post" (the address is already shown above it). -->
+	<!-- `primary` turns the first link into a "Visit site" button (or its `cta`), like a post's "Read post"; the address is already shown above it. -->
 	{#snippet linkButtons(links, primary = false)}
 		{#if links.length}
 			<div class="links">
@@ -266,7 +266,7 @@
 					{#if l.internal}
 						<a class="lnk" class:primary={primary && i === 0} href={l.href}>{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
 					{:else}
-						<a class="lnk" class:primary={primary && i === 0} href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{primary && i === 0 ? 'Visit site' : l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+						<a class="lnk" class:primary={primary && i === 0} href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{primary && i === 0 ? (l.cta ?? 'Visit site') : l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
 					{/if}
 				{/each}
 			</div>
@@ -307,6 +307,11 @@
 						{#each card.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
 					</dl>
 				{/if}
+				{#if card.contact}
+					<div class="card-h">Contact</div>
+					<p class="desc contact">{card.contact}</p>
+				{/if}
+				{@render linkButtons(card.links)}
 				{#if card.moons}
 					<div class="card-h">{card.moonsLabel}</div>
 					<ul class="posts">
@@ -342,11 +347,6 @@
 						{/each}
 					</ul>
 				{/if}
-				{#if card.contact}
-					<div class="card-h">Contact</div>
-					<p class="desc contact">{card.contact}</p>
-				{/if}
-				{@render linkButtons(card.links)}
 			</div>
 		</aside>
 	{/if}

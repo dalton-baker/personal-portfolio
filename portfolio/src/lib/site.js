@@ -12,13 +12,16 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  * `phase` is the starting angle in radians, `size` is the diameter in px.
  * The inner, `rocky` planets sit inside the asteroid belt; rocks sit in the belt itself (keep their `t`
  * within `belt`); everything else orbits beyond it. Other looks: `satellite` (a large decorative moon,
- * like Earth's; it can't be selected) and `dwarf` (a tiny icy world).
+ * like Earth's; it can't be selected), `dwarf` (a tiny icy world) and `surface` (CSS background layers
+ * drawn over `base`). `zoom` multiplies the camera zoom when the body is selected, for small ones.
  *
  * Giants have selectable moons, listed in their card. The Log's moons are the blog posts; other moons
  * are bodies with `kind: 'moon'` and `host` set to the giant's slug, orbiting at `mt`. A giant with
  * `rings` draws them as [inner, outer, opacity, detail] bands measured in planet radii, and its moons'
  * `mt` uses the same unit, so they can sit in the gaps; `detail` bands only fade in as the camera zooms
- * closer, keeping the overview reserved.
+ * closer, keeping the overview reserved. A body with `barycenter` and one moon is a binary pair, like Pluto
+ * and Charon: both circle a point `barycenter` planet radii from the planet's centre, and the moon's `mt`
+ * is its distance from that point.
  */
 
 const L = (label, href) => ({ label, href });
@@ -146,9 +149,29 @@ export const bodies = [
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]
 	},
 	{
-		slug: 'state-your-name', kind: 'planet', dwarf: true, name: 'State Your Name', category: 'Game',
-		t: 1, phase: 5.9, size: 8, base: '#dde7f0', dark: '#4c586b',
+		slug: 'omniscreenz', kind: 'moon', host: 'live-sites', name: 'OmniScreenz', category: 'Live site',
+		mt: 4.45, phase: 1.9, size: 2.6, base: '#ffb35c', dark: '#8a4a12',
+		body: 'I built this website for a coworker at [Omnitech](/omnitech). He makes screensavers and video games, and I wanted him to have a place to show them off.',
+		facts: [F('Runs on', 'SvelteKit · Cloudflare')],
+		links: [L('omniscreenz.com', 'https://omniscreenz.com/')]
+	},
+	// A Pluto–Charon style binary on the outermost orbit: the game, and its screensaver as the moon.
+	{
+		slug: 'state-your-name', kind: 'planet', dwarf: true, barycenter: 1.35, name: 'State Your Name', category: 'Game',
+		t: 1, phase: 5.9, size: 9, zoom: 1.8, base: '#e2cfb2', dark: '#4a3e34',
+		// A bright, heart-shaped plain and darker reddish-brown lowlands, like Pluto's.
+		surface: 'radial-gradient(ellipse 26% 22% at 52% 50%,rgba(255,252,245,.85) 0 70%,transparent 100%),radial-gradient(ellipse 22% 20% at 68% 58%,rgba(255,252,245,.8) 0 70%,transparent 100%),radial-gradient(ellipse 46% 22% at 30% 72%,rgba(112,56,38,.5) 0 60%,transparent 100%)',
 		body: 'A space exploration idle game, currently in development. Explore the cosmos at your own pace.',
+		moonsLabel: 'Moon',
 		links: [L('Play the game', 'https://state-your-name.dalt.dev/')]
+	},
+	{
+		slug: 'state-your-name-screensaver', kind: 'moon', host: 'state-your-name', name: 'State Your Name Screensaver', category: 'Screensaver',
+		mt: 2.45, phase: 0.8, mspeed: 0.2, size: 4.6, base: '#bcb8b3', dark: '#3c3a38',
+		// Grey, with a reddish polar cap like Charon's.
+		surface: 'radial-gradient(ellipse 46% 26% at 50% 6%,rgba(122,52,40,.6) 0 60%,transparent 100%)',
+		body: 'A screensaver I made based on State Your Name. It’s on [OmniScreenz](/omniscreenz) with the rest.',
+		facts: [F('Platform', 'Windows · MonoGame')],
+		links: [{ label: 'omniscreenz.com', href: 'https://omniscreenz.com/s/state-your-name', cta: 'Get the screensaver' }]
 	}
 ];
