@@ -9,7 +9,7 @@
 	const head = $derived.by(() => {
 		const b = data.slug ? byId[data.slug] : null;
 		if (!b) return { title: 'Dalton Baker | Portfolio', description: DEFAULT_DESCRIPTION };
-		if (b.kind === 'moon') return { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek };
+		if (b.post) return { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek };
 		if (b.kind === 'hole') return { title: 'About | Dalton Baker', description: b.summary };
 		return { title: `${b.name} | Dalton Baker`, description: b.summary };
 	});

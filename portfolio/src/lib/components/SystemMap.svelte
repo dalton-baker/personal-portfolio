@@ -3,7 +3,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { OrbitEngine } from '$lib/orbit/engine.js';
-	import { all, byId, hole, orbiters, moons, blog } from '$lib/orbit/system.js';
+	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
 	import Lightbox from './Lightbox.svelte';
 	import { lightbox } from './lightbox.svelte.js';
@@ -11,13 +11,16 @@
 	/** The URL segment: a body slug, a post slug, or null for the home page. */
 	let { slug = null } = $props();
 
-	const postSlug = (s) => (s && byId[s]?.kind === 'moon' ? s : null);
+	const postSlug = (s) => (s && byId[s]?.post ? s : null);
 	const isMoon = (id) => byId[id]?.kind === 'moon';
 
 	let scan = $state(false);
 	let noGL = $state(false);
 	let ready = $state(false);
-	/** A moon picked while orbiting The Log; its post expands inside The Log's card without changing the URL. */
+	/**
+	 * A post moon picked while orbiting The Log; its post expands inside The Log's card without changing
+	 * the URL (the post's own URL opens the reader). Other giants' moons are selected through their URLs.
+	 */
 	let moonSel = $state(null);
 	/** The post open in the reader. Lags the URL while the close animation plays. */
 	let reading = $state(untrack(() => postSlug(slug)));
@@ -32,9 +35,10 @@
 		if (slug === blog.id && moonSel) return moonSel;
 		return slug;
 	});
-	const inBlog = $derived(sel === blog.id || isMoon(sel));
-	/** A selected moon is shown as an expanded entry in The Log's card rather than a card of its own. */
-	const card = $derived(sel ? byId[isMoon(sel) ? blog.id : sel] : null);
+	/** The giant whose moons are in play: it, or one of its moons, is selected. */
+	const hostId = $derived(sel ? (isMoon(sel) ? byId[sel].host.id : byId[sel]?.moons ? sel : null) : null);
+	/** A selected moon is shown as an expanded entry in its giant's card rather than a card of its own. */
+	const card = $derived(sel ? byId[isMoon(sel) ? byId[sel].host.id : sel] : null);
 	const art = $derived.by(() => {
 		if (!reading) return null;
 		const p = byId[reading].post;
@@ -60,7 +64,7 @@
 	onMount(() => {
 		engine = new OrbitEngine({
 			root, glCanvas, fxCanvas, holeEl, clockEl, els,
-			getState: () => ({ sel, blog: inBlog, reading, closing, scan }),
+			getState: () => ({ sel, host: hostId, reading, closing, scan }),
 			onGLChange: (ok) => (noGL = !ok),
 			onReady: () => (ready = true)
 		});
@@ -157,10 +161,10 @@
 		moonSel = null;
 	}
 
-	// Keep the expanded post in view, e.g. on a phone where the card is a half-height sheet.
+	// Keep the expanded moon entry in view, e.g. on a phone where the card is a half-height sheet.
 	let cardEl = $state();
 	$effect(() => {
-		if (!moonSel || !cardEl) return;
+		if (!isMoon(sel) || !cardEl) return;
 		tick().then(() => {
 			const item = cardEl?.querySelector('.post-item.on');
 			if (!item) return;
@@ -219,16 +223,15 @@
 			<a
 				bind:this={els[b.id]}
 				class="body {b.kind}"
-				class:active={b.kind === 'moon' && inBlog}
+				class:active={b.kind === 'moon' && b.host.id === hostId}
 				class:is-sel={sel === b.id}
 				href="/{b.id}"
 				aria-label={b.aria}
 				aria-current={slug === b.id ? 'page' : undefined}
-				tabindex={b.kind === 'moon' && !inBlog ? -1 : 0}
-				onclick={b.kind === 'moon' ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
+				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
+				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
 			>
 				<span class="dotwrap" style={b.wrapStyle}>
-					{#if b.ring}<span class="ring" style={b.ringStyle}></span>{/if}
 					{#if b.rays}<span class="rays"></span>{/if}
 					<span class="dot" style={b.dotStyle}>
 						{#if b.shaded}<span class="shade" style={b.shadeStyle}></span>{/if}
@@ -255,6 +258,20 @@
 		<div>{scan ? 'mode: scan // telemetry live' : 'mode: visual'}</div>
 	</div>
 
+	<!-- `primary` turns the first link into a "Visit site" button, like a post's "Read post" (the address is already shown above it). -->
+	{#snippet linkButtons(links, primary = false)}
+		{#if links.length}
+			<div class="links">
+				{#each links as l, i (l.href)}
+					{#if l.internal}
+						<a class="lnk" class:primary={primary && i === 0} href={l.href}>{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+					{:else}
+						<a class="lnk" class:primary={primary && i === 0} href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{primary && i === 0 ? 'Visit site' : l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+					{/if}
+				{/each}
+			</div>
+		{/if}
+	{/snippet}
 	{#snippet scanToggle()}
 		<button class="scanbtn" class:on={scan} onclick={() => (scan = !scan)} aria-pressed={scan}>
 			<span class="frame" aria-hidden="true"></span><span class="led"></span>Scan mode
@@ -290,19 +307,35 @@
 						{#each card.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
 					</dl>
 				{/if}
-				{#if card.isBlog}
-					<div class="card-h">Posts in orbit</div>
+				{#if card.moons}
+					<div class="card-h">{card.moonsLabel}</div>
 					<ul class="posts">
-						{#each moons as m (m.id)}
-							{@const open = moonSel === m.id}
+						{#each card.moons as m (m.id)}
+							{@const open = sel === m.id}
 							<li class="post-item" class:on={open}>
-								<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
-									<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.date}</span>
-								</a>
+								{#if m.post}
+									<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+									</a>
+								{:else}
+									<a class="post" href={open ? `/${card.id}` : `/${m.id}`} aria-expanded={open}>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+									</a>
+								{/if}
 								{#if open}
 									<div class="post-more">
-										<p class="post-dek">{m.body}</p>
-										<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+										{#if m.post}
+											<p class="post-dek">{m.body}</p>
+											<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+										{:else}
+											{#each m.paras as para, i (i)}<p class="post-dek">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>{/each}
+											{#if m.facts.length}
+												<dl class="facts">
+													{#each m.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
+												</dl>
+											{/if}
+											{@render linkButtons(m.links, true)}
+										{/if}
 									</div>
 								{/if}
 							</li>
@@ -313,17 +346,7 @@
 					<div class="card-h">Contact</div>
 					<p class="desc contact">{card.contact}</p>
 				{/if}
-				{#if card.links.length}
-					<div class="links">
-						{#each card.links as l (l.href)}
-							{#if l.internal}
-								<a class="lnk" href={l.href}>{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
-							{:else}
-								<a class="lnk" href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
-							{/if}
-						{/each}
-					</div>
-				{/if}
+				{@render linkButtons(card.links)}
 			</div>
 		</aside>
 	{/if}

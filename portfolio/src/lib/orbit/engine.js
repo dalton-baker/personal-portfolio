@@ -1,4 +1,4 @@
-import { kep, all, byId, moons, blog, pulsar, belt } from './system.js';
+import { kep, all, byId, moons, hosts, pulsar, belt } from './system.js';
 
 /** WebGL pixels per CSS pixel: starts at 60% of the device's pixel ratio (never below 1:1) and can drop to MIN_SCALE. */
 const BASE_SCALE = 0.6;
@@ -21,7 +21,8 @@ export class OrbitEngine {
 	 * @param {HTMLElement} o.holeEl
 	 * @param {HTMLElement} o.clockEl
 	 * @param {Record<string, HTMLElement>} o.els body id -> element
-	 * @param {() => {sel: string|null, blog: boolean, reading: string|null, closing: boolean, scan: boolean}} o.getState
+	 * @param {() => {sel: string|null, host: string|null, reading: string|null, closing: boolean, scan: boolean}} o.getState
+	 * `host` is the giant whose moons are in play (it, or one of its moons, is selected).
 	 * @param {(ok: boolean) => void} o.onGLChange called when WebGL becomes unavailable (false) or comes back (true)
 	 * @param {() => void} o.onReady
 	 */
@@ -251,6 +252,11 @@ export class OrbitEngine {
 		}
 	}
 
+	/** World-space unit for a giant's moon orbits (`mt`): its radius when it has rings, else the layout's moon unit. */
+	moonUnit(h, L) {
+		return h.rings ? (h.size / 2) * L.bs : L.moonR;
+	}
+
 	/** Cached children of a body element: its scaled wrapper, shading, and decorative moon. */
 	partsOf(el) {
 		let p = this.parts.get(el);
@@ -286,18 +292,18 @@ export class OrbitEngine {
 		if (!(dt > 0)) dt = 0.016;
 		dt = Math.min(dt, 0.05);
 		this.frame++;
-		const mob = this.isMobile, isBlog = st.blog;
+		const mob = this.isMobile;
 		const L = this.layout();
 		const ts = this.timeScale * (this.reduced ? 0.25 : 1);
-		const g = blog;
-		// The camera zooms in on The Log while orbiting it, otherwise on whatever is selected. The black
-		// hole is the centre of everything, so selecting it only zooms in gently and keeps the system moving.
+		// The camera zooms in on the giant whose moons are in play, otherwise on whatever is selected. The
+		// black hole is the centre of everything, so selecting it only zooms in gently and keeps things moving.
 		const selB = st.sel ? byId[st.sel] : null;
-		const focus = isBlog ? g : selB && selB.kind !== 'hole' ? selB : null;
+		const hostB = st.host ? byId[st.host] : null;
+		const focus = hostB || (selB && selB.kind !== 'hole' && selB.kind !== 'moon' ? selB : null);
 		const target = focus ? 0.03 : st.sel ? 0.3 : 1;
 		this.spd += (target - this.spd) * Math.min(1, dt * 2.5);
 		this.simT += dt * this.spd * ts;
-		this.moonT += dt * ts * (st.reading ? 0 : isBlog ? 1 : 0.6);
+		this.moonT += dt * ts * (st.reading ? 0 : hostB ? 1 : 0.6);
 		this.realT += dt * (this.reduced ? 0.3 : 1);
 		this.scanV += ((st.scan ? 1 : 0) - this.scanV) * Math.min(1, dt * 6);
 		const span = L.rmax - L.rmin;
@@ -311,12 +317,13 @@ export class OrbitEngine {
 			b.py = b.r * L.ty * b.s;
 		}
 		for (const m of moons) {
-			m.r = L.moonR * m.mt;
+			const h = m.host;
+			m.r = this.moonUnit(h, L) * m.mt;
 			m.th = m.phase + m.mspeed * this.moonT;
 			m.c = Math.cos(m.th);
 			m.s = Math.sin(m.th);
-			m.px = g.px + m.r * m.c;
-			m.py = g.py + m.r * L.ty * m.s;
+			m.px = h.px + m.r * m.c;
+			m.py = h.py + m.r * L.ty * m.s;
 		}
 		let tz = 1, tfx = 0, tfy = 0, tcx = L.cx, tcy = L.cy;
 		if (focus) {
@@ -349,7 +356,6 @@ export class OrbitEngine {
 		const Z = cam.z;
 		const ox = cam.cx - cam.x * Z, oy = cam.cy - cam.y * Z;
 		const bz = L.bs * (1 + (Z - 1) * 0.32);
-		const blogZ = Math.round(200 + g.s * 100);
 
 		for (const b of all) {
 			if (b.kind === 'hole') continue;
@@ -359,13 +365,15 @@ export class OrbitEngine {
 			const el = this.els[b.id];
 			if (!el) continue;
 			const depth = L.ty < 0.98 ? b.s : 0;
-			let sc = bz * (1 + 0.1 * depth);
+			// A ringed giant scales with the camera, like its rings and moon orbits, so they keep their proportions.
+			let sc = b.rings ? L.bs * Z : bz * (1 + 0.1 * depth);
 			let op = 0.7 + 0.3 * (depth * 0.5 + 0.5);
 			let zi = Math.round(200 + depth * 100);
 			if (b.kind === 'moon') {
-				sc = bz * (isBlog ? 1.25 : 0.55);
-				if (!isBlog) op = focus ? 0.16 : 0.45;
-				zi = blogZ + 2;
+				const active = b.host === hostB;
+				sc = bz * (active ? 1.25 : 0.55);
+				if (!active) op = focus ? 0.16 : 0.45;
+				zi = Math.round(200 + b.host.s * 100) + 2;
 			} else if (focus && b !== focus) op *= 0.35;
 			el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)';
 			el.style.opacity = op.toFixed(3);
@@ -373,7 +381,7 @@ export class OrbitEngine {
 			const p = this.partsOf(el);
 			if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
 			// Drawn radius (including a ring or moon), so the frame and hover label clear the body at any zoom.
-			const rad = (b.ring ? b.size : b.sat ? b.sat.orbit + b.sat.size / 2 : b.size / 2) * sc;
+			const rad = (b.rings ? b.ringsOuter * (b.size / 2) : b.sat ? b.sat.orbit + b.sat.size / 2 : b.size / 2) * sc;
 			if (!(Math.abs(rad - p.r) < 0.3)) {
 				p.r = rad;
 				el.style.setProperty('--r', rad.toFixed(1) + 'px');
@@ -409,7 +417,7 @@ export class OrbitEngine {
 			this.clockEl.textContent = 'T+ ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 		}
 
-		this.drawFx(L, Z, ox, oy, bz, isBlog, focus, st, mob);
+		this.drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob);
 
 		if (this.gl) {
 			const gl = this.gl, qq = this.qGL;
@@ -424,7 +432,7 @@ export class OrbitEngine {
 		if (this.frame === 1) this.onReady();
 	}
 
-	drawFx(L, Z, ox, oy, bz, isBlog, focus, st, mob) {
+	drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob) {
 		const ctx = this.ctx;
 		if (!ctx) return;
 		const W = this.W, H = this.H, TAU = Math.PI * 2, sv = this.scanV, sel = st.sel;
@@ -484,13 +492,52 @@ export class OrbitEngine {
 			ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
 		}
 		ctx.globalAlpha = 1;
-		const gx = blog.sx, gy = blog.sy;
+		for (const h of hosts) {
+			if (!h.rings) continue;
+			// Ring bands as filled annuli at map scale, so moons stay in the gaps at any zoom. The overview
+			// shows only the main bands, softly; the faint ones and the ringlets fade in as the camera zooms
+			// closer. Scan mode swaps the fill for lime outlines.
+			const u = this.moonUnit(h, L) * Z, dim = focus && focus !== h ? 0.35 : 1;
+			const detail = Math.min(1, Math.max(0, (Z - 1.2) / 1.2));
+			for (const [r0, r1, a0, detailOnly] of h.rings) {
+				const a = detailOnly ? a0 * detail : a0 * (0.6 + 0.4 * detail);
+				if (a < 0.004) continue;
+				ctx.beginPath();
+				ctx.ellipse(h.sx, h.sy, r1 * u, r1 * u * L.ty, 0, 0, TAU);
+				ctx.ellipse(h.sx, h.sy, r0 * u, r0 * u * L.ty, 0, 0, TAU);
+				if (sv < 1) {
+					ctx.fillStyle = 'rgba(232,206,150,' + (a * dim * (1 - sv)).toFixed(3) + ')';
+					ctx.fill('evenodd');
+				}
+				if (sv > 0.02) {
+					ctx.setLineDash([2, 3]);
+					ctx.strokeStyle = 'rgba(200,255,46,' + (0.45 * dim * sv * (detailOnly ? detail : 1)).toFixed(3) + ')';
+					ctx.stroke();
+					ctx.setLineDash([]);
+				}
+				if (a0 >= 0.3 && !detailOnly && sv < 1 && detail > 0) {
+					// A couple of darker ringlets inside the bright bands.
+					ctx.strokeStyle = 'rgba(40,24,6,' + (0.35 * dim * detail * (1 - sv)).toFixed(3) + ')';
+					ctx.lineWidth = 0.75;
+					for (const f of [0.35, 0.7]) {
+						const rr = (r0 + (r1 - r0) * f) * u;
+						ctx.beginPath();
+						ctx.ellipse(h.sx, h.sy, rr, rr * L.ty, 0, 0, TAU);
+						ctx.stroke();
+					}
+					ctx.lineWidth = 1;
+				}
+			}
+		}
 		for (const m of moons) {
-			const on = sel === m.id;
+			const on = sel === m.id, active = m.host === hostB;
+			// Moons in a ring system only show an orbit line when selected; the gaps already show it.
+			if (m.host.rings && !on) continue;
+			const c = m.host.rings ? '232,206,150' : '255,46,136';
 			ctx.setLineDash(on ? [] : [2, 5]);
-			ctx.strokeStyle = on ? 'rgba(255,46,136,0.9)' : isBlog ? 'rgba(255,46,136,0.35)' : 'rgba(255,46,136,0.12)';
+			ctx.strokeStyle = 'rgba(' + c + ',' + (on ? 0.9 : active ? 0.35 : 0.12) + ')';
 			ctx.beginPath();
-			ctx.ellipse(gx, gy, m.r * Z, m.r * L.ty * Z, 0, 0, TAU);
+			ctx.ellipse(m.host.sx, m.host.sy, m.r * Z, m.r * L.ty * Z, 0, 0, TAU);
 			ctx.stroke();
 		}
 		ctx.setLineDash([]);

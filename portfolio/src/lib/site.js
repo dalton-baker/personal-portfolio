@@ -10,10 +10,15 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  *
  * Orbit fields: `t` is the orbit radius from 0 (innermost) to 1 (outermost),
  * `phase` is the starting angle in radians, `size` is the diameter in px.
- * Optional looks: `rocky` (cratered surface), `ring` (with an optional `ringColor`), and `satellite`
- * (a large decorative moon, like Earth's; it can't be selected).
  * The inner, `rocky` planets sit inside the asteroid belt; rocks sit in the belt itself (keep their `t`
- * within `belt`); everything else orbits beyond it.
+ * within `belt`); everything else orbits beyond it. Other looks: `satellite` (a large decorative moon,
+ * like Earth's; it can't be selected) and `dwarf` (a tiny icy world).
+ *
+ * Giants have selectable moons, listed in their card. The Log's moons are the blog posts; other moons
+ * are bodies with `kind: 'moon'` and `host` set to the giant's slug, orbiting at `mt`. A giant with
+ * `rings` draws them as [inner, outer, opacity, detail] bands measured in planet radii, and its moons'
+ * `mt` uses the same unit, so they can sit in the gaps; `detail` bands only fade in as the camera zooms
+ * closer, keeping the overview reserved.
  */
 
 const L = (label, href) => ({ label, href });
@@ -96,40 +101,53 @@ export const bodies = [
 	},
 	// Outer system
 	{
-		slug: 'metals-market-display', kind: 'planet', name: 'Metals Market Display', category: 'Live site',
-		t: 0.5, phase: 0.9, size: 16, base: '#d5dae6', dark: '#535b6e',
+		slug: 'log', kind: 'giant', isBlog: true, name: 'The Log', category: 'Blog',
+		t: 0.6, phase: 2.9, size: 34, dark: 'rgba(40,6,40,.72)',
+		body: 'Write-ups of things I’ve built. Every moon is a post: pick one below, or tap the moons directly while you’re in orbit.',
+		moonsLabel: 'Posts in orbit',
+		links: []
+	},
+	{
+		slug: 'live-sites', kind: 'giant', name: 'Live Sites', category: 'Websites',
+		t: 0.87, phase: 0.6, size: 18, swatch: '#e8c98e', dark: 'rgba(60,38,8,.7)',
+		surface: 'repeating-linear-gradient(176deg,#f2deaa 0 4px,#dcbb7c 4px 7px,#ead09a 7px 11px,#c9a161 11px 13px)',
+		body: 'Websites and apps I’ve built that are live right now. Every moon is a site: pick one below, or tap the moons directly while you’re in orbit.',
+		moonsLabel: 'Sites in orbit',
+		// Saturn-style rings, in planet radii: a clear gap, the faint C ring, the bright B ring, a narrow
+		// Cassini-style division, the A ring split by a narrow Encke-style gap, a thin F ring and a faint,
+		// wide E ring. Two pinpoint moons orbit in the narrow gaps, the others just outside.
+		rings: [[1.45, 1.75, 0.2], [1.75, 2.3, 0.52], [2.45, 2.67, 0.38], [2.77, 2.95, 0.34], [3.05, 3.09, 0.45, true], [3.5, 4.7, 0.07, true]],
+		links: []
+	},
+	{
+		slug: 'metals-market-display', kind: 'moon', host: 'live-sites', name: 'Metals Market Display', category: 'Live site',
+		mt: 3.28, phase: 0.9, size: 3.5, base: '#d5dae6', dark: '#535b6e',
 		body: 'Displays live gold and silver prices with automatic updates. Designed for display in coin and pawn shops.',
 		facts: [F('Runs on', 'Cloudflare Workers · R2')],
 		links: [L('metalsmarketdisplay.com', 'https://metalsmarketdisplay.com/'), { label: 'The LED sign story', href: '/led-sign', internal: true }]
 	},
 	{
-		slug: 'heartland-tanks', kind: 'planet', name: 'Heartland Tanks', category: 'Live site',
-		t: 0.6, phase: 2.4, size: 15, base: '#8fd67c', dark: '#30692a',
+		slug: 'heartland-tanks', kind: 'moon', host: 'live-sites', name: 'Heartland Tanks', category: 'Live site',
+		mt: 2.375, phase: 2.6, size: 1.4, base: '#8fd67c', dark: '#30692a',
 		body: 'Custom website for a South Dakota-based tire tank manufacturer. Built for simplicity, performance, and easy maintenance.',
 		links: [L('heartlandtanks.com', 'https://heartlandtanks.com/')]
 	},
 	{
-		slug: 'lottery-pool-tracker', kind: 'planet', name: 'Lottery Pool Tracker', category: 'Live site',
-		t: 0.7, phase: 4.4, size: 16, base: '#b18cff', dark: '#4a2f8a',
+		slug: 'lottery-pool-tracker', kind: 'moon', host: 'live-sites', name: 'Lottery Pool Tracker', category: 'Live site',
+		mt: 3.95, phase: 4.3, size: 3, base: '#b18cff', dark: '#4a2f8a',
 		body: 'Tracks contributions, winnings, and payouts for lottery pools shared across clubs.',
 		facts: [F('Runs on', 'Svelte SSR · Cloudflare Workers')],
 		links: [L('lotterypooltracker.com', 'https://lotterypooltracker.com/')]
 	},
 	{
-		slug: 'log', kind: 'giant', isBlog: true, name: 'The Log', category: 'Blog',
-		t: 0.8, phase: 2.9, size: 34, dark: 'rgba(40,6,40,.72)',
-		body: 'Write-ups of things I’ve built. Every moon is a post: pick one below, or tap the moons directly while you’re in orbit.',
-		links: []
-	},
-	{
-		slug: 'department-of-truth', kind: 'planet', ring: true, ringColor: '#c4f5ec', name: 'Dalton’s Department of Truth', category: 'Blog',
-		t: 0.9, phase: 0.3, size: 14, base: '#3ddbc4', dark: '#0e6b5f',
+		slug: 'department-of-truth', kind: 'moon', host: 'live-sites', name: 'Dalton’s Department of Truth', category: 'Blog',
+		mt: 2.72, phase: 5.7, size: 1.2, base: '#3ddbc4', dark: '#0e6b5f',
 		body: 'A tongue-in-cheek conspiracy blog exploring absurd ideas.',
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]
 	},
 	{
-		slug: 'state-your-name', kind: 'star', rays: true, name: 'State Your Name', category: 'Game',
-		t: 1, phase: 5.9, size: 14, swatch: '#9fd0ff',
+		slug: 'state-your-name', kind: 'planet', dwarf: true, name: 'State Your Name', category: 'Game',
+		t: 1, phase: 5.9, size: 8, base: '#dde7f0', dark: '#4c586b',
 		body: 'A space exploration idle game, currently in development. Explore the cosmos at your own pace.',
 		links: [L('Play the game', 'https://state-your-name.dalt.dev/')]
 	}
