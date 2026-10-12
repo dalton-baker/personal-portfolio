@@ -1,0 +1,397 @@
+<script>
+	import '$lib/orbit/system-map.css';
+	import { onMount, tick, untrack } from 'svelte';
+	import { afterNavigate, goto } from '$app/navigation';
+	import { OrbitEngine } from '$lib/orbit/engine.js';
+	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
+	import { posts } from '$lib/posts';
+	import Lightbox from './Lightbox.svelte';
+	import { lightbox } from './lightbox.svelte.js';
+
+	/** The URL segment: a body slug, a post slug, or null for the home page. */
+	let { slug = null } = $props();
+
+	const postSlug = (s) => (s && byId[s]?.post ? s : null);
+	const isMoon = (id) => byId[id]?.kind === 'moon';
+
+	let scan = $state(false);
+	let noGL = $state(false);
+	let ready = $state(false);
+	/**
+	 * A post moon picked while orbiting The Log; its post expands inside The Log's card without changing
+	 * the URL (the post's own URL opens the reader). Other giants' moons are selected through their URLs.
+	 */
+	let moonSel = $state(null);
+	/** The post open in the reader. Lags the URL while the close animation plays. */
+	let reading = $state(untrack(() => postSlug(slug)));
+	let closing = $state(false);
+	let instant = $state(true);
+	let readX = $state(0);
+	let readY = $state(0);
+
+	const sel = $derived.by(() => {
+		if (!slug) return null;
+		if (isMoon(slug)) return slug;
+		if (slug === blog.id && moonSel) return moonSel;
+		return slug;
+	});
+	/** The giant whose moons are in play: it, or one of its moons, is selected. */
+	const hostId = $derived(sel ? (isMoon(sel) ? byId[sel].host.id : byId[sel]?.moons ? sel : null) : null);
+	/** A selected moon is shown as an expanded entry in its giant's card rather than a card of its own. */
+	const card = $derived(sel ? byId[isMoon(sel) ? byId[sel].host.id : sel] : null);
+	const art = $derived.by(() => {
+		if (!reading) return null;
+		const p = byId[reading].post;
+		const i = posts.indexOf(p);
+		return {
+			...p,
+			n: String(p.n).padStart(2, '0'),
+			prev: posts[(i - 1 + posts.length) % posts.length],
+			next: posts[(i + 1) % posts.length]
+		};
+	});
+
+	let root, glCanvas, fxCanvas, holeEl;
+	let readerEl = $state();
+	let progEl = $state();
+	const els = {};
+	let engine;
+	let closeTimer;
+	/** Path of the page we came from, if we got here by a forward in-app navigation. */
+	let cameFrom = null;
+	let lastSlug = untrack(() => slug);
+
+	onMount(() => {
+		engine = new OrbitEngine({
+			root, glCanvas, fxCanvas, holeEl, els,
+			getState: () => ({ sel, host: hostId, reading, closing, scan }),
+			onGLChange: (ok) => (noGL = !ok),
+			onReady: () => (ready = true)
+		});
+		engine.start();
+		return () => {
+			engine.destroy();
+			clearTimeout(closeTimer);
+		};
+	});
+
+	afterNavigate(({ from, type }) => {
+		cameFrom = type === 'link' || type === 'goto' ? (from?.url.pathname ?? null) : null;
+	});
+
+	// React to URL changes: open, switch or close the reader, and drop a moon preview once we leave The Log.
+	$effect(() => {
+		const next = slug;
+		untrack(() => {
+			if (next !== lastSlug) onRoute(next);
+			lastSlug = next;
+		});
+	});
+
+	function onRoute(next) {
+		const post = postSlug(next);
+		if (post) {
+			moonSel = null;
+			clearTimeout(closeTimer);
+			if (reading && !closing) {
+				// Previous/next post: swap the article in place.
+				reading = post;
+				tick().then(resetReaderScroll);
+				return;
+			}
+			const p = engine ? engine.screenPos(post) : { x: 0, y: 0 };
+			readX = p.x;
+			readY = p.y;
+			instant = false;
+			closing = false;
+			reading = post;
+			engine?.markRead();
+			tick().then(resetReaderScroll);
+			return;
+		}
+		if (reading && !closing) {
+			// Leaving a post: keep its moon selected if we land back in The Log.
+			const was = reading;
+			moonSel = next === blog.id ? was : null;
+			closing = true;
+			closeTimer = setTimeout(() => {
+				reading = null;
+				closing = false;
+			}, 430);
+			return;
+		}
+		if (next !== blog.id) moonSel = null;
+	}
+
+	function resetReaderScroll() {
+		if (readerEl) readerEl.scrollTop = 0;
+		if (progEl) progEl.style.transform = 'scaleX(0)';
+	}
+
+	/** Back to the plain map, stepping back through history when that is where we came from. */
+	function closeCard() {
+		if (cameFrom === '/') history.back();
+		else goto('/', { noScroll: true });
+	}
+
+	/** Back to The Log, stepping back through history when that is where the post was opened from. */
+	function closeRead() {
+		if (!reading || closing) return;
+		if (cameFrom === '/' + blog.id) history.back();
+		else goto('/' + blog.id, { noScroll: true });
+	}
+
+	const plainClick = (e) => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
+	/**
+	 * Moon links select the moon and expand its post in The Log's card; `toggle` (the card's list) collapses
+	 * it again on a second click. Modified clicks still open the post itself.
+	 */
+	function previewMoon(e, id, toggle = false) {
+		if (!plainClick(e)) return;
+		e.preventDefault();
+		if (slug !== blog.id) goto('/' + blog.id, { noScroll: true });
+		moonSel = toggle && moonSel === id ? null : id;
+	}
+
+	/** Clicking The Log while one of its moons is selected goes back to The Log itself. */
+	function selectLog(e) {
+		if (slug !== blog.id || !moonSel || !plainClick(e)) return;
+		e.preventDefault();
+		moonSel = null;
+	}
+
+	// Keep the expanded moon entry in view, e.g. on a phone where the card is a half-height sheet.
+	let cardEl = $state();
+	$effect(() => {
+		if (!isMoon(sel) || !cardEl) return;
+		tick().then(() => {
+			const item = cardEl?.querySelector('.post-item.on');
+			if (!item) return;
+			const c = cardEl.getBoundingClientRect();
+			const r = item.getBoundingClientRect();
+			const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+			if (r.bottom > c.bottom) cardEl.scrollBy({ top: r.bottom - c.bottom + 16, behavior });
+			else if (r.top < c.top) cardEl.scrollBy({ top: r.top - c.top - 16, behavior });
+		});
+	});
+
+	function onReadScroll(e) {
+		const el = e.currentTarget;
+		const p = el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
+		if (progEl) progEl.style.transform = 'scaleX(' + Math.min(1, p).toFixed(4) + ')';
+	}
+
+	function onKey(e) {
+		if (e.key !== 'Escape') return;
+		if (lightbox.src) lightbox.src = '';
+		else if (reading) closeRead();
+		else if (sel) closeCard();
+	}
+</script>
+
+<svelte:window onkeydown={onKey} />
+
+<div
+	bind:this={root}
+	class="bh"
+	class:nogl={noGL}
+	class:scan
+	class:card-open={!!sel}
+	class:ready
+	onpointermove={(e) => engine?.pointerMove(e)}
+	onpointerleave={() => engine?.pointerLeave()}
+	onpointerover={(e) => engine?.pointerOver(e)}
+	role="presentation"
+>
+	<canvas bind:this={glCanvas} class="glc" aria-hidden="true"></canvas>
+	<canvas bind:this={fxCanvas} class="fxc" aria-hidden="true"></canvas>
+
+	<nav class="orbits" aria-label="System map">
+		<a
+			bind:this={holeEl}
+			class="hole-btn"
+			class:is-sel={sel === hole.id}
+			href="/{hole.id}"
+			aria-label={hole.aria}
+			aria-current={slug === hole.id ? 'page' : undefined}
+		>
+			<span class="fb"></span>
+			<span class="hole-label">{scan ? 'Event horizon // about' : 'About'}</span>
+		</a>
+		{#each orbiters as b (b.id)}
+			<a
+				bind:this={els[b.id]}
+				class="body {b.kind}"
+				class:active={b.kind === 'moon' && b.host.id === hostId}
+				class:is-sel={sel === b.id}
+				href="/{b.id}"
+				aria-label={b.aria}
+				aria-current={slug === b.id ? 'page' : undefined}
+				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
+				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
+			>
+				<span class="dotwrap" style={b.wrapStyle}>
+					{#if b.rays}<span class="rays"></span>{/if}
+					<span class="dot" style={b.dotStyle}>
+						{#if b.shaded}<span class="shade" style={b.shadeStyle}></span>{/if}
+					</span>
+					{#if b.sat}
+						<span class="sat" style={b.sat.style}><span class="dot" style={b.sat.dotStyle}><span class="shade" style={b.sat.shadeStyle}></span></span></span>
+					{/if}
+				</span>
+				<span class="label" style={b.labelStyle}><span class="lname">{b.name}</span></span>
+				<span class="tip" aria-hidden="true">{b.name}</span>
+			</a>
+		{/each}
+	</nav>
+
+	<header class="hdr">
+		<div class="kicker">sys://daltonsbaker.com — system map</div>
+		<h1>Dalton<br />Baker</h1>
+		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
+		<div class="hdr-actions">{@render scanToggle()}</div>
+	</header>
+
+	<!-- `primary` turns the first link into a "Visit site" button (or its `cta`), like a post's "Read post"; the address is already shown above it. -->
+	{#snippet linkButtons(links, primary = false)}
+		{#if links.length}
+			<div class="links">
+				{#each links as l, i (l.href)}
+					{#if l.internal}
+						<a class="lnk" class:primary={primary && i === 0} href={l.href}>{l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+					{:else}
+						<a class="lnk" class:primary={primary && i === 0} href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">{primary && i === 0 ? (l.cta ?? 'Visit site') : l.label}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg></a>
+					{/if}
+				{/each}
+			</div>
+		{/if}
+	{/snippet}
+	{#snippet scanToggle()}
+		<button class="scanbtn" class:on={scan} onclick={() => (scan = !scan)} aria-pressed={scan}>
+			<span class="frame" aria-hidden="true"></span><span class="led"></span>Scan mode
+		</button>
+	{/snippet}
+	<!-- On desktop the toggle sits under the intro; phones keep it in the top-right corner. -->
+	<div class="hud">{@render scanToggle()}</div>
+
+	{#if !sel}
+		<section class="mpanel" aria-label="Intro">
+			<div class="kicker">sys://daltonsbaker.com</div>
+			<h1>Dalton Baker</h1>
+			<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
+		</section>
+	{/if}
+
+	{#if card && !reading}
+		<aside class="card" aria-live="polite" bind:this={cardEl}>
+			<div class="card-bar"></div>
+			<div class="card-in">
+				<div class="card-top">
+					<span class="tag">{card.tag}</span>
+					<button class="x" onclick={closeCard} aria-label="Close">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+					</button>
+				</div>
+				<h2>{card.name}</h2>
+				{#each card.paras as para, i (i)}
+					<p class="desc">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>
+				{/each}
+				{#if card.facts.length}
+					<dl class="facts">
+						{#each card.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
+					</dl>
+				{/if}
+				{#if card.contact}
+					<div class="card-h">Contact</div>
+					<p class="desc contact">{card.contact}</p>
+				{/if}
+				{@render linkButtons(card.links)}
+				{#if card.moons}
+					<div class="card-h">{card.moonsLabel}</div>
+					<ul class="posts">
+						{#each card.moons as m (m.id)}
+							{@const open = sel === m.id}
+							<li class="post-item" class:on={open}>
+								{#if m.post}
+									<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+									</a>
+								{:else}
+									<a class="post" href={open ? `/${card.id}` : `/${m.id}`} aria-expanded={open}>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+									</a>
+								{/if}
+								{#if open}
+									<div class="post-more">
+										{#if m.post}
+											<p class="post-dek">{m.body}</p>
+											<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+										{:else}
+											{#each m.paras as para, i (i)}<p class="post-dek">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>{/each}
+											{#if m.facts.length}
+												<dl class="facts">
+													{#each m.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
+												</dl>
+											{/if}
+											{@render linkButtons(m.links, true)}
+										{/if}
+									</div>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		</aside>
+	{/if}
+
+	{#if art}
+		<article
+			bind:this={readerEl}
+			class="reader"
+			class:out={closing}
+			class:instant
+			style={closing ? '--ox:50%;--oy:50%' : `--ox:${Math.round(readX)}px;--oy:${Math.round(readY)}px`}
+			onscroll={onReadScroll}
+			aria-label={art.title}
+		>
+			<div class="rbar">
+				<button class="rback" onclick={closeRead}>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Back to orbit
+				</button>
+				<span class="rcrumb">The Log // Post {art.n}</span>
+				<div class="rprog"><div bind:this={progEl} class="rprog-fill"></div></div>
+			</div>
+			<div class="rcol">
+				<div class="rkicker"><b>Post {art.n}</b> · {art.displayDate} · {art.mins} min read</div>
+				<h1 class="rtitle">{art.title}</h1>
+				<p class="rdek">{art.dek}</p>
+				<figure class="rfig hero">
+					{#if art.hero.video}
+						<video src={art.hero.src} autoplay loop muted playsinline></video>
+					{:else}
+						<img src={art.hero.src} alt={art.hero.alt} />
+					{/if}
+				</figure>
+				<div class="prose">
+					<art.component />
+				</div>
+				<div class="rend">
+					<div class="rend-h">End of transmission</div>
+					{#if posts.length > 1}
+						<div class="rnav">
+							<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>
+							<a class="rnext right" href="/{art.next.slug}"><span class="rnext-k">Next moon →</span><span class="rnext-t">{art.next.title}</span></a>
+						</div>
+					{/if}
+					<button class="rback rback2" onclick={closeRead}>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Back to orbit
+					</button>
+				</div>
+			</div>
+		</article>
+	{/if}
+
+	<Lightbox />
+</div>
