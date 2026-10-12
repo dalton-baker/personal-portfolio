@@ -1,38 +1,34 @@
-# sv
+# daltonsbaker.com
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
+Personal portfolio: an interactive "system map" built with SvelteKit, prerendered with
+`adapter-static`, and served from Cloudflare Workers static assets.
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+npm ci
+npm run dev       # local dev server
+npm run build     # prerender every page to dist/
+npm run preview   # build, then serve dist/ with wrangler
 ```
 
-## Building
+## Content
 
-To create a production version of your app:
+- **Planets and other bodies** live in `src/lib/site.js`. Each body's `slug` is its URL
+  (`/reg-x-timing`, `/log`, `/about`, ...). Add an entry there to put something new in orbit.
+- **Posts** ("The Log") are the `.svelte` files in `src/lib/posts/`. The file name is the URL
+  (`telescope.svelte` is served at `/telescope`), and each post exports a `meta` block with its
+  title, date, summary and hero image. Each post becomes a moon of The Log automatically.
+  Use `Gallery` for image grids; clicking a thumbnail opens it full screen.
+- Images and video stay in `static/`.
 
-```sh
-npm run build
-```
+Every body and post is its own prerendered page, so links to them load straight into that view.
 
-You can preview the production build with `npm run preview`.
+## How it fits together
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- `src/routes/[[slug]]/` is the only map route. Navigating between bodies and posts keeps the
+  same component mounted, so the animation continues while the URL changes.
+- `src/lib/components/SystemMap.svelte` renders the map UI, the info card and the post reader.
+- `src/lib/orbit/engine.js` runs the per-frame animation: orbits, camera, the WebGL black hole and
+  the 2D effects canvas.
+- `src/lib/orbit/system-map.css` holds the map styles, ported from the design mockup.
