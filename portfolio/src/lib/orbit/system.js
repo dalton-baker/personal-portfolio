@@ -74,7 +74,20 @@ function decorate(b) {
 	b.facts = b.facts || [];
 	b.links = b.links || [];
 	b.wrapStyle = `width:${s}px;height:${s}px`;
-	b.ringStyle = `width:${Math.round(s * 2)}px;height:${Math.round(s * 2)}px`;
+	b.ringStyle = `width:${Math.round(s * 2)}px;height:${Math.round(s * 2)}px` + (b.ringColor ? `;--ring:${b.ringColor}` : '');
+	if (b.satellite) {
+		// A big moon (a bit larger than ours is next to Earth, so it reads at map scale), orbiting just clear of the planet.
+		const ms = Math.round(s * 0.45);
+		b.sat = {
+			size: ms,
+			orbit: s * 1.12,
+			phase: (b.phase * 1.9) % (Math.PI * 2),
+			speed: 0.35,
+			style: `width:${ms}px;height:${ms}px;margin:${-ms / 2}px 0 0 ${-ms / 2}px`,
+			dotStyle: 'background:' + CRATERS + '#cfcac2',
+			shadeStyle: 'background:linear-gradient(90deg,rgba(0,0,0,0) 0 47%,#55514b 47% 100%)'
+		};
+	}
 	b.labelStyle = `margin-left:${Math.round(s / 2 + 12)}px`;
 	b.aria = b.kind === 'moon' ? 'Post: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
 	if (b.kind === 'giant') b.swatch = '#ff2e88';

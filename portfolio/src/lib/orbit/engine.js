@@ -251,11 +251,16 @@ export class OrbitEngine {
 		}
 	}
 
-	/** Cached .dotwrap / .shade children of a body element. */
+	/** Cached children of a body element: its scaled wrapper, shading, and decorative moon. */
 	partsOf(el) {
 		let p = this.parts.get(el);
 		if (!p) {
-			p = { wrap: el.querySelector('.dotwrap'), shade: el.querySelector('.shade') };
+			p = {
+				wrap: el.querySelector('.dotwrap'),
+				shade: el.querySelector('.dotwrap > .dot > .shade'),
+				sat: el.querySelector('.sat'),
+				satShade: el.querySelector('.sat .shade')
+			};
 			this.parts.set(el, p);
 		}
 		return p;
@@ -367,15 +372,19 @@ export class OrbitEngine {
 			el.style.zIndex = String(zi);
 			const p = this.partsOf(el);
 			if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
-			// Drawn radius, so the hover label sits just below the body at any zoom.
-			const rad = (b.ring ? b.size : b.size / 2) * sc;
+			// Drawn radius (including a ring or moon), so the frame and hover label clear the body at any zoom.
+			const rad = (b.ring ? b.size : b.sat ? b.sat.orbit + b.sat.size / 2 : b.size / 2) * sc;
 			if (!(Math.abs(rad - p.r) < 0.3)) {
 				p.r = rad;
 				el.style.setProperty('--r', rad.toFixed(1) + 'px');
 			}
-			if (b.shaded && p.shade) {
-				const an = Math.atan2(y - oy, x - ox);
-				p.shade.style.transform = 'rotate(' + an.toFixed(3) + 'rad)';
+			// Night side faces away from the black hole.
+			const shadeRot = 'rotate(' + Math.atan2(y - oy, x - ox).toFixed(3) + 'rad)';
+			if (b.shaded && p.shade) p.shade.style.transform = shadeRot;
+			if (p.sat) {
+				const s = b.sat, th = s.phase + s.speed * this.realT;
+				p.sat.style.transform = 'translate(' + (Math.cos(th) * s.orbit).toFixed(2) + 'px,' + (Math.sin(th) * s.orbit * L.ty).toFixed(2) + 'px)';
+				if (p.satShade) p.satShade.style.transform = shadeRot;
 			}
 		}
 		if (this.holeEl) {

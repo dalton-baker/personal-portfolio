@@ -10,6 +10,8 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  *
  * Orbit fields: `t` is the orbit radius from 0 (innermost) to 1 (outermost),
  * `phase` is the starting angle in radians, `size` is the diameter in px.
+ * Optional looks: `rocky` (cratered surface), `ring` (with an optional `ringColor`), and `satellite`
+ * (a large decorative moon, like Earth's; it can't be selected).
  * The inner, `rocky` planets sit inside the asteroid belt; rocks sit in the belt itself (keep their `t`
  * within `belt`); everything else orbits beyond it.
  */
@@ -54,7 +56,7 @@ export const bodies = [
 		links: [L('omnitech-inc.com', 'https://omnitech-inc.com/')]
 	},
 	{
-		slug: 'reg-x-timing', kind: 'planet', rocky: true, ring: true, name: 'Reg X Timing', category: 'Business',
+		slug: 'reg-x-timing', kind: 'planet', rocky: true, satellite: true, name: 'Reg X Timing', category: 'Business',
 		t: 0.1, phase: 5.3, size: 20, base: '#ff5a1f', dark: '#9c2706',
 		body: [
 			'I co-founded Reg X Timing in 2024 with my mentor and first boss in software engineering. We spent our first year building our race registration and timing platform.',
@@ -64,7 +66,7 @@ export const bodies = [
 		links: [L('regxtiming.com', 'https://regxtiming.com')]
 	},
 	{
-		slug: 'best-choice-pawn', kind: 'planet', rocky: true, name: 'Best Choice Pawn', category: 'Business',
+		slug: 'best-choice-pawn', kind: 'planet', rocky: true, satellite: true, name: 'Best Choice Pawn', category: 'Business',
 		t: 0.2, phase: 3.7, size: 18, base: '#ffc93c', dark: '#a8700c',
 		body: [
 			'I bought Best Choice Pawn with my best friend in November 2025. We actually worked together at another pawn shop nearly a decade earlier.',
@@ -120,7 +122,7 @@ export const bodies = [
 		links: []
 	},
 	{
-		slug: 'department-of-truth', kind: 'planet', name: 'Dalton’s Department of Truth', category: 'Blog',
+		slug: 'department-of-truth', kind: 'planet', ring: true, ringColor: '#c4f5ec', name: 'Dalton’s Department of Truth', category: 'Blog',
 		t: 0.9, phase: 0.3, size: 14, base: '#3ddbc4', dark: '#0e6b5f',
 		body: 'A tongue-in-cheek conspiracy blog exploring absurd ideas.',
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]

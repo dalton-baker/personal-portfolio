@@ -233,6 +233,9 @@
 					<span class="dot" style={b.dotStyle}>
 						{#if b.shaded}<span class="shade" style={b.shadeStyle}></span>{/if}
 					</span>
+					{#if b.sat}
+						<span class="sat" style={b.sat.style}><span class="dot" style={b.sat.dotStyle}><span class="shade" style={b.sat.shadeStyle}></span></span></span>
+					{/if}
 				</span>
 				<span class="label" style={b.labelStyle}><span class="lname">{b.name}</span></span>
 				<span class="tip" aria-hidden="true">{b.name}</span>

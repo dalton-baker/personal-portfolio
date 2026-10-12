@@ -27,7 +27,9 @@
 .dotwrap{position:relative;display:block;will-change:transform}
 .dot{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:block;z-index:1}
 .shade{position:absolute;inset:0;border-radius:50%;will-change:transform}
-.ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%);border:2px solid #ffd9c2;pointer-events:none;z-index:0;box-shadow:0 0 0 4px rgba(255,217,194,.14)}
+.ring{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--ring,#ffd9c2);pointer-events:none;z-index:0;box-shadow:0 0 0 4px color-mix(in srgb,var(--ring,#ffd9c2) 14%,transparent)}
+/* A planet's decorative moon; the engine moves it around the planet. */
+.sat{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none;will-change:transform}
 .rays{position:absolute;left:50%;top:50%;width:330%;height:330%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:0;background:repeating-conic-gradient(from 0deg,rgba(159,208,255,.9) 0 5deg,rgba(159,208,255,0) 5deg 30deg);-webkit-mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);animation:spin 14s linear infinite}
 @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 .label{position:absolute;left:50%;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;white-space:nowrap;pointer-events:none}
