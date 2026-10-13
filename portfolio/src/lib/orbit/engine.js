@@ -1,11 +1,28 @@
 import { kep, all, byId, moons, hosts, pulsar, belt } from './system.js';
 
-/** WebGL pixels per CSS pixel: starts at 60% of the device's pixel ratio (never below 1:1) and can drop to MIN_SCALE. */
-const BASE_SCALE = 0.6;
-const MIN_SCALE = 0.5;
+/** The canvases render at the device's pixel ratio, up to 3x (current phones). */
+const MAX_DPR = 3;
+/**
+ * The black hole shader only runs on a box around the hole, at full resolution unless that box would
+ * take more pixels than this (zoomed in close), when it renders lower and is scaled up.
+ */
+const GL_BUDGET_DESKTOP = 2.4e6;
+const GL_BUDGET_TOUCH = 1.2e6;
+/** Adaptive quality steps for the shader, as fractions of that resolution. */
+const GL_LEVELS = [1, 0.8, 0.65, 0.5];
+/** The shader draws nothing beyond this many disk radii from the hole (allowing for the halftone cells). */
+const GL_REACH = 1.75;
 /** Frame-rate caps. The motion is slow orbits and a swirl, so lower rates look nearly identical. */
 const FPS_DESKTOP = 60;
 const FPS_TOUCH = 30;
+/** The starfield redraws at this rate for its twinkle and grain; the parallax still moves it every frame. */
+const STAR_FPS = 20;
+/** Starfield grid (CSS px): about 45% of the cells hold a star, a few of them four-pointed. */
+const STAR_CELL = 46;
+/** How far the star canvas overhangs the map on each side (see .starc), so the parallax never shows its edge. */
+const STAR_PAD = 8;
+/** Film grain tile, in CSS px. */
+const GRAIN = 256;
 /**
  * Parallax: how far (CSS px) the system and, less, the starfield drift when the pointer is at the edge of
  * the map, so the stars read as farther away. It follows the mouse, or a finger while it's touching.
@@ -15,15 +32,22 @@ const PARALLAX_STARS = 5;
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
+const smooth = (e0, e1, x) => {
+	const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+	return t * t * (3 - 2 * t);
+};
+
 /**
- * Drives the system map every animation frame: orbits, camera, the WebGL
- * black hole and the 2D effects canvas. It writes transforms straight onto the
- * body elements; Svelte only renders the markup and the UI around it.
+ * Drives the system map every animation frame: orbits, camera and three canvases. From the back: the
+ * starfield (laid out on resize, redrawn STAR_FPS times a second to twinkle), the WebGL black hole (a box
+ * around the hole, transparent outside the disk) and the 2D effects (orbits, belt, rings, reticle). It
+ * writes transforms straight onto the body elements; Svelte only renders the markup and the UI around it.
  */
 export class OrbitEngine {
 	/**
 	 * @param {object} o
 	 * @param {HTMLElement} o.root
+	 * @param {HTMLCanvasElement} o.starCanvas
 	 * @param {HTMLCanvasElement} o.glCanvas
 	 * @param {HTMLCanvasElement} o.fxCanvas
 	 * @param {HTMLElement} o.holeEl
@@ -37,7 +61,10 @@ export class OrbitEngine {
 		Object.assign(this, o);
 		this.timeScale = 2.2;
 		this.tiltY = 1;
-		this.glScale = 1;
+		/** Index into GL_LEVELS. */
+		this.glLevel = 0;
+		/** The GL canvas's drawing buffer size (px) and whether it's showing; the hole can be off screen. */
+		this.glBox = { w: 0, h: 0, shown: true, tf: '' };
 		this.cam = { x: 0, y: 0, z: 1, cx: 0, cy: 0, init: false };
 		this.simT = 0;
 		this.moonT = 0;
@@ -46,14 +73,17 @@ export class OrbitEngine {
 		this.spd = 1;
 		this.lastFrame = 0;
 		this.frameClock = 0;
-		this.perf = { n: 0, sum: 0, skip: 5 };
+		this.perf = { n: 0, sum: 0, skip: 5, good: 0, wait: 2, raised: false, slowAt: 0, minInterval: 0 };
 		this.scanV = 0;
 		this.frame = 0;
 		this.W = 1440;
 		this.H = 900;
 		this.isMobile = false;
-		this.q2 = 1;
-		this.qGL = 1;
+		/** Canvas pixels per CSS pixel (the device pixel ratio, capped). */
+		this.dpr = 1;
+		this.stars = [];
+		this.starAt = -1e9;
+		this.starTf = '';
 		this.ptr = null;
 		this.hoverEl = null;
 		this.hoverT0 = 0;
@@ -77,7 +107,6 @@ export class OrbitEngine {
 	start() {
 		this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		this.coarse = window.matchMedia('(pointer: coarse)').matches;
-		this.glScale = Math.max(1, Math.min(window.devicePixelRatio || 1, 2) * BASE_SCALE);
 		// Phones drop the GPU context when backgrounded for a while. Without handling this the canvas
 		// stays blank (Chrome shows a white "sad face" placeholder) until the page is reloaded.
 		this.onContextLost = (e) => {
@@ -85,9 +114,7 @@ export class OrbitEngine {
 			this.gl = null;
 			this.onGLChange(false);
 		};
-		this.onContextRestored = () => {
-			if (this.initGL()) this.sizeGL();
-		};
+		this.onContextRestored = () => this.initGL();
 		this.glCanvas.addEventListener('webglcontextlost', this.onContextLost);
 		this.glCanvas.addEventListener('webglcontextrestored', this.onContextRestored);
 		this.onVisible = () => {
@@ -96,6 +123,10 @@ export class OrbitEngine {
 		document.addEventListener('visibilitychange', this.onVisible);
 		this.initGL();
 		if (this.fxCanvas) this.ctx = this.fxCanvas.getContext('2d');
+		if (this.starCanvas) {
+			this.sctx = this.starCanvas.getContext('2d', { alpha: false });
+			this.grain = this.sctx && makeGrain(this.sctx);
+		}
 		this.measure();
 		this.ro = new ResizeObserver(() => this.measure());
 		this.ro.observe(this.root);
@@ -182,25 +213,25 @@ export class OrbitEngine {
 		this.H = Math.max(1, this.root.clientHeight);
 		// Matches the 760px breakpoint in system-map.css.
 		this.isMobile = this.W < 760;
-		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		this.q2 = dpr;
+		// Also re-measured when the pixel ratio changes (browser zoom, a window moved to another screen).
+		this.dprSeen = window.devicePixelRatio;
+		const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+		this.dpr = dpr;
 		if (this.fxCanvas) {
 			this.fxCanvas.width = Math.round(this.W * dpr);
 			this.fxCanvas.height = Math.round(this.H * dpr);
 		}
-		this.sizeGL();
-	}
-
-	sizeGL() {
-		if (!this.gl || !this.glCanvas) return;
-		const w = Math.max(1, Math.round(this.W * this.glScale));
-		const h = Math.max(1, Math.round(this.H * this.glScale));
-		if (this.glCanvas.width !== w || this.glCanvas.height !== h) {
-			this.glCanvas.width = w;
-			this.glCanvas.height = h;
+		if (this.starCanvas) {
+			const w = this.W + STAR_PAD * 2, h = this.H + STAR_PAD * 2;
+			this.starCanvas.width = Math.round(w * dpr);
+			this.starCanvas.height = Math.round(h * dpr);
+			if (dpr !== this.spriteDpr) {
+				this.sprites = makeStarSprites(dpr);
+				this.spriteDpr = dpr;
+			}
+			this.stars = layoutStars(w, h);
+			this.starAt = -1e9;
 		}
-		this.qGL = w / this.W;
-		this.gl.viewport(0, 0, w, h);
 	}
 
 	/** Builds the shader program; also runs again after a lost context is restored. Returns whether WebGL works. */
@@ -208,7 +239,8 @@ export class OrbitEngine {
 		const c = this.glCanvas;
 		let gl = null;
 		try {
-			gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false, powerPreference: 'low-power' });
+			// Transparent (premultiplied) so the starfield shows around and through the disk.
+			gl = c.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'low-power' });
 		} catch {
 			gl = null;
 		}
@@ -244,15 +276,20 @@ export class OrbitEngine {
 		gl.enableVertexAttribArray(loc);
 		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 		const U = (n) => gl.getUniformLocation(pr, n);
-		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx'), Star: U('uStar') };
+		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') };
+		const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+		this.glMax = Math.min(vp[0], vp[1], gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096);
 		this.gl = gl;
 		this.onGLChange(true);
 		return true;
 	}
 
 	/**
-	 * Adaptive quality: average the frame interval over 40 frames (or 1.5 s on very slow devices)
-	 * and, if the device can't keep up with the frame cap, render the shader at a lower resolution.
+	 * Adaptive quality: average the frame interval over 40 frames (or 1.5 s on very slow devices). If the
+	 * device can't keep up with the frame cap, render the shader a step lower; once it keeps up again, step
+	 * back up (waiting longer each time a step up turns out too much). If even the lowest step is no faster
+	 * than full resolution, the shader isn't what's slow (a battery saver capping the frame rate, a busy
+	 * CPU), so go back to full resolution and accept that frame rate.
 	 */
 	samplePerf(elapsed, interval) {
 		const p = this.perf;
@@ -266,9 +303,22 @@ export class OrbitEngine {
 		if (p.n < 40 && p.sum < 1500) return;
 		const mean = p.sum / p.n;
 		p.sum = p.n = 0;
-		if (mean > interval * 1.35 && this.glScale > MIN_SCALE) {
-			this.glScale = Math.max(MIN_SCALE, this.glScale * 0.75);
-			this.sizeGL();
+		const target = Math.max(interval, p.minInterval);
+		if (mean > target * 1.35) {
+			p.good = 0;
+			if (p.raised) p.wait = Math.min(p.wait * 2, 32);
+			p.raised = false;
+			if (this.glLevel === 0) p.slowAt = mean;
+			if (this.glLevel < GL_LEVELS.length - 1) this.glLevel++;
+			else if (mean > p.slowAt * 0.9) {
+				this.glLevel = 0;
+				p.minInterval = mean;
+			}
+			p.skip = 3;
+		} else if (mean < target * 1.12 && this.glLevel > 0 && ++p.good >= p.wait) {
+			this.glLevel--;
+			p.good = 0;
+			p.raised = true;
 			p.skip = 3;
 		}
 	}
@@ -312,6 +362,7 @@ export class OrbitEngine {
 		const elapsed = now - this.lastFrame;
 		this.lastFrame = now;
 		this.samplePerf(elapsed, interval);
+		if (window.devicePixelRatio !== this.dprSeen) this.measure();
 		let dt = elapsed / 1000;
 		if (!(dt > 0)) dt = 0.016;
 		dt = Math.min(dt, 0.05);
@@ -423,7 +474,13 @@ export class OrbitEngine {
 			el.style.opacity = op.toFixed(3);
 			el.style.zIndex = String(zi);
 			const p = this.partsOf(el);
-			if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
+			// A planet repaints at its new size whenever its scale changes (rather than stretching a bitmap, which
+			// blurs it when the camera zooms in), so skip changes too small to see.
+			if (!(Math.abs(sc - p.sc) < p.sc * 0.004)) {
+				p.sc = sc;
+				if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
+			}
+			sc = p.sc;
 			// Drawn radius (including a ring or moon), so the frame and labels clear the body at any zoom.
 			const rad = (b.rings ? b.ringsOuter * (b.size / 2) : b.sat ? b.sat.orbit + b.sat.size / 2 : b.size / 2) * sc;
 			if (!(Math.abs(rad - p.r) < 0.3)) {
@@ -437,13 +494,16 @@ export class OrbitEngine {
 				p.disc = disc;
 				el.style.setProperty('--disc', disc.toFixed(1) + 'px');
 			}
-			// Night side faces away from the black hole.
-			const shadeRot = 'rotate(' + Math.atan2(y - oy, x - ox).toFixed(3) + 'rad)';
-			if (b.shaded && p.shade) p.shade.style.transform = shadeRot;
+			// Night side faces away from the black hole (turned in steps of about half a degree, for the same reason).
+			const ang = Math.atan2(y - oy, x - ox);
+			const turn = !(Math.abs(ang - p.ang) < 0.01);
+			if (turn) p.ang = ang;
+			const shadeRot = 'rotate(' + p.ang.toFixed(3) + 'rad)';
+			if (turn && b.shaded && p.shade) p.shade.style.transform = shadeRot;
 			if (p.sat) {
 				const s = b.sat, th = s.phase + s.speed * this.realT;
 				p.sat.style.transform = 'translate(' + (Math.cos(th) * s.orbit).toFixed(2) + 'px,' + (Math.sin(th) * s.orbit * L.ty).toFixed(2) + 'px)';
-				if (p.satShade) p.satShade.style.transform = shadeRot;
+				if (turn && p.satShade) p.satShade.style.transform = shadeRot;
 			}
 		}
 		if (this.holeEl) {
@@ -464,28 +524,121 @@ export class OrbitEngine {
 			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0)';
 		}
 		this.drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob);
-
-		if (this.gl) {
-			const gl = this.gl, qq = this.qGL;
-			gl.uniform2f(this.u.C, ox * qq, (this.H - oy) * qq);
-			gl.uniform1f(this.u.R, L.disk * Z * qq);
-			gl.uniform1f(this.u.T, this.realT);
-			gl.uniform1f(this.u.Ty, L.ty);
-			gl.uniform1f(this.u.Scan, this.scanV);
-			gl.uniform1f(this.u.Px, qq);
-			// The starfield drifts less than the system (GL y runs up).
-			const sa = PARALLAX_STARS * amp * qq;
-			gl.uniform2f(this.u.Star, -par.x * sa, par.y * sa);
-			gl.drawArrays(gl.TRIANGLES, 0, 3);
+		if (this.starCanvas) {
+			// The starfield drifts less than the system, so it reads as farther away. Moved in whole device
+			// pixels to keep the stars crisp.
+			const d = this.dpr, sa = PARALLAX_STARS * amp * d;
+			const tf = 'translate3d(' + (Math.round(-par.x * sa) / d).toFixed(3) + 'px,' + (Math.round(-par.y * sa) / d).toFixed(3) + 'px,0)';
+			if (tf !== this.starTf) {
+				this.starTf = tf;
+				this.starCanvas.style.transform = tf;
+			}
+			if (now - this.starAt >= 1000 / STAR_FPS - 2) {
+				this.starAt = now;
+				this.drawStars();
+			}
 		}
+		if (this.gl) this.drawGL(L, Z, ox, oy);
 		if (this.frame === 1) this.onReady();
+	}
+
+	/**
+	 * The starfield: background and film grain, then the stars added on top (as light, like the shader used
+	 * to), each twinkling at its own pace. Scan mode dims the small stars and turns the bright ones lime.
+	 */
+	drawStars() {
+		const g = this.sctx, S = this.sprites;
+		if (!g || !S) return;
+		const d = this.dpr, c = this.starCanvas;
+		g.setTransform(d, 0, 0, d, 0, 0);
+		g.globalCompositeOperation = 'source-over';
+		g.globalAlpha = 1;
+		g.imageSmoothingEnabled = false;
+		// The grain tile jumps to a new offset on every redraw, so it shimmers.
+		const gx = this.reduced ? 0 : Math.floor(Math.random() * GRAIN), gy = this.reduced ? 0 : Math.floor(Math.random() * GRAIN);
+		g.translate(-gx, -gy);
+		g.fillStyle = this.grain;
+		g.fillRect(gx, gy, c.width / d, c.height / d);
+		g.setTransform(1, 0, 0, 1, 0, 0);
+		g.globalCompositeOperation = 'lighter';
+		const t = this.realT, sv = this.scanV, dim = 1 - sv * 0.5, lime = sv * 0.8;
+		for (const s of this.stars) {
+			const tw = 0.55 + 0.45 * Math.sin(t * s.f + s.ph);
+			const x = Math.round(s.x * d), y = Math.round(s.y * d);
+			if (s.spark) {
+				const sp = S.spark(s.spark);
+				if (lime < 0.99) {
+					g.globalAlpha = tw * (1 - lime);
+					g.drawImage(sp.white.cv, x - sp.white.c, y - sp.white.c);
+				}
+				if (lime > 0.01) {
+					g.globalAlpha = tw * lime;
+					g.drawImage(sp.lime.cv, x - sp.lime.c, y - sp.lime.c);
+				}
+			} else {
+				g.globalAlpha = tw * s.b * dim;
+				g.drawImage(S.dot.cv, x - S.dot.c, y - S.dot.c);
+			}
+		}
+		g.globalAlpha = 1;
+		g.globalCompositeOperation = 'source-over';
+	}
+
+	/**
+	 * The black hole. The shader only runs on a box around the hole (it draws nothing further out), clipped
+	 * to the map, at full resolution where the pixel budget allows. The canvas is placed and scaled with a
+	 * transform, and its drawing buffer is only reallocated when the box outgrows it or shrinks a lot.
+	 */
+	drawGL(L, Z, ox, oy) {
+		const gl = this.gl, c = this.glCanvas, box = this.glBox, d = this.dpr, R = L.disk * Z;
+		const rx = R * GL_REACH + 2, ry = rx * L.ty;
+		// The box's corner sits on a device pixel, so at full resolution the canvas maps 1:1 onto the screen.
+		const x0 = Math.max(0, Math.floor((ox - rx) * d) / d), y0 = Math.max(0, Math.floor((oy - ry) * d) / d);
+		const x1 = Math.min(this.W, ox + rx), y1 = Math.min(this.H, oy + ry);
+		if (x1 <= x0 || y1 <= y0) {
+			if (box.shown) {
+				box.shown = false;
+				c.style.display = 'none';
+			}
+			return;
+		}
+		if (!box.shown) {
+			box.shown = true;
+			c.style.display = '';
+		}
+		const bw0 = x1 - x0, bh0 = y1 - y0;
+		const budget = this.isMobile || this.coarse ? GL_BUDGET_TOUCH : GL_BUDGET_DESKTOP;
+		const q = Math.min(d * GL_LEVELS[this.glLevel], Math.sqrt(budget / (bw0 * bh0)), this.glMax / bw0, this.glMax / bh0);
+		const bw = Math.ceil(bw0 * q), bh = Math.ceil(bh0 * q);
+		if (bw > box.w || bh > box.h || bw * bh < box.w * box.h * 0.25) {
+			box.w = Math.min(Math.ceil((bw * 1.15) / 16) * 16, this.glMax);
+			box.h = Math.min(Math.ceil((bh * 1.15) / 16) * 16, this.glMax);
+			c.width = box.w;
+			c.height = box.h;
+			c.style.width = box.w + 'px';
+			c.style.height = box.h + 'px';
+		}
+		const tf = 'translate3d(' + x0.toFixed(3) + 'px,' + y0.toFixed(3) + 'px,0) scale(' + (1 / q).toFixed(5) + ')';
+		if (tf !== box.tf) {
+			box.tf = tf;
+			c.style.transform = tf;
+		}
+		// Draw into the buffer's top-left corner (GL y runs up); the rest stays transparent.
+		gl.viewport(0, box.h - bh, bw, bh);
+		gl.uniform2f(this.u.C, (ox - x0) * q, box.h - (oy - y0) * q);
+		gl.uniform1f(this.u.R, R * q);
+		gl.uniform1f(this.u.T, this.realT);
+		gl.uniform1f(this.u.Ty, L.ty);
+		gl.uniform1f(this.u.Scan, this.scanV);
+		gl.uniform1f(this.u.Px, q);
+		gl.drawArrays(gl.TRIANGLES, 0, 3);
 	}
 
 	drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob) {
 		const ctx = this.ctx;
 		if (!ctx) return;
 		const W = this.W, H = this.H, TAU = Math.PI * 2, sv = this.scanV, sel = st.sel;
-		ctx.setTransform(this.q2, 0, 0, this.q2, 0, 0);
+		ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 		ctx.clearRect(0, 0, W, H);
 		ctx.lineWidth = 1;
 		if (sv > 0.02) {
@@ -663,13 +816,110 @@ export class OrbitEngine {
 	}
 }
 
+/** A random sequence fixed by a starfield cell, so the stars stay put when the map is resized. */
+function cellRandom(i, j) {
+	let s = (Math.imul(i, 73856093) ^ Math.imul(j, 19349663) ^ 0x5bd1e995) >>> 0;
+	return () => {
+		s = (s + 0x6d2b79f5) >>> 0;
+		let t = s;
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+/**
+ * Stars for a w x h (CSS px) area, at most one per grid cell: most are small dots of varying brightness, a
+ * few are four-pointed. `f` and `ph` set the twinkle's pace and phase.
+ */
+function layoutStars(w, h) {
+	const stars = [];
+	for (let j = 0; j * STAR_CELL < h; j++) {
+		for (let i = 0; i * STAR_CELL < w; i++) {
+			const r = cellRandom(i, j);
+			const k = r();
+			if (k <= 0.55) continue;
+			const star = { x: (i + 0.2 + 0.6 * r()) * STAR_CELL, y: (j + 0.2 + 0.6 * r()) * STAR_CELL, f: 0.6 + k * 2, ph: k * 40 };
+			if (k > 0.968) star.spark = Math.round((4 + 4 * r()) * 2) / 2; // arm length (px), in half-pixel steps
+			else star.b = 0.25 + 0.6 * r();
+			stars.push(star);
+		}
+	}
+	return stars;
+}
+
+/**
+ * A star sprite at device resolution, centred on a pixel. `shape(x, y)` is its brightness at an offset in
+ * CSS px; `reach` is how far that goes.
+ */
+function starSprite(dpr, reach, rgb, shape) {
+	const c = Math.ceil(reach * dpr), n = c * 2 + 1;
+	const cv = document.createElement('canvas');
+	cv.width = cv.height = n;
+	const g = cv.getContext('2d');
+	const img = g.createImageData(n, n), px = img.data;
+	for (let y = 0; y < n; y++) {
+		for (let x = 0; x < n; x++) {
+			const o = (y * n + x) * 4;
+			px[o] = rgb[0];
+			px[o + 1] = rgb[1];
+			px[o + 2] = rgb[2];
+			px[o + 3] = Math.round(shape((x - c) / dpr, (y - c) / dpr) * 255);
+		}
+	}
+	g.putImageData(img, 0, 0);
+	return { cv, c };
+}
+
+/** The small round star, and the four-pointed ones (made on first use for each arm length, in white and in lime). */
+function makeStarSprites(dpr) {
+	const sparks = new Map();
+	const sparkShape = (sz) => (x, y) => {
+		const ax = Math.abs(x), ay = Math.abs(y);
+		return Math.max(smooth(0.9, 0, ax) * smooth(sz, 0, ay), smooth(0.9, 0, ay) * smooth(sz, 0, ax), smooth(1.7, 0.6, Math.hypot(x, y)));
+	};
+	return {
+		dot: starSprite(dpr, 1.1, [217, 217, 255], (x, y) => smooth(1.1, 0.2, Math.hypot(x, y))),
+		spark(sz) {
+			let s = sparks.get(sz);
+			if (!s) {
+				s = { white: starSprite(dpr, sz, [242, 237, 255], sparkShape(sz)), lime: starSprite(dpr, sz, [200, 255, 46], sparkShape(sz)) };
+				sparks.set(sz, s);
+			}
+			return s;
+		}
+	};
+}
+
+/** A tile of the background colour with film grain (up to 2.5% brighter or darker per CSS px), as a repeating pattern. */
+function makeGrain(g) {
+	const cv = document.createElement('canvas');
+	cv.width = cv.height = GRAIN;
+	const c = cv.getContext('2d');
+	const img = c.createImageData(GRAIN, GRAIN), px = img.data;
+	for (let o = 0; o < px.length; o += 4) {
+		const v = (Math.random() - 0.5) * 12.75;
+		px[o] = 7 + v;
+		px[o + 1] = 6 + v;
+		px[o + 2] = 11 + v;
+		px[o + 3] = 255;
+	}
+	c.putImageData(img, 0, 0);
+	return g.createPattern(cv, 'repeat');
+}
+
+/**
+ * The black hole: accretion disk, halftone haze, shadow and photon ring. It outputs premultiplied colour
+ * with coverage, so the starfield shows through wherever it isn't opaque (between the haze dots, the
+ * disk's gaps, and everything outside it).
+ */
 const FRAG = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 uC; uniform float uR; uniform float uT; uniform float uTy; uniform float uScan; uniform float uPx; uniform vec2 uStar;
+uniform vec2 uC; uniform float uR; uniform float uT; uniform float uTy; uniform float uScan; uniform float uPx;
 float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 vec3 band(float k){
   if(k < 1.5) return vec3(0.231,0.051,0.369);
@@ -684,75 +934,65 @@ float dens(float ang0, float r, float sh){
   float str = 0.5 + 0.5*sin(17.0*ang + r*31.0 + 2.0*sin(5.0*ang - uT*0.6));
   return 0.2 + 0.55*arms + 0.3*str;
 }
+// Light laid over what's drawn so far, with coverage equal to its brightest channel. That's close to adding
+// it, since the stars and background it covers are so dark.
+void glow(inout vec3 col, inout float al, vec3 l){
+  float la = min(1.0, max(l.r, max(l.g, l.b)));
+  col = min(l, vec3(la)) + col*(1.0 - la);
+  al = la + al*(1.0 - la);
+}
 void main(){
   vec2 f = gl_FragCoord.xy;
-  vec3 lime = vec3(0.784,1.0,0.18);
-  vec3 col = vec3(0.027,0.024,0.043);
-  float cs = 46.0*uPx;
-  vec2 fs = f - uStar;
-  vec2 cell = floor(fs/cs); vec2 lc = fs - cell*cs;
-  float h = hash(cell);
-  if(h > 0.55){
-    vec2 sp = (0.2 + 0.6*vec2(hash(cell+1.3), hash(cell+7.1)))*cs;
-    vec2 d = (lc - sp)/uPx;
-    float tw = 0.55 + 0.45*sin(uT*(0.6 + h*2.0) + h*40.0);
-    if(h > 0.968){
-      float sz = 4.0 + 4.0*hash(cell+3.3);
-      float s = max(smoothstep(0.9,0.0,abs(d.x))*smoothstep(sz,0.0,abs(d.y)), smoothstep(0.9,0.0,abs(d.y))*smoothstep(sz,0.0,abs(d.x)));
-      s = max(s, smoothstep(1.7,0.6,length(d)));
-      col += mix(vec3(0.95,0.93,1.0), lime, uScan*0.8)*s*tw;
-    } else {
-      float s = smoothstep(1.1,0.2,length(d))*(0.25 + 0.6*hash(cell+5.5));
-      col += vec3(0.85,0.85,1.0)*s*tw*(1.0 - uScan*0.5);
-    }
-  }
   vec2 p = (f - uC)/uR;
   vec2 q = vec2(p.x, p.y/uTy);
   float rp = length(p); float rq = length(q);
   // The disk, halftone and photon ring all fade to exactly zero before 1.75 disk radii (allowing for the
-  // halftone cell size), so most of the screen only needs the stars and grain.
-  if(rq < 1.75){
-    float a = atan(q.y, q.x);
-    float rs = 0.24; float inner = 0.30;
-    float rqc = max(rq, 0.05);
-    float w = pow(inner/rqc, 1.5);
-    float edge = smoothstep(inner - 0.01, inner + 0.05, rq)*(1.0 - smoothstep(0.5, 1.0, rq));
-    float heat = pow(inner/max(rq, inner), 1.3);
-    float PER = 9.0;
-    float t1 = mod(uT, PER); float t2 = mod(uT + 0.5*PER, PER);
-    float w1 = 1.0 - abs(t1/PER*2.0 - 1.0);
-    float base = a + uT*0.35;
-    float d1 = dens(base, rqc, w*t1*0.8);
-    float d2 = dens(base, rqc, w*t2*0.8);
-    float dd = clamp(edge*mix(d2, d1, w1)*(0.4 + 0.8*heat), 0.0, 0.999);
-    float x = dd*5.5;
-    float k = floor(x);
-    float fill = step(1.0, k);
-    float fe = fract(x); float e = min(fe, 1.0 - fe);
-    float contour = smoothstep(0.09, 0.0, e)*step(0.12, dd);
-    vec3 filled = mix(col, band(k), fill);
-    vec3 scanC = col + lime*contour*0.85 + lime*0.04*edge;
-    col = mix(filled, scanC, uScan);
-    // Halftone dots on a grid anchored to the black hole, so they move with it (parallax, camera) instead
-    // of the hole sliding under a fixed screen grid.
-    float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
-    vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
-    float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
-    float hr = hc*0.36*sqrt(g);
-    float dotm = g > 0.003 ? 1.0 - smoothstep(hr - 0.75*uPx, hr + 0.75*uPx, length(f - cc)) : 0.0;
-    vec3 htc = mix(vec3(0.34,0.06,0.31), lime*0.3, uScan);
-    col = mix(col, htc, dotm*(1.0 - fill*(1.0 - uScan)));
-    float sh = step(rp, rs);
-    col = mix(col, vec3(0.0), sh*(1.0 - uScan*0.9));
-    float rr0 = rs + 0.014; float rw = 0.018; float off = 0.013;
-    float cr = smoothstep(rw, 0.0, abs(length(p + vec2(off, 0.0)) - rr0));
-    float cg = smoothstep(rw, 0.0, abs(rp - rr0));
-    float cb = smoothstep(rw, 0.0, abs(length(p - vec2(off, 0.0)) - rr0));
-    vec3 ringc = vec3(max(cr, cg), cg, max(cb, cg));
-    col = mix(col + ringc*1.3, col + lime*cg, uScan);
-    col += lime*uScan*smoothstep(0.008, 0.0, abs(rp - rs))*0.9;
-  }
-  col += (hash(f*0.73 + fract(uT*0.37)*91.0) - 0.5)*0.05;
-  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  // halftone cell size); the canvas covers about that box.
+  if(rq >= 1.75){ gl_FragColor = vec4(0.0); return; }
+  vec3 lime = vec3(0.784,1.0,0.18);
+  float a = atan(q.y, q.x);
+  float rs = 0.24; float inner = 0.30;
+  float rqc = max(rq, 0.05);
+  float w = pow(inner/rqc, 1.5);
+  float edge = smoothstep(inner - 0.01, inner + 0.05, rq)*(1.0 - smoothstep(0.5, 1.0, rq));
+  float heat = pow(inner/max(rq, inner), 1.3);
+  float PER = 9.0;
+  float t1 = mod(uT, PER); float t2 = mod(uT + 0.5*PER, PER);
+  float w1 = 1.0 - abs(t1/PER*2.0 - 1.0);
+  float base = a + uT*0.35;
+  float d1 = dens(base, rqc, w*t1*0.8);
+  float d2 = dens(base, rqc, w*t2*0.8);
+  float dd = clamp(edge*mix(d2, d1, w1)*(0.4 + 0.8*heat), 0.0, 0.999);
+  float x = dd*5.5;
+  float k = floor(x);
+  float fill = step(1.0, k);
+  float fe = fract(x); float e = min(fe, 1.0 - fe);
+  float contour = smoothstep(0.09, 0.0, e)*step(0.12, dd);
+  // Premultiplied colour (col) and coverage (al): solid colour bands, or in scan mode lime contour lines.
+  vec3 col = band(k)*fill; float al = fill;
+  vec3 sc = vec3(0.0); float sa = 0.0;
+  glow(sc, sa, lime*(contour*0.85 + 0.04*edge));
+  col = mix(col, sc, uScan); al = mix(al, sa, uScan);
+  // Halftone dots on a grid anchored to the black hole, so they move with it (parallax, camera).
+  float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
+  vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
+  float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
+  float hr = hc*0.36*sqrt(g);
+  float dotm = g > 0.003 ? 1.0 - smoothstep(hr - 0.75*uPx, hr + 0.75*uPx, length(f - cc)) : 0.0;
+  vec3 htc = mix(vec3(0.34,0.06,0.31), lime*0.3, uScan);
+  float m = dotm*(1.0 - fill*(1.0 - uScan));
+  col = mix(col, htc, m); al = mix(al, 1.0, m);
+  float sh = step(rp, rs)*(1.0 - uScan*0.9);
+  col *= 1.0 - sh; al = mix(al, 1.0, sh);
+  float rr0 = rs + 0.014; float rw = 0.018; float off = 0.013;
+  float cr = smoothstep(rw, 0.0, abs(length(p + vec2(off, 0.0)) - rr0));
+  float cg = smoothstep(rw, 0.0, abs(rp - rr0));
+  float cb = smoothstep(rw, 0.0, abs(length(p - vec2(off, 0.0)) - rr0));
+  vec3 ringc = vec3(max(cr, cg), cg, max(cb, cg));
+  glow(col, al, mix(ringc*1.3, lime*cg, uScan));
+  glow(col, al, lime*uScan*smoothstep(0.008, 0.0, abs(rp - rs))*0.9);
+  // Film grain, like the star layer's.
+  col += (hash(f*0.73 + fract(uT*0.37)*91.0) - 0.5)*0.05*al;
+  gl_FragColor = vec4(clamp(col, 0.0, al), al);
 }
 `;
