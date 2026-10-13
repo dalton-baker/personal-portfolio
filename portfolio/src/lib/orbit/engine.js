@@ -402,6 +402,13 @@ export class OrbitEngine {
 				p.r = rad;
 				el.style.setProperty('--r', rad.toFixed(1) + 'px');
 			}
+			// The body as you'd point at it: the planet itself, or a giant together with its rings (big moons
+			// orbit outside this, so the first-visit hint can sit right on top of the planet).
+			const disc = b.rings ? rad : (b.size / 2) * sc;
+			if (!(Math.abs(disc - p.disc) < 0.3)) {
+				p.disc = disc;
+				el.style.setProperty('--disc', disc.toFixed(1) + 'px');
+			}
 			// Night side faces away from the black hole.
 			const shadeRot = 'rotate(' + Math.atan2(y - oy, x - ox).toFixed(3) + 'rad)';
 			if (b.shaded && p.shade) p.shade.style.transform = shadeRot;

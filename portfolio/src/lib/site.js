@@ -7,7 +7,8 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  * shorter `label` is used for its name on the map (hover and scan labels).
  *
  * `body` is the card text: a string, or an array of paragraphs. [Text](/slug) inside it links to
- * another body or post. `contact` adds a Contact section above the card's links.
+ * another body or post. `sections` adds titled groups of paragraphs after it ({ title, body }), and
+ * `contact` adds a Contact section above the card's links.
  *
  * Orbit fields: `t` is the orbit radius from 0 (innermost) to 1 (outermost),
  * `phase` is the starting angle in radians, `size` is the diameter in px.
@@ -71,6 +72,16 @@ export const bodies = [
 			'I co-founded Reg X Timing in 2024 with my mentor and first boss in software engineering. We spent our first year building our race registration and timing platform.',
 			'In 2025, we timed our first event, the Pure Pactola open swim race. In 2026, we picked up a couple more clients and timed six races throughout the season.',
 			'It’s been pretty cool watching something we built from scratch turn into a real business.'
+		],
+		sections: [
+			{
+				title: 'Behind the Tech',
+				body: [
+					'We’ve built everything from the race registration platform and RFID timing hardware to the cloud services that process race results.',
+					'When someone crosses the finish line, our system reads their tag, processes the timing data, and publishes their results online within seconds.',
+					'Getting all those pieces working together reliably on race day has taken a couple years of development, testing, and refinement.'
+				]
+			}
 		],
 		links: [L('regxtiming.com', 'https://regxtiming.com')]
 	},

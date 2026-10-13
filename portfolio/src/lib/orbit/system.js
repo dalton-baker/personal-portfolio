@@ -75,6 +75,7 @@ function decorate(b) {
 	if (b.kind === 'moon') b.mspeed ??= 0.32 * Math.pow(0.9 / b.mt, 0.8);
 	b.label ??= b.name;
 	b.paras = toParas(b.body);
+	b.sections = (b.sections || []).map((sec) => ({ title: sec.title, paras: toParas(sec.body) }));
 	b.summary = b.paras[0].map((seg) => seg.text).join('');
 	b.facts = b.facts || [];
 	b.links = b.links || [];

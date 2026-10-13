@@ -61,7 +61,44 @@
 	let cameFrom = null;
 	let lastSlug = untrack(() => slug);
 
+	/**
+	 * First-visit hint: a "Click me" (or "Tap me") tag on a random planet, until a panel is opened. Opening
+	 * one sets a session flag so it doesn't come back during the visit.
+	 */
+	const HINT_KEY = 'map-hint-done';
+	const HINT_BODIES = orbiters.filter((b) => b.kind === 'planet' || b.kind === 'giant');
+	let hintId = $state(null);
+	let hintVerb = $state('Click');
+
+	function dismissHint() {
+		hintId = null;
+		try {
+			sessionStorage.setItem(HINT_KEY, '1');
+		} catch {
+			// Storage can be unavailable (private mode, blocked); the hint just goes away for this page view.
+		}
+	}
+
+	$effect(() => {
+		if (sel && hintId) dismissHint();
+	});
+
+	function startHint() {
+		let done = false;
+		try {
+			done = sessionStorage.getItem(HINT_KEY) === '1';
+		} catch {
+			// Treat unavailable storage as a first visit.
+		}
+		if (sel) dismissHint();
+		else if (!done) {
+			hintVerb = matchMedia('(pointer: coarse)').matches ? 'Tap' : 'Click';
+			hintId = HINT_BODIES[Math.floor(Math.random() * HINT_BODIES.length)].id;
+		}
+	}
+
 	onMount(() => {
+		startHint();
 		engine = new OrbitEngine({
 			root, glCanvas, fxCanvas, holeEl, els,
 			getState: () => ({ sel, host: hostId, reading, closing, scan }),
@@ -239,6 +276,7 @@
 				class="body {b.kind}"
 				class:active={b.kind === 'moon' && b.host.id === hostId}
 				class:is-sel={sel === b.id}
+				class:hinted={hintId === b.id}
 				href="/{b.id}"
 				aria-label={b.aria}
 				data-name={b.label}
@@ -257,6 +295,12 @@
 				</span>
 				<span class="label"><span class="lname">{b.label}</span></span>
 				<span class="tip" aria-hidden="true">{b.label}</span>
+				{#if hintId === b.id}
+					<span class="hint-tag" aria-hidden="true"
+						><span class="hint-text">{hintVerb} me</span
+						><svg class="hint-arrow" width="18" height="12" viewBox="0 0 18 12"><path d="M3.5 3h11L9 9z"></path></svg></span
+					>
+				{/if}
 			</a>
 		{/each}
 	</nav>
@@ -268,6 +312,8 @@
 		<div class="hdr-actions">{@render scanToggle()}</div>
 	</header>
 
+	<!-- A paragraph of { text, href? } segments. -->
+	{#snippet richText(para)}{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}{/snippet}
 	<!-- `primary` turns the first link into a "Visit site" button (or its `cta`), like a post's "Read post"; the address is already shown above it. -->
 	{#snippet linkButtons(links, primary = false)}
 		{#if links.length}
@@ -310,7 +356,13 @@
 				</div>
 				<h2>{card.name}</h2>
 				{#each card.paras as para, i (i)}
-					<p class="desc">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>
+					<p class="desc">{@render richText(para)}</p>
+				{/each}
+				{#each card.sections as sec (sec.title)}
+					<div class="card-h">{sec.title}</div>
+					{#each sec.paras as para, i (i)}
+						<p class="desc">{@render richText(para)}</p>
+					{/each}
 				{/each}
 				{#if card.facts.length}
 					<dl class="facts">
@@ -319,7 +371,7 @@
 				{/if}
 				{#if card.contact}
 					<div class="card-h">Contact</div>
-					<p class="desc contact">{card.contact}</p>
+					<p class="desc">{card.contact}</p>
 				{/if}
 				{@render linkButtons(card.links)}
 				{#if card.moons}
@@ -343,7 +395,7 @@
 											<p class="post-dek">{m.body}</p>
 											<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
 										{:else}
-											{#each m.paras as para, i (i)}<p class="post-dek">{#each para as seg, j (j)}{#if seg.href}<a href={seg.href}>{seg.text}</a>{:else}{seg.text}{/if}{/each}</p>{/each}
+											{#each m.paras as para, i (i)}<p class="post-dek">{@render richText(para)}</p>{/each}
 											{#if m.facts.length}
 												<dl class="facts">
 													{#each m.facts as f (f.k)}<div class="fact"><dt>{f.k}</dt><dd>{f.v}</dd></div>{/each}
