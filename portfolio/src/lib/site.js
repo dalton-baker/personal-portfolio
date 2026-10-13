@@ -3,7 +3,8 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
 /**
  * Everything on the system map except the blog posts (those live in $lib/posts).
  *
- * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ...
+ * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ... `name` titles its card; an optional
+ * shorter `label` is used for its name on the map (hover and scan labels).
  *
  * `body` is the card text: a string, or an array of paragraphs. [Text](/slug) inside it links to
  * another body or post. `contact` adds a Contact section above the card's links.
@@ -91,13 +92,13 @@ export const bodies = [
 		links: [L('tools.dalt.dev', 'https://tools.dalt.dev/')]
 	},
 	{
-		slug: 'cosmos-db-query-converter', kind: 'rock', name: 'Cosmos DB Query Converter', category: 'Package',
+		slug: 'cosmos-db-query-converter', kind: 'rock', name: 'Cosmos DB Query Converter', label: 'Cosmos Query NuGet', category: 'Package',
 		t: 0.36, phase: 3.1, size: 9, base: '#c9c1d6', dark: '#5a5268',
 		body: 'A lightweight NuGet package for writing native Cosmos DB SQL queries with automatic parameterization.',
 		links: [L('NuGet', 'https://www.nuget.org/packages/DBaker.CosmosDbQueryConverter')]
 	},
 	{
-		slug: 'dependency-registration-attributes', kind: 'rock', name: 'Dependency Registration Attributes', category: 'Package',
+		slug: 'dependency-registration-attributes', kind: 'rock', name: 'Dependency Registration Attributes', label: 'DI Attributes NuGet', category: 'Package',
 		t: 0.4, phase: 5.0, size: 11, base: '#a9b8ad', dark: '#4b5a4f',
 		body: 'A lightweight NuGet package that simplifies dependency injection by letting you register services using C# attributes.',
 		links: [L('NuGet', 'https://www.nuget.org/packages/DBaker.DepRegAttributes')]

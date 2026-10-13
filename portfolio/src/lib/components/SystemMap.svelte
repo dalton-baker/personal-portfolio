@@ -241,7 +241,7 @@
 				class:is-sel={sel === b.id}
 				href="/{b.id}"
 				aria-label={b.aria}
-				data-name={b.name}
+				data-name={b.label}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
 				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
@@ -255,8 +255,8 @@
 						<span class="sat" style={b.sat.style}><span class="dot" style={b.sat.dotStyle}><span class="shade" style={b.sat.shadeStyle}></span></span></span>
 					{/if}
 				</span>
-				<span class="label" style={b.labelStyle}><span class="lname">{b.name}</span></span>
-				<span class="tip" aria-hidden="true">{b.name}</span>
+				<span class="label"><span class="lname">{b.label}</span></span>
+				<span class="tip" aria-hidden="true">{b.label}</span>
 			</a>
 		{/each}
 	</nav>

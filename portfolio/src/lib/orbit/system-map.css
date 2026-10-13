@@ -37,7 +37,8 @@
 .sat{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none;will-change:transform}
 .rays{position:absolute;left:50%;top:50%;width:330%;height:330%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:0;background:repeating-conic-gradient(from 0deg,rgba(159,208,255,.9) 0 5deg,rgba(159,208,255,0) 5deg 30deg);-webkit-mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);animation:spin 14s linear infinite}
 @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-.label{position:absolute;left:50%;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;white-space:nowrap;pointer-events:none}
+/* Scan label, just right of the body's drawn extent (--r includes rings and big moons; set by the engine). */
+.label{position:absolute;left:calc(50% + var(--r,10px) + 12px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;white-space:nowrap;pointer-events:none}
 .lname{font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(241,238,247,.78);transition:color .15s}
 .body.is-sel .lname{color:#c8ff2e}
 @media (hover:hover){.body:hover .lname{color:#c8ff2e}}
@@ -59,9 +60,11 @@
 .hole-btn:focus-visible .hole-label,.hole-btn.is-sel .hole-label{opacity:1}
 @media (hover:hover){.hole-btn:hover .hole-label{opacity:1}}
 /* In scan mode it's always shown, styled like the other bodies' scan labels until hovered or selected. */
-.scan .hole-label{opacity:1}
-.scan .hole-btn:not(:focus-visible):not(.is-sel) .hole-label{color:rgba(241,238,247,.78);letter-spacing:.1em}
-@media (hover:hover){.scan .hole-btn:hover:not(.is-sel) .hole-label{color:#c8ff2e;letter-spacing:.12em}}
+/* Scan mode shows it like the other bodies' scan labels: always on, to the right, no plate, grey until
+   hovered or selected. */
+.scan .hole-label{opacity:1;left:calc(50% + var(--hr,30px) + 12px);top:50%;transform:translateY(-50%);margin:0;padding:0;background:none;letter-spacing:.1em}
+.scan .hole-btn:not(:focus-visible):not(.is-sel) .hole-label{color:rgba(241,238,247,.78)}
+@media (hover:hover){.scan .hole-btn:hover:not(.is-sel) .hole-label{color:#c8ff2e}}
 .fb{display:none}
 .nogl .fb{display:block;position:absolute;inset:31%;border-radius:50%;background:#000;box-shadow:0 0 0 3px #fff4d6,0 0 0 10px #ff5a1f,0 0 0 18px #c2187a,0 0 0 26px #3b0d5e}
 .hdr{position:absolute;left:36px;top:30px;max-width:400px;z-index:400;pointer-events:none}

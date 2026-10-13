@@ -396,7 +396,7 @@ export class OrbitEngine {
 			el.style.zIndex = String(zi);
 			const p = this.partsOf(el);
 			if (p.wrap) p.wrap.style.transform = 'scale(' + sc.toFixed(3) + ')';
-			// Drawn radius (including a ring or moon), so the frame and hover label clear the body at any zoom.
+			// Drawn radius (including a ring or moon), so the frame and labels clear the body at any zoom.
 			const rad = (b.rings ? b.ringsOuter * (b.size / 2) : b.sat ? b.sat.orbit + b.sat.size / 2 : b.size / 2) * sc;
 			if (!(Math.abs(rad - p.r) < 0.3)) {
 				p.r = rad;
