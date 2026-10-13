@@ -88,7 +88,10 @@ export const bodies = [
 	{
 		slug: 'web-tools', kind: 'rock', name: 'Web Tools', category: 'Tool',
 		t: 0.32, phase: 1.2, size: 10, base: '#b9b2a8', dark: '#56504a',
-		body: 'A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.',
+		body: [
+			'A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.',
+			'I mostly built this for myself. I got tired of searching for simple tools online and ending up on sketchy websites packed with ads. So I started making my own and putting them all in one place.'
+		],
 		links: [L('tools.dalt.dev', 'https://tools.dalt.dev/')]
 	},
 	{
