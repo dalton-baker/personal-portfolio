@@ -5,6 +5,7 @@
 	import { OrbitEngine } from '$lib/orbit/engine.js';
 	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
+	import { game } from '$lib/game';
 	import Lightbox from './Lightbox.svelte';
 	import { lightbox } from './lightbox.svelte.js';
 
@@ -28,9 +29,19 @@
 	let instant = $state(true);
 	let readX = $state(0);
 	let readY = $state(0);
+	/**
+	 * Gravity Well, the comet's game, open over the map (it lags the URL while its close animation plays).
+	 * It opens with an iris from where the comet was caught, or instantly when its page is loaded directly.
+	 */
+	let playing = $state(untrack(() => slug === game.slug));
+	let gameClosing = $state(false);
+	let gameInstant = $state(true);
+	let gameX = $state(0);
+	let gameY = $state(0);
+	let gameTimer;
 
 	const sel = $derived.by(() => {
-		if (!slug) return null;
+		if (!slug || slug === game.slug) return null;
 		if (isMoon(slug)) return slug;
 		if (slug === blog.id && moonSel) return moonSel;
 		return slug;
@@ -51,7 +62,7 @@
 		};
 	});
 
-	let root, starCanvas, glCanvas, fxCanvas, holeEl;
+	let root, starCanvas, glCanvas, fxCanvas, holeEl, cometEl;
 	let readerEl = $state();
 	let progEl = $state();
 	const els = {};
@@ -100,15 +111,18 @@
 	onMount(() => {
 		startHint();
 		engine = new OrbitEngine({
-			root, starCanvas, glCanvas, fxCanvas, holeEl, els,
-			getState: () => ({ sel, host: hostId, reading, closing, scan }),
+			root, starCanvas, glCanvas, fxCanvas, holeEl, cometEl, els,
+			getState: () => ({ sel, host: hostId, reading, cover: !!reading || playing, closing: closing || gameClosing, scan }),
 			onGLChange: (ok) => (noGL = !ok),
 			onReady: () => (ready = true)
 		});
 		engine.start();
+		// /?comet sends one across straight away.
+		if (new URLSearchParams(location.search).has('comet')) engine.launchComet();
 		return () => {
 			engine.destroy();
 			clearTimeout(closeTimer);
+			clearTimeout(gameTimer);
 		};
 	});
 
@@ -126,6 +140,17 @@
 	});
 
 	function onRoute(next) {
+		if (next === game.slug) {
+			openGame();
+			return;
+		}
+		if (playing && !gameClosing) {
+			gameClosing = true;
+			gameTimer = setTimeout(() => {
+				playing = false;
+				gameClosing = false;
+			}, 430);
+		}
 		const post = postSlug(next);
 		if (post) {
 			moonSel = null;
@@ -160,6 +185,27 @@
 			return;
 		}
 		if (next !== blog.id) moonSel = null;
+	}
+
+	/** Opens the game with an iris from the comet that was clicked (or the middle of the map). */
+	function openGame() {
+		clearTimeout(gameTimer);
+		if (playing && !gameClosing) return;
+		const p = engine?.cometPos() ?? { x: root.clientWidth / 2, y: root.clientHeight / 2 };
+		gameX = Math.min(Math.max(p.x, 0), root.clientWidth);
+		gameY = Math.min(Math.max(p.y, 0), root.clientHeight);
+		gameInstant = false;
+		gameClosing = false;
+		playing = true;
+		engine?.catchComet();
+		engine?.markRead();
+	}
+
+	/** Back to the map, stepping back through history when that's where the game was opened from. */
+	function closeGame() {
+		if (!playing || gameClosing) return;
+		if (cameFrom === '/') history.back();
+		else goto('/', { noScroll: true });
 	}
 
 	function resetReaderScroll() {
@@ -222,7 +268,7 @@
 	}
 
 	/** Anything on the map that isn't empty space: bodies, buttons, links, the card, the reader, the lightbox. */
-	const NOT_SPACE = 'a, button, .card, .mpanel, .reader, .lb';
+	const NOT_SPACE = 'a, button, .card, .mpanel, .reader, .game, .lb';
 
 	/** Clicking empty space on the map leaves whatever is selected and returns to the full system view. */
 	function onMapClick(e) {
@@ -233,6 +279,7 @@
 	function onKey(e) {
 		if (e.key !== 'Escape') return;
 		if (lightbox.src) lightbox.src = '';
+		else if (playing) closeGame();
 		else if (reading) closeRead();
 		else if (sel) closeCard();
 	}
@@ -309,6 +356,19 @@
 				{/if}
 			</a>
 		{/each}
+		<!-- The comet: hidden until the engine sends one across (now and then, while the whole map is in view). -->
+		<a
+			bind:this={cometEl}
+			class="body comet"
+			href="/{game.slug}"
+			aria-label="A comet. Catch it to play {game.title}"
+			data-name="Comet"
+			style="display:none"
+		>
+			<span class="comet-core"></span>
+			<span class="label"><span class="lname">Comet</span></span>
+			<span class="tip" aria-hidden="true">Comet</span>
+		</a>
 	</nav>
 
 	<header class="hdr">
@@ -464,6 +524,20 @@
 				</div>
 			</div>
 		</article>
+	{/if}
+
+	{#if playing}
+		<div
+			class="game"
+			class:out={gameClosing}
+			class:instant={gameInstant}
+			style={gameClosing ? '--ox:50%;--oy:50%' : `--ox:${Math.round(gameX)}px;--oy:${Math.round(gameY)}px`}
+		>
+			<!-- Loaded on demand, so the map doesn't carry the game's code. -->
+			{#await import('$lib/game/GravityWell.svelte') then { default: GravityWell }}
+				<GravityWell onclose={closeGame} />
+			{/await}
+		</div>
 	{/if}
 
 	<Lightbox />
