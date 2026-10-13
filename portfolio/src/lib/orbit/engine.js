@@ -17,11 +17,16 @@ const GL_REACH = 1.75;
 const FPS_DESKTOP = 60;
 const FPS_TOUCH = 30;
 /**
- * Parallax: how far (CSS px) the system and, less, the starfield drift when the pointer is at the edge of
- * the map, so the stars read as farther away. It follows the mouse, or a finger while it's touching.
+ * Parallax: the system and, less, the starfield (so the stars read as farther away) drift against the
+ * pointer's movement, then settle back once it stops. It follows movement rather than where the pointer
+ * is, so a mouse arriving at the edge of the page doesn't slide the view across. A finger dragging on the
+ * map does the same. SYSTEM and STARS are the largest drift (CSS px), GAIN is how much of that a move
+ * across the whole map gives, and SETTLE is how quickly (seconds) the drift eases back.
  */
-const PARALLAX_SYSTEM = 14;
-const PARALLAX_STARS = 5;
+const PARALLAX_SYSTEM = 10;
+const PARALLAX_STARS = 4;
+const PARALLAX_GAIN = 2;
+const PARALLAX_SETTLE = 1.2;
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
@@ -79,8 +84,10 @@ export class OrbitEngine {
 		this.hoverEl = null;
 		this.hoverT0 = 0;
 		this.parts = new Map();
-		/** Parallax deflection, -1..1 on each axis: eased (x, y) toward the target (tx, ty). */
+		/** Parallax drift, -1..1 on each axis: eased (x, y) toward the target (tx, ty), which pointer moves push. */
 		this.par = { x: 0, y: 0, tx: 0, ty: 0 };
+		/** Where the pointer was at its last move, or null until it moves over the map (or a finger lands). */
+		this.parPrev = null;
 
 		let seed = 11;
 		const rnd = () => {
@@ -155,27 +162,30 @@ export class OrbitEngine {
 		const sx = r.width ? this.W / r.width : 1;
 		const sy = r.height ? this.H / r.height : 1;
 		const x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sy;
-		if (!this.reduced) {
-			this.par.tx = clamp1((x / this.W) * 2 - 1);
-			this.par.ty = clamp1((y / this.H) * 2 - 1);
+		// Each move nudges the parallax by how far the pointer went; the first one only records where it is.
+		const prev = this.parPrev;
+		if (prev && !this.reduced) {
+			this.par.tx = clamp1(this.par.tx + ((x - prev.x) / this.W) * PARALLAX_GAIN);
+			this.par.ty = clamp1(this.par.ty + ((y - prev.y) / this.H) * PARALLAX_GAIN);
 		}
+		this.parPrev = { x, y };
 		// Only a mouse gets the hover reticle; a finger only moves the parallax while it's down.
 		this.ptr = e.pointerType === 'touch' ? null : { x, y };
 	}
 
-	/** A finger landing on the map aims the parallax there; lifting it lets the view drift back. */
+	/** A finger landing on the map is where its drag starts; once it lifts, the view settles back. */
 	pointerDown(e) {
 		if (e.pointerType === 'touch') this.pointerMove(e);
 	}
 
 	pointerUp(e) {
-		if (e.pointerType === 'touch') this.par.tx = this.par.ty = 0;
+		if (e.pointerType === 'touch') this.parPrev = null;
 	}
 
 	pointerLeave() {
 		this.ptr = null;
 		this.hoverEl = null;
-		this.par.tx = this.par.ty = 0;
+		this.parPrev = null;
 	}
 
 	pointerOver(e) {
@@ -448,8 +458,11 @@ export class OrbitEngine {
 		cam.cx += (tcx - cam.cx) * k;
 		cam.cy += (tcy - cam.cy) * k;
 		const Z = cam.z;
-		// Parallax: ease toward the pointer target, then shift the whole system opposite to it.
-		const par = this.par, kp = 1 - Math.exp(-dt * 4);
+		// Parallax: the drift settles back toward the centre and the view eases after it, shifting the whole
+		// system against the pointer's movement.
+		const par = this.par, settle = Math.exp(-dt / PARALLAX_SETTLE), kp = 1 - Math.exp(-dt * 4);
+		par.tx *= settle;
+		par.ty *= settle;
 		par.x += (par.tx - par.x) * kp;
 		par.y += (par.ty - par.y) * kp;
 		const amp = mob ? 0.7 : 1;
