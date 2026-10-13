@@ -1,4 +1,5 @@
 import { kep, all, byId, moons, hosts, pulsar, belt } from './system.js';
+import { Starfield, STAR_FPS } from './starfield.js';
 
 /** The canvases render at the device's pixel ratio, up to 3x (current phones). */
 const MAX_DPR = 3;
@@ -15,14 +16,6 @@ const GL_REACH = 1.75;
 /** Frame-rate caps. The motion is slow orbits and a swirl, so lower rates look nearly identical. */
 const FPS_DESKTOP = 60;
 const FPS_TOUCH = 30;
-/** The starfield redraws at this rate for its twinkle and grain; the parallax still moves it every frame. */
-const STAR_FPS = 20;
-/** Starfield grid (CSS px): about 45% of the cells hold a star, a few of them four-pointed. */
-const STAR_CELL = 46;
-/** How far the star canvas overhangs the map on each side (see .starc), so the parallax never shows its edge. */
-const STAR_PAD = 8;
-/** Film grain tile, in CSS px. */
-const GRAIN = 256;
 /**
  * Parallax: how far (CSS px) the system and, less, the starfield drift when the pointer is at the edge of
  * the map, so the stars read as farther away. It follows the mouse, or a finger while it's touching.
@@ -32,14 +25,9 @@ const PARALLAX_STARS = 5;
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
-const smooth = (e0, e1, x) => {
-	const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
-	return t * t * (3 - 2 * t);
-};
-
 /**
  * Drives the system map every animation frame: orbits, camera and three canvases. From the back: the
- * starfield (laid out on resize, redrawn STAR_FPS times a second to twinkle), the WebGL black hole (a box
+ * starfield (starfield.js, drawn in a worker where the browser allows), the WebGL black hole (a box
  * around the hole, transparent outside the disk) and the 2D effects (orbits, belt, rings, reticle). It
  * writes transforms straight onto the body elements; Svelte only renders the markup and the UI around it.
  */
@@ -81,9 +69,12 @@ export class OrbitEngine {
 		this.isMobile = false;
 		/** Canvas pixels per CSS pixel (the device pixel ratio, capped). */
 		this.dpr = 1;
-		this.stars = [];
-		this.starAt = -1e9;
 		this.starTf = '';
+		/** Starfield state last sent to the worker (or applied here), so it's only sent on changes. */
+		this.starScan = false;
+		this.starRun = true;
+		this.starAt = 0;
+		this.starDt = 0;
 		this.ptr = null;
 		this.hoverEl = null;
 		this.hoverT0 = 0;
@@ -100,8 +91,10 @@ export class OrbitEngine {
 		for (let i = 0; i < 360; i++) {
 			const g = (rnd() + rnd() + rnd() - 1.5) / 1.5;
 			const t = belt.t + g * belt.spread;
-			this.belt.push({ t, ph: rnd() * Math.PI * 2, sp: kep(t) * (0.94 + rnd() * 0.12), s: 1 + rnd() * 1.6, b: 0.35 + rnd() * 0.65 });
+			this.belt.push({ t, ph: rnd() * Math.PI * 2, sp: kep(t) * (0.94 + rnd() * 0.12), s: 1 + rnd() * 1.6, b: Math.round((0.35 + rnd() * 0.65) * 10) / 10 });
 		}
+		// Grouped by brightness, so drawing them only changes the canvas alpha a handful of times a frame.
+		this.belt.sort((p, q) => p.b - q.b);
 	}
 
 	start() {
@@ -119,14 +112,12 @@ export class OrbitEngine {
 		this.glCanvas.addEventListener('webglcontextrestored', this.onContextRestored);
 		this.onVisible = () => {
 			if (!document.hidden) this.frameClock = this.lastFrame = performance.now();
+			this.runStars(!document.hidden);
 		};
 		document.addEventListener('visibilitychange', this.onVisible);
 		this.initGL();
 		if (this.fxCanvas) this.ctx = this.fxCanvas.getContext('2d');
-		if (this.starCanvas) {
-			this.sctx = this.starCanvas.getContext('2d', { alpha: false });
-			this.grain = this.sctx && makeGrain(this.sctx);
-		}
+		if (this.starCanvas) this.initStars();
 		this.measure();
 		this.ro = new ResizeObserver(() => this.measure());
 		this.ro.observe(this.root);
@@ -140,6 +131,7 @@ export class OrbitEngine {
 
 	destroy() {
 		cancelAnimationFrame(this.raf);
+		this.starWorker?.terminate();
 		this.ro?.disconnect();
 		this.glCanvas.removeEventListener('webglcontextlost', this.onContextLost);
 		this.glCanvas.removeEventListener('webglcontextrestored', this.onContextRestored);
@@ -221,17 +213,36 @@ export class OrbitEngine {
 			this.fxCanvas.width = Math.round(this.W * dpr);
 			this.fxCanvas.height = Math.round(this.H * dpr);
 		}
-		if (this.starCanvas) {
-			const w = this.W + STAR_PAD * 2, h = this.H + STAR_PAD * 2;
-			this.starCanvas.width = Math.round(w * dpr);
-			this.starCanvas.height = Math.round(h * dpr);
-			if (dpr !== this.spriteDpr) {
-				this.sprites = makeStarSprites(dpr);
-				this.spriteDpr = dpr;
+		this.starWorker?.postMessage({ type: 'size', w: this.W, h: this.H, dpr });
+		this.starfield?.size(this.W, this.H, dpr);
+	}
+
+	/**
+	 * The starfield draws in a worker on an OffscreenCanvas where the browser supports it (Chrome 69+,
+	 * Firefox 105+, Safari 16.4+), keeping its redraws off the main thread; otherwise it draws here.
+	 */
+	initStars() {
+		const c = this.starCanvas;
+		if (typeof c.transferControlToOffscreen === 'function' && typeof Worker === 'function') {
+			try {
+				const worker = new Worker(new URL('./starfield.worker.js', import.meta.url), { type: 'module' });
+				const off = c.transferControlToOffscreen();
+				worker.postMessage({ type: 'init', canvas: off, reduced: this.reduced }, [off]);
+				this.starWorker = worker;
+				return;
+			} catch {
+				// Fall through to drawing here (the canvas is only handed over once the worker exists).
 			}
-			this.stars = layoutStars(w, h);
-			this.starAt = -1e9;
 		}
+		this.starfield = new Starfield(c, this.reduced);
+	}
+
+	/** Pauses the starfield (reader covering the map, hidden tab) or lets it run again. */
+	runStars(on) {
+		if (on === this.starRun) return;
+		this.starRun = on;
+		this.starWorker?.postMessage({ type: 'run', on });
+		if (on) this.starAt = performance.now();
 	}
 
 	/** Builds the shader program; also runs again after a lost context is restored. Returns whether WebGL works. */
@@ -352,8 +363,10 @@ export class OrbitEngine {
 		if (st.reading && !st.closing && this.realT - this.readT0 > 1.1) {
 			// The reader covers the map, so stop rendering until it closes.
 			this.frameClock = this.lastFrame = now;
+			this.runStars(false);
 			return;
 		}
+		this.runStars(true);
 		const interval = 1000 / (this.isMobile || this.coarse ? FPS_TOUCH : FPS_DESKTOP);
 		const sinceClock = now - this.frameClock;
 		if (sinceClock < interval - 1.5) return;
@@ -423,6 +436,7 @@ export class OrbitEngine {
 			tcy = this.H / 2;
 		}
 		const cam = this.cam;
+		this.camZ = tz;
 		if (!cam.init) {
 			cam.x = tfx; cam.y = tfy; cam.z = tz; cam.cx = tcx; cam.cy = tcy;
 			cam.init = true;
@@ -453,6 +467,7 @@ export class OrbitEngine {
 			b.sy = y;
 			const el = this.els[b.id];
 			if (!el) continue;
+			const p = this.partsOf(el);
 			const depth = L.ty < 0.98 ? b.s : 0;
 			// Ringed giants and binary pairs scale with the camera, like their rings and moon orbits, so they keep
 			// their proportions at any zoom.
@@ -470,10 +485,29 @@ export class OrbitEngine {
 				if (!active) op = focus ? 0.16 : 0.45;
 				zi = Math.round(200 + b.host.s * 100) + 2;
 			} else if (focus && b !== focus) op *= 0.35;
-			el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)';
-			el.style.opacity = op.toFixed(3);
-			el.style.zIndex = String(zi);
-			const p = this.partsOf(el);
+			// Styles are only written when they change (position to 0.1px, opacity to 1%), since every write
+			// restyles the element. A body well off screen (the camera zoomed in elsewhere) is moved off once and
+			// then left alone until it comes back; the margin covers rings, labels and the hint.
+			const tx = Math.round(x * 10), ty = Math.round(y * 10);
+			const margin = (b.rings ? b.ringsOuter * b.size : b.size) * sc + 240;
+			const off = x < -margin || y < -margin || x > this.W + margin || y > this.H + margin;
+			if (off && p.off) continue;
+			p.off = off;
+			if (tx !== p.tx || ty !== p.ty) {
+				p.tx = tx;
+				p.ty = ty;
+				el.style.transform = 'translate3d(' + tx / 10 + 'px,' + ty / 10 + 'px,0)';
+			}
+			if (off) continue;
+			const o = Math.round(op * 100);
+			if (o !== p.o) {
+				p.o = o;
+				el.style.opacity = String(o / 100);
+			}
+			if (zi !== p.zi) {
+				p.zi = zi;
+				el.style.zIndex = String(zi);
+			}
 			// A planet repaints at its new size whenever its scale changes (rather than stretching a bitmap, which
 			// blurs it when the camera zooms in), so skip changes too small to see.
 			if (!(Math.abs(sc - p.sc) < p.sc * 0.004)) {
@@ -494,15 +528,21 @@ export class OrbitEngine {
 				p.disc = disc;
 				el.style.setProperty('--disc', disc.toFixed(1) + 'px');
 			}
-			// Night side faces away from the black hole (turned in steps of about half a degree, for the same reason).
+			// Night side faces away from the black hole. It turns in steps that move its edge by half a pixel at
+			// most (a few degrees on a small planet), for the same reason.
 			const ang = Math.atan2(y - oy, x - ox);
-			const turn = !(Math.abs(ang - p.ang) < 0.01);
+			const turn = !(Math.abs(ang - p.ang) < Math.min(0.05, 1 / Math.max(1, b.size * sc)));
 			if (turn) p.ang = ang;
 			const shadeRot = 'rotate(' + p.ang.toFixed(3) + 'rad)';
 			if (turn && b.shaded && p.shade) p.shade.style.transform = shadeRot;
 			if (p.sat) {
 				const s = b.sat, th = s.phase + s.speed * this.realT;
-				p.sat.style.transform = 'translate(' + (Math.cos(th) * s.orbit).toFixed(2) + 'px,' + (Math.sin(th) * s.orbit * L.ty).toFixed(2) + 'px)';
+				const mx = Math.round(Math.cos(th) * s.orbit * 20), my = Math.round(Math.sin(th) * s.orbit * L.ty * 20);
+				if (mx !== p.mx || my !== p.my) {
+					p.mx = mx;
+					p.my = my;
+					p.sat.style.transform = 'translate(' + mx / 20 + 'px,' + my / 20 + 'px)';
+				}
 				if (turn && p.satShade) p.satShade.style.transform = shadeRot;
 			}
 		}
@@ -521,7 +561,12 @@ export class OrbitEngine {
 				this.holeR = hr;
 				s.setProperty('--hr', hr.toFixed(1) + 'px');
 			}
-			this.holeEl.style.transform = 'translate3d(' + ox.toFixed(1) + 'px,' + oy.toFixed(1) + 'px,0)';
+			const hx = Math.round(ox * 10), hy = Math.round(oy * 10);
+			if (hx !== this.holeX || hy !== this.holeY) {
+				this.holeX = hx;
+				this.holeY = hy;
+				this.holeEl.style.transform = 'translate3d(' + hx / 10 + 'px,' + hy / 10 + 'px,0)';
+			}
 		}
 		this.drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob);
 		if (this.starCanvas) {
@@ -533,55 +578,18 @@ export class OrbitEngine {
 				this.starTf = tf;
 				this.starCanvas.style.transform = tf;
 			}
-			if (now - this.starAt >= 1000 / STAR_FPS - 2) {
+			if (st.scan !== this.starScan) {
+				this.starScan = st.scan;
+				this.starWorker?.postMessage({ type: 'scan', on: st.scan });
+				if (this.starfield) this.starfield.scanTarget = st.scan ? 1 : 0;
+			}
+			if (this.starfield && now - this.starAt >= 1000 / STAR_FPS - 2) {
+				this.starfield.frame(Math.min(0.1, (now - this.starAt) / 1000));
 				this.starAt = now;
-				this.drawStars();
 			}
 		}
 		if (this.gl) this.drawGL(L, Z, ox, oy);
 		if (this.frame === 1) this.onReady();
-	}
-
-	/**
-	 * The starfield: background and film grain, then the stars added on top (as light, like the shader used
-	 * to), each twinkling at its own pace. Scan mode dims the small stars and turns the bright ones lime.
-	 */
-	drawStars() {
-		const g = this.sctx, S = this.sprites;
-		if (!g || !S) return;
-		const d = this.dpr, c = this.starCanvas;
-		g.setTransform(d, 0, 0, d, 0, 0);
-		g.globalCompositeOperation = 'source-over';
-		g.globalAlpha = 1;
-		g.imageSmoothingEnabled = false;
-		// The grain tile jumps to a new offset on every redraw, so it shimmers.
-		const gx = this.reduced ? 0 : Math.floor(Math.random() * GRAIN), gy = this.reduced ? 0 : Math.floor(Math.random() * GRAIN);
-		g.translate(-gx, -gy);
-		g.fillStyle = this.grain;
-		g.fillRect(gx, gy, c.width / d, c.height / d);
-		g.setTransform(1, 0, 0, 1, 0, 0);
-		g.globalCompositeOperation = 'lighter';
-		const t = this.realT, sv = this.scanV, dim = 1 - sv * 0.5, lime = sv * 0.8;
-		for (const s of this.stars) {
-			const tw = 0.55 + 0.45 * Math.sin(t * s.f + s.ph);
-			const x = Math.round(s.x * d), y = Math.round(s.y * d);
-			if (s.spark) {
-				const sp = S.spark(s.spark);
-				if (lime < 0.99) {
-					g.globalAlpha = tw * (1 - lime);
-					g.drawImage(sp.white.cv, x - sp.white.c, y - sp.white.c);
-				}
-				if (lime > 0.01) {
-					g.globalAlpha = tw * lime;
-					g.drawImage(sp.lime.cv, x - sp.lime.c, y - sp.lime.c);
-				}
-			} else {
-				g.globalAlpha = tw * s.b * dim;
-				g.drawImage(S.dot.cv, x - S.dot.c, y - S.dot.c);
-			}
-		}
-		g.globalAlpha = 1;
-		g.globalCompositeOperation = 'source-over';
 	}
 
 	/**
@@ -606,13 +614,17 @@ export class OrbitEngine {
 			box.shown = true;
 			c.style.display = '';
 		}
-		const bw0 = x1 - x0, bh0 = y1 - y0;
 		const budget = this.isMobile || this.coarse ? GL_BUDGET_TOUCH : GL_BUDGET_DESKTOP;
-		const q = Math.min(d * GL_LEVELS[this.glLevel], Math.sqrt(budget / (bw0 * bh0)), this.glMax / bw0, this.glMax / bh0);
+		const res = (w, h) => Math.min(d * GL_LEVELS[this.glLevel], Math.sqrt(budget / (w * h)), this.glMax / w, this.glMax / h);
+		const bw0 = x1 - x0, bh0 = y1 - y0, q = res(bw0, bh0);
 		const bw = Math.ceil(bw0 * q), bh = Math.ceil(bh0 * q);
 		if (bw > box.w || bh > box.h || bw * bh < box.w * box.h * 0.25) {
-			box.w = Math.min(Math.ceil((bw * 1.15) / 16) * 16, this.glMax);
-			box.h = Math.min(Math.ceil((bh * 1.15) / 16) * 16, this.glMax);
+			// Make room for where the camera is heading as well: a zoom grows the box every frame, and each
+			// reallocation can cost a frame.
+			const tr = L.disk * this.camZ * GL_REACH + 2;
+			const tw0 = Math.min(2 * tr, this.W), th0 = Math.min(2 * tr * L.ty, this.H), tq = res(tw0, th0);
+			box.w = Math.min(Math.ceil((Math.max(bw, tw0 * tq) * 1.15) / 16) * 16, this.glMax);
+			box.h = Math.min(Math.ceil((Math.max(bh, th0 * tq) * 1.15) / 16) * 16, this.glMax);
 			c.width = box.w;
 			c.height = box.h;
 			c.style.width = box.w + 'px';
@@ -683,13 +695,17 @@ export class OrbitEngine {
 		ctx.lineWidth = 1;
 		const span = L.rmax - L.rmin;
 		ctx.fillStyle = sv > 0.5 ? '#c8ff2e' : '#b9b2a8';
-		const bsz = 0.85 + 0.3 * (Z - 1);
+		const bsz = 0.85 + 0.3 * (Z - 1), fa = (focus ? 0.4 : 1) * (sv > 0.5 ? 0.6 : 1);
+		let lastB = -1;
 		for (const p of this.belt) {
 			const r = (L.rmin + span * p.t) * Z;
 			const th = p.ph + p.sp * this.simT;
 			const x = ox + r * Math.cos(th), y = oy + r * L.ty * Math.sin(th);
 			if (x < -4 || y < -4 || x > W + 4 || y > H + 4) continue;
-			ctx.globalAlpha = (0.3 + 0.5 * p.b) * (focus ? 0.4 : 1) * (sv > 0.5 ? 0.6 : 1);
+			if (p.b !== lastB) {
+				lastB = p.b;
+				ctx.globalAlpha = (0.3 + 0.5 * p.b) * fa;
+			}
 			const sz = p.s * bsz * (mob ? 0.8 : 1);
 			ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
 		}
@@ -814,98 +830,6 @@ export class OrbitEngine {
 			}
 		}
 	}
-}
-
-/** A random sequence fixed by a starfield cell, so the stars stay put when the map is resized. */
-function cellRandom(i, j) {
-	let s = (Math.imul(i, 73856093) ^ Math.imul(j, 19349663) ^ 0x5bd1e995) >>> 0;
-	return () => {
-		s = (s + 0x6d2b79f5) >>> 0;
-		let t = s;
-		t = Math.imul(t ^ (t >>> 15), t | 1);
-		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-}
-
-/**
- * Stars for a w x h (CSS px) area, at most one per grid cell: most are small dots of varying brightness, a
- * few are four-pointed. `f` and `ph` set the twinkle's pace and phase.
- */
-function layoutStars(w, h) {
-	const stars = [];
-	for (let j = 0; j * STAR_CELL < h; j++) {
-		for (let i = 0; i * STAR_CELL < w; i++) {
-			const r = cellRandom(i, j);
-			const k = r();
-			if (k <= 0.55) continue;
-			const star = { x: (i + 0.2 + 0.6 * r()) * STAR_CELL, y: (j + 0.2 + 0.6 * r()) * STAR_CELL, f: 0.6 + k * 2, ph: k * 40 };
-			if (k > 0.968) star.spark = Math.round((4 + 4 * r()) * 2) / 2; // arm length (px), in half-pixel steps
-			else star.b = 0.25 + 0.6 * r();
-			stars.push(star);
-		}
-	}
-	return stars;
-}
-
-/**
- * A star sprite at device resolution, centred on a pixel. `shape(x, y)` is its brightness at an offset in
- * CSS px; `reach` is how far that goes.
- */
-function starSprite(dpr, reach, rgb, shape) {
-	const c = Math.ceil(reach * dpr), n = c * 2 + 1;
-	const cv = document.createElement('canvas');
-	cv.width = cv.height = n;
-	const g = cv.getContext('2d');
-	const img = g.createImageData(n, n), px = img.data;
-	for (let y = 0; y < n; y++) {
-		for (let x = 0; x < n; x++) {
-			const o = (y * n + x) * 4;
-			px[o] = rgb[0];
-			px[o + 1] = rgb[1];
-			px[o + 2] = rgb[2];
-			px[o + 3] = Math.round(shape((x - c) / dpr, (y - c) / dpr) * 255);
-		}
-	}
-	g.putImageData(img, 0, 0);
-	return { cv, c };
-}
-
-/** The small round star, and the four-pointed ones (made on first use for each arm length, in white and in lime). */
-function makeStarSprites(dpr) {
-	const sparks = new Map();
-	const sparkShape = (sz) => (x, y) => {
-		const ax = Math.abs(x), ay = Math.abs(y);
-		return Math.max(smooth(0.9, 0, ax) * smooth(sz, 0, ay), smooth(0.9, 0, ay) * smooth(sz, 0, ax), smooth(1.7, 0.6, Math.hypot(x, y)));
-	};
-	return {
-		dot: starSprite(dpr, 1.1, [217, 217, 255], (x, y) => smooth(1.1, 0.2, Math.hypot(x, y))),
-		spark(sz) {
-			let s = sparks.get(sz);
-			if (!s) {
-				s = { white: starSprite(dpr, sz, [242, 237, 255], sparkShape(sz)), lime: starSprite(dpr, sz, [200, 255, 46], sparkShape(sz)) };
-				sparks.set(sz, s);
-			}
-			return s;
-		}
-	};
-}
-
-/** A tile of the background colour with film grain (up to 2.5% brighter or darker per CSS px), as a repeating pattern. */
-function makeGrain(g) {
-	const cv = document.createElement('canvas');
-	cv.width = cv.height = GRAIN;
-	const c = cv.getContext('2d');
-	const img = c.createImageData(GRAIN, GRAIN), px = img.data;
-	for (let o = 0; o < px.length; o += 4) {
-		const v = (Math.random() - 0.5) * 12.75;
-		px[o] = 7 + v;
-		px[o + 1] = 6 + v;
-		px[o + 2] = 11 + v;
-		px[o + 3] = 255;
-	}
-	c.putImageData(img, 0, 0);
-	return g.createPattern(cv, 'repeat');
 }
 
 /**

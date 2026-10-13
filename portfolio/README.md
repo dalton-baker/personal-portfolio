@@ -32,4 +32,8 @@ Every body and post is its own prerendered page, so links to them load straight 
 - `src/lib/orbit/engine.js` runs the per-frame animation: orbits, camera and three canvases, from the
   back: the starfield, the WebGL black hole (a box around the hole, at full resolution) and the 2D
   effects (orbits, belt, rings). Planets and moons are HTML elements it moves and scales.
+- `src/lib/orbit/starfield.js` draws the stars and film grain, in a worker
+  (`starfield.worker.js`, on an OffscreenCanvas) where the browser supports it.
+- `src/lib/fonts/` holds the self-hosted fonts, trimmed to the weights and characters the site uses
+  by `scripts/trim-fonts.py` (instructions at the top of the script).
 - `src/lib/orbit/system-map.css` holds the map styles, ported from the design mockup.
