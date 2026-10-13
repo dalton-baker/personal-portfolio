@@ -428,6 +428,14 @@ export class Sim {
 	}
 
 	toggleSandbox() {
+		// Empty space is sandbox only (there's nothing to hold a lane around), so back in the lanes the black
+		// hole returns.
+		if (this.sandbox && this.core === 'empty') {
+			this.setCore('hole');
+			this.sandbox = false;
+			this.say('Back to the lanes, around a black hole again.');
+			return;
+		}
 		this.sandbox = !this.sandbox;
 		this.complete = false;
 		this.say(this.sandbox ? 'Sandbox. No rules, only Newton.' : 'Back to the lanes.');
