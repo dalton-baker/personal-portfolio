@@ -96,9 +96,17 @@ export class CometTail {
 		return g;
 	}
 
-	/** Draws both tails and the glow around the nucleus at (x, y); `px` is one screen pixel in these units. */
-	draw(ctx, x, y, px) {
-		const u = this.unit, s = Math.max(0.3, this.strength), d = Math.hypot(x, y) || 1, ax = x / d, ay = y / d;
+	/**
+	 * Draws both tails and the glow around the nucleus at (x, y); `px` is one screen pixel in these units.
+	 * The tails point away from (0, 0) unless a direction (ax, ay) is given.
+	 */
+	draw(ctx, x, y, px, ax, ay) {
+		if (ax == null || (!ax && !ay)) {
+			const d = Math.hypot(x, y) || 1;
+			ax = x / d;
+			ay = y / d;
+		}
+		const u = this.unit, s = Math.max(0.3, this.strength);
 		const len = u * (0.75 + 0.85 * s), w0 = Math.max(u * 0.075, 5 * px);
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';

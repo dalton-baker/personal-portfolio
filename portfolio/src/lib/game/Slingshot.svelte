@@ -32,7 +32,7 @@
 	let trayOpen = $state(false);
 
 	function read() {
-		return { core: sim.core, payload: sim.payload, level: sim.level, sandbox: sim.sandbox, complete: sim.complete, finished: sim.finished, revs: sim.revs, bound: sim.bound, toast: sim.toast };
+		return { core: sim.core, payload: sim.payload, level: sim.level, sandbox: sim.sandbox, complete: sim.complete, finished: sim.finished, revs: sim.revs, bound: sim.bound, bodies: sim.bodies.length, toast: sim.toast };
 	}
 
 	function sync() {
@@ -222,7 +222,7 @@
 			{#if ui.sandbox}
 				<div class="tag">Sandbox</div>
 				<div class="gw-name">No goals. Just physics.</div>
-				<div class="gw-meta">{ui.bound} bound to the core</div>
+				<div class="gw-meta">{ui.core === 'empty' ? ui.bodies + ' in play' : ui.bound + ' bound to the core'}</div>
 			{:else}
 				<div class="tag">Level {ui.level + 1} / {LEVELS.length}</div>
 				<div class="gw-name">{lv.name}</div>

@@ -215,7 +215,18 @@ function drawFlatHole(c, R) {
 
 function drawCore(c, sim, t, px, gl) {
 	const id = sim.core;
-	if (id === 'hole') {
+	if (id === 'empty') {
+		// Just a faint crosshair marking the middle.
+		const k = 7 * px;
+		c.strokeStyle = 'rgba(241,238,247,0.25)';
+		c.lineWidth = px;
+		c.beginPath();
+		c.moveTo(-k, 0);
+		c.lineTo(k, 0);
+		c.moveTo(0, -k);
+		c.lineTo(0, k);
+		c.stroke();
+	} else if (id === 'hole') {
 		if (!gl) drawFlatHole(c, 30);
 	} else if (id === 'star') drawStar(c, t, 0, 0, 40);
 	else if (id === 'giant') drawGiant(c, 46);
@@ -322,13 +333,14 @@ export function drawScene(c, sim, view, drag, t, dt, gl) {
 		c.globalAlpha = 1;
 	}
 
-	// Comets' tails, pointing away from the core.
+	// Comets' tails, pointing away from the core (or, in empty space, back along their path).
 	for (const b of sim.bodies) {
 		if (b.kind !== 'comet') continue;
 		let tail = tails.get(b);
 		if (!tail) tails.set(b, (tail = new CometTail(80)));
-		tail.update(dt, b.x, b.y, b.vx, b.vy, cometStrength(Math.hypot(b.x, b.y), 140));
-		tail.draw(c, b.x, b.y, px);
+		const empty = sim.core === 'empty';
+		tail.update(dt, b.x, b.y, b.vx, b.vy, empty ? 0.6 : cometStrength(Math.hypot(b.x, b.y), 140));
+		tail.draw(c, b.x, b.y, px, empty ? tail.bx : undefined, empty ? tail.by : undefined);
 	}
 
 	// Bodies, with the selection frame on locked ones and a progress arc while one's in the lane.
