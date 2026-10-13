@@ -164,6 +164,14 @@
 /* "Read post" is a button in the mockup and inherits its 16px font from .bh button; it is a link here, so restate that. */
 .bh .lnk.primary{border-color:#ff2e88;background:#ff2e88;color:#07060b;cursor:pointer;font:400 16px/normal 'Geist Mono',ui-monospace,monospace}
 @media (hover:hover){.bh .lnk.primary:hover{background:#c8ff2e;border-color:#c8ff2e}}
+/* The comet's nucleus; the engine moves it and draws its tails on the effects canvas. */
+.comet{z-index:390;--r:5px;--disc:4px}
+.comet-core{width:7px;height:7px;border-radius:50%;background:#f4fbff;box-shadow:0 0 0 2px rgba(191,233,255,.3),0 0 12px 5px rgba(191,233,255,.4)}
+.scan .comet-core{background:transparent;box-shadow:inset 0 0 0 1.5px #c8ff2e}
+/* Slingshot, over the map: it opens and closes with the same iris as the reader. */
+.game{position:absolute;inset:0;z-index:700;background:#07060b;color:#f1eef7;cursor:auto;overflow:hidden;animation:iris .75s cubic-bezier(.7,0,.2,1) .2s both}
+.game.instant{animation:none}
+.game.out{animation:irisout .42s cubic-bezier(.6,0,.4,1) both}
 .reader{position:absolute;inset:0;z-index:700;overflow-y:auto;overflow-x:hidden;background:#0b0a11;color:#f1eef7;cursor:auto;animation:iris .75s cubic-bezier(.7,0,.2,1) .2s both}
 .reader.instant{animation:none}
 @keyframes iris{from{clip-path:circle(0px at var(--ox) var(--oy))}to{clip-path:circle(150% at var(--ox) var(--oy))}}
@@ -193,7 +201,7 @@
 .rnext-t{font:600 15px/1.3 'Geist',system-ui,sans-serif;color:#f1eef7}
 .rback2{margin-top:28px}
 .rback:focus-visible,.rnext:focus-visible,.lnk.primary:focus-visible{outline:2px solid #c8ff2e;outline-offset:2px}
-@media (prefers-reduced-motion:reduce){.reader,.reader.out{animation-duration:.01s;animation-delay:0s}}
+@media (prefers-reduced-motion:reduce){.reader,.reader.out,.game,.game.out{animation-duration:.01s;animation-delay:0s}}
 
 /* Post body: the mockup's paragraph (.rp), heading (.rh), figure and code styles applied to plain markup. */
 .prose p{margin:0 0 24px;font:400 18px/1.75 'Geist',system-ui,sans-serif;color:rgba(241,238,247,.88)}

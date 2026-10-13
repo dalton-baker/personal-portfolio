@@ -1,5 +1,7 @@
 import { kep, all, byId, moons, hosts, pulsar, belt } from './system.js';
-import { Starfield, STAR_FPS } from './starfield.js';
+import { StarfieldHost } from './starfield-host.js';
+import { HOLE_GL_OPTIONS, createHoleProgram } from './blackhole.js';
+import { CometTail, cometStrength } from './comet.js';
 
 /** The canvases render at the device's pixel ratio, up to 3x (current phones). */
 const MAX_DPR = 3;
@@ -31,7 +33,18 @@ const PARALLAX_GAIN = 2;
 const PARALLAX_EASE = 0.6;
 const PARALLAX_SETTLE = 1.5;
 
+/**
+ * The comet: now and then one crosses the map on a parabolic orbit around the black hole (fastest as it
+ * passes closest). Clicking it opens Slingshot. WAIT is how long the map waits before the first one and
+ * between them (seconds, random within the range; it doesn't count while a post or the game covers the
+ * map), and PASS how long one takes to cross the view.
+ */
+const COMET_FIRST_WAIT = [8, 20];
+const COMET_WAIT = [25, 55];
+const COMET_PASS = 16;
+
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
+const between = ([a, b]) => a + Math.random() * (b - a);
 
 /**
  * Drives the system map every animation frame: orbits, camera and three canvases. From the back: the
@@ -47,9 +60,11 @@ export class OrbitEngine {
 	 * @param {HTMLCanvasElement} o.glCanvas
 	 * @param {HTMLCanvasElement} o.fxCanvas
 	 * @param {HTMLElement} o.holeEl
+	 * @param {HTMLElement} [o.cometEl] the comet's link; the engine shows, hides and moves it
 	 * @param {Record<string, HTMLElement>} o.els body id -> element
-	 * @param {() => {sel: string|null, host: string|null, reading: string|null, closing: boolean, scan: boolean}} o.getState
-	 * `host` is the giant whose moons are in play (it, or one of its moons, is selected).
+	 * @param {() => {sel: string|null, host: string|null, reading: string|null, cover: boolean, closing: boolean, scan: boolean}} o.getState
+	 * `host` is the giant whose moons are in play (it, or one of its moons, is selected). `cover` is true
+	 * while the reader or the game covers the map, and `closing` while it's closing.
 	 * @param {(ok: boolean) => void} o.onGLChange called when WebGL becomes unavailable (false) or comes back (true)
 	 * @param {() => void} o.onReady
 	 */
@@ -78,11 +93,6 @@ export class OrbitEngine {
 		/** Canvas pixels per CSS pixel (the device pixel ratio, capped). */
 		this.dpr = 1;
 		this.starTf = '';
-		/** Starfield state last sent to the worker (or applied here), so it's only sent on changes. */
-		this.starScan = false;
-		this.starRun = true;
-		this.starAt = 0;
-		this.starDt = 0;
 		this.ptr = null;
 		this.hoverEl = null;
 		this.hoverT0 = 0;
@@ -91,6 +101,10 @@ export class OrbitEngine {
 		this.par = { x: 0, y: 0, tx: 0, ty: 0 };
 		/** Where the pointer was at its last move, or null until it moves over the map (or a finger lands). */
 		this.parPrev = null;
+		/** The comet in flight (see newComet), or null; time left before the next one. */
+		this.comet = null;
+		this.cometWait = between(COMET_FIRST_WAIT);
+		this.cometSpd = 1;
 
 		let seed = 11;
 		const rnd = () => {
@@ -122,12 +136,12 @@ export class OrbitEngine {
 		this.glCanvas.addEventListener('webglcontextrestored', this.onContextRestored);
 		this.onVisible = () => {
 			if (!document.hidden) this.frameClock = this.lastFrame = performance.now();
-			this.runStars(!document.hidden);
+			this.stars?.run(!document.hidden);
 		};
 		document.addEventListener('visibilitychange', this.onVisible);
 		this.initGL();
 		if (this.fxCanvas) this.ctx = this.fxCanvas.getContext('2d');
-		if (this.starCanvas) this.initStars();
+		if (this.starCanvas) this.stars = new StarfieldHost(this.starCanvas, this.reduced);
 		this.measure();
 		this.ro = new ResizeObserver(() => this.measure());
 		this.ro.observe(this.root);
@@ -141,10 +155,7 @@ export class OrbitEngine {
 
 	destroy() {
 		cancelAnimationFrame(this.raf);
-		this.starWorker?.terminate();
-		this.starPending?.terminate();
-		this.starPending = null;
-		clearTimeout(this.starTimer);
+		this.stars?.destroy();
 		this.ro?.disconnect();
 		this.glCanvas.removeEventListener('webglcontextlost', this.onContextLost);
 		this.glCanvas.removeEventListener('webglcontextrestored', this.onContextRestored);
@@ -158,9 +169,119 @@ export class OrbitEngine {
 		return { x: this.W / 2, y: this.H / 2 };
 	}
 
-	/** Call when the reader opens; rendering pauses once its iris has covered the map. */
+	/** Call when the reader or the game opens; rendering pauses once its iris has covered the map. */
 	markRead() {
 		this.readT0 = this.realT;
+	}
+
+	/** Sends a comet across as soon as the map is idle (the ?comet link). */
+	launchComet() {
+		this.cometWait = 0;
+	}
+
+	/** Where the comet is on screen (px relative to the map), or null when there isn't one. */
+	cometPos() {
+		return this.comet && this.comet.sx != null ? { x: this.comet.sx, y: this.comet.sy } : null;
+	}
+
+	/** The comet was caught (its game opened), so it's gone until the next one. */
+	catchComet() {
+		if (this.comet) this.endComet();
+	}
+
+	/**
+	 * A new flyby, in map units around the hole. On a parabola with closest approach q, r = q (1 + D^2) where
+	 * D = tan(angle from the closest point / 2), and (Barker's equation) the time from the closest point is
+	 * k (D + D^3 / 3). With the whole system in view it swings close past the hole; zoomed in on something,
+	 * the orbit is aimed through a point near the middle of the view instead (for a point at distance d,
+	 * reached at D, q = d / (1 + D^2)). Either way it's timed to cross the view in COMET_PASS seconds, from
+	 * just off screen to just off screen. Null if no such path is in view.
+	 */
+	newComet(L, Z, ox, oy, st) {
+		const W = this.W, H = this.H, m = 60, dir = Math.random() < 0.5 ? 1 : -1;
+		const inView = (x, y) => x > -m && y > -m && x < W + m && y < H + m;
+		let q = L.rmin * (0.95 + Math.random() * 0.75), rot = Math.random() * Math.PI * 2, u0 = 0;
+		if (st.sel) {
+			const spread = 0.5 * Math.min(W, H), sx = this.cam.cx + (Math.random() - 0.5) * spread, sy = this.cam.cy + (Math.random() - 0.5) * spread;
+			const wx = (sx - ox) / Z, wy = (sy - oy) / (Z * L.ty), d = Math.hypot(wx, wy);
+			if (d > L.rmin * 1.2) {
+				const D = (Math.random() * 2 - 1) * 1.3;
+				u0 = Math.atan(D);
+				q = d / (1 + D * D);
+				rot = Math.atan2(wy, wx) - 2 * u0 * dir;
+			}
+		}
+		// Walk along the orbit (u = atan D) both ways from that point to where it leaves the view.
+		const shown = (u) => {
+			const D = Math.tan(u), r = q * (1 + D * D), th = rot + 2 * u * dir;
+			return inView(ox + r * Math.cos(th) * Z, oy + r * Math.sin(th) * L.ty * Z);
+		};
+		const walk = (sign) => {
+			let u = u0;
+			while (Math.abs(u) < 1.55 && shown(u + sign * 0.004)) u += sign * 0.004;
+			return u;
+		};
+		const a = walk(-1), b = walk(1);
+		if (b - a < 0.05) return null;
+		const f = (u) => Math.tan(u) + Math.tan(u) ** 3 / 3;
+		const k = (COMET_PASS * (this.reduced ? 1.6 : 1)) / (f(b) - f(a));
+		return { q, k, t: k * f(a), end: k * f(b), rot, dir, tail: new CometTail(L.rmin) };
+	}
+
+	endComet() {
+		this.comet = null;
+		this.cometWait = between(COMET_WAIT);
+		if (this.cometEl) this.cometEl.style.display = 'none';
+		if (this.hoverEl === this.cometEl) this.hoverEl = null;
+	}
+
+	/**
+	 * Moves the comet along, or counts down to the next one. A post or the game covering the map ends a
+	 * comet in flight; anything else (a planet's card, the camera zooming) it just flies through.
+	 */
+	updateComet(dt, L, Z, ox, oy, st) {
+		const el = this.cometEl;
+		if (!el) return;
+		let c = this.comet;
+		if (st.cover) {
+			if (c) this.endComet();
+			return;
+		}
+		if (!c) {
+			this.cometWait -= dt;
+			if (this.cometWait > 0) return;
+			c = this.comet = this.newComet(L, Z, ox, oy, st);
+			if (!c) {
+				this.cometWait = 3;
+				return;
+			}
+			this.cometSpd = 1;
+			el.style.display = '';
+		}
+		// It slows right down while the pointer is on it, so it can be caught.
+		this.cometSpd += ((this.hoverEl === el ? 0.2 : 1) - this.cometSpd) * Math.min(1, dt * 6);
+		c.t += dt * this.cometSpd;
+		// Solve Barker's equation for D (a cubic with one real root), then place it on the parabola.
+		const m = c.t / c.k, w = Math.cbrt(1.5 * m + Math.sqrt(2.25 * m * m + 1)), D = w - 1 / w;
+		const r = c.q * (1 + D * D), th = c.rot + 2 * Math.atan(D) * c.dir;
+		c.r = r;
+		const px = r * Math.cos(th), py = r * Math.sin(th) * L.ty;
+		// Its velocity (map units per second), for the tails it sheds.
+		const vx = c.px != null && dt > 0 ? (px - c.px) / dt : 0, vy = c.py != null && dt > 0 ? (py - c.py) / dt : 0;
+		c.px = px;
+		c.py = py;
+		c.tail.update(dt, px, py, vx, vy, cometStrength(r, L.rmin * 1.2));
+		c.sx = ox + c.px * Z;
+		c.sy = oy + c.py * Z;
+		// It's done once it's past the end of its pass and off screen (the camera may have moved since).
+		const out = c.sx < -80 || c.sy < -80 || c.sx > this.W + 80 || c.sy > this.H + 80;
+		if (c.t > c.end && (out || c.t > c.end + 25)) return this.endComet();
+		const sx = Math.round(c.sx * 10), sy = Math.round(c.sy * 10);
+		if (sx !== c.tx || sy !== c.ty) {
+			c.tx = sx;
+			c.ty = sy;
+			el.style.transform = 'translate3d(' + sx / 10 + 'px,' + sy / 10 + 'px,0)';
+		}
 	}
 
 	pointerMove(e) {
@@ -229,75 +350,7 @@ export class OrbitEngine {
 			this.fxCanvas.width = Math.round(this.W * dpr);
 			this.fxCanvas.height = Math.round(this.H * dpr);
 		}
-		this.starWorker?.postMessage({ type: 'size', w: this.W, h: this.H, dpr });
-		this.starfield?.size(this.W, this.H, dpr);
-		this.measured = true;
-	}
-
-	/**
-	 * The starfield draws in a worker on an OffscreenCanvas where the browser supports it (Chrome 69+,
-	 * Firefox 105+, Safari 16.4+), keeping its redraws off the main thread; otherwise it draws here.
-	 */
-	initStars() {
-		const c = this.starCanvas;
-		let worker = null;
-		if (typeof c.transferControlToOffscreen === 'function' && typeof Worker === 'function') {
-			try {
-				worker = new Worker(new URL('./starfield.worker.js', import.meta.url), { type: 'module' });
-			} catch {
-				worker = null;
-			}
-		}
-		if (!worker) return this.drawStarsHere();
-		// The canvas can only be handed over once, so wait for the worker to say it has loaded and can draw.
-		// If it fails to load, can't draw there, or doesn't answer, terminate it and draw here instead.
-		const fail = () => {
-			if (this.starPending !== worker) return;
-			clearTimeout(this.starTimer);
-			this.starPending = null;
-			worker.terminate();
-			this.drawStarsHere();
-		};
-		this.starPending = worker;
-		this.starTimer = setTimeout(fail, 4000);
-		worker.onerror = fail;
-		worker.onmessage = ({ data }) => {
-			if (this.starPending !== worker) return;
-			if (data.type !== 'ready') return fail();
-			clearTimeout(this.starTimer);
-			this.starPending = null;
-			worker.onerror = worker.onmessage = null;
-			const off = c.transferControlToOffscreen();
-			worker.postMessage({ type: 'init', canvas: off, reduced: this.reduced }, [off]);
-			this.starWorker = worker;
-			this.syncStars();
-		};
-	}
-
-	drawStarsHere() {
-		this.starfield = new Starfield(this.starCanvas, this.reduced);
-		this.syncStars();
-	}
-
-	/** Brings a starfield that just started up to date: its size, the scan tint, and whether it's paused. */
-	syncStars() {
-		if (!this.measured) return; // measure() sizes it
-		const dpr = this.dpr, w = this.starWorker, f = this.starfield;
-		w?.postMessage({ type: 'size', w: this.W, h: this.H, dpr });
-		w?.postMessage({ type: 'scan', on: this.starScan });
-		w?.postMessage({ type: 'run', on: this.starRun });
-		if (f) {
-			f.size(this.W, this.H, dpr);
-			f.scanTarget = f.scan = this.starScan ? 1 : 0;
-		}
-	}
-
-	/** Pauses the starfield (reader covering the map, hidden tab) or lets it run again. */
-	runStars(on) {
-		if (on === this.starRun) return;
-		this.starRun = on;
-		this.starWorker?.postMessage({ type: 'run', on });
-		if (on) this.starAt = performance.now();
+		this.stars?.size(this.W, this.H, dpr);
 	}
 
 	/** Builds the shader program; also runs again after a lost context is restored. Returns whether WebGL works. */
@@ -305,46 +358,18 @@ export class OrbitEngine {
 		const c = this.glCanvas;
 		let gl = null;
 		try {
-			// Transparent (premultiplied) so the starfield shows around and through the disk.
-			gl = c.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'low-power' });
+			gl = c.getContext('webgl', HOLE_GL_OPTIONS);
 		} catch {
 			gl = null;
 		}
-		const fail = () => {
+		const prog = gl && !gl.isContextLost() ? createHoleProgram(gl) : null;
+		if (!prog) {
 			this.gl = null;
 			this.onGLChange(false);
 			return false;
-		};
-		if (!gl || gl.isContextLost()) return fail();
-		const mk = (type, src) => {
-			const s = gl.createShader(type);
-			gl.shaderSource(s, src);
-			gl.compileShader(s);
-			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-				console.warn(gl.getShaderInfoLog(s));
-				return null;
-			}
-			return s;
-		};
-		const vs = mk(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }');
-		const fs = mk(gl.FRAGMENT_SHADER, FRAG);
-		if (!vs || !fs) return fail();
-		const pr = gl.createProgram();
-		gl.attachShader(pr, vs);
-		gl.attachShader(pr, fs);
-		gl.linkProgram(pr);
-		if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return fail();
-		gl.useProgram(pr);
-		const buf = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-		const loc = gl.getAttribLocation(pr, 'p');
-		gl.enableVertexAttribArray(loc);
-		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-		const U = (n) => gl.getUniformLocation(pr, n);
-		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') };
-		const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
-		this.glMax = Math.min(vp[0], vp[1], gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096);
+		}
+		this.u = prog.u;
+		this.glMax = prog.max;
 		this.gl = gl;
 		this.onGLChange(true);
 		return true;
@@ -415,13 +440,13 @@ export class OrbitEngine {
 	tick(now) {
 		if (document.hidden) return;
 		const st = this.getState();
-		if (st.reading && !st.closing && this.realT - this.readT0 > 1.1) {
-			// The reader covers the map, so stop rendering until it closes.
+		if (st.cover && !st.closing && this.realT - this.readT0 > 1.1) {
+			// The reader or the game covers the map, so stop rendering until it closes.
 			this.frameClock = this.lastFrame = now;
-			this.runStars(false);
+			this.stars?.run(false);
 			return;
 		}
-		this.runStars(true);
+		this.stars?.run(!document.hidden);
 		const interval = 1000 / (this.isMobile || this.coarse ? FPS_TOUCH : FPS_DESKTOP);
 		const sinceClock = now - this.frameClock;
 		if (sinceClock < interval - 1.5) return;
@@ -626,6 +651,7 @@ export class OrbitEngine {
 				this.holeEl.style.transform = 'translate3d(' + hx / 10 + 'px,' + hy / 10 + 'px,0)';
 			}
 		}
+		this.updateComet(dt, L, Z, ox, oy, st);
 		this.drawFx(L, Z, ox, oy, bz, hostB, focus, st, mob);
 		if (this.starCanvas) {
 			// The starfield drifts less than the system, so it reads as farther away. Moved in whole device
@@ -636,15 +662,8 @@ export class OrbitEngine {
 				this.starTf = tf;
 				this.starCanvas.style.transform = tf;
 			}
-			if (st.scan !== this.starScan) {
-				this.starScan = st.scan;
-				this.starWorker?.postMessage({ type: 'scan', on: st.scan });
-				if (this.starfield) this.starfield.scanTarget = st.scan ? 1 : 0;
-			}
-			if (this.starfield && now - this.starAt >= 1000 / STAR_FPS - 2) {
-				this.starfield.frame(Math.min(0.1, (now - this.starAt) / 1000));
-				this.starAt = now;
-			}
+			this.stars.scan(st.scan);
+			this.stars.frame(now);
 		}
 		if (this.gl) this.drawGL(L, Z, ox, oy);
 		if (this.frame === 1) this.onReady();
@@ -858,6 +877,13 @@ export class OrbitEngine {
 			}
 		}
 		ctx.globalAlpha = 1;
+		const c = this.comet;
+		if (c && c.sx != null) {
+			// The tails live in map units around the hole, so they hold together while the camera moves.
+			ctx.setTransform(this.dpr * Z, 0, 0, this.dpr * Z, this.dpr * ox, this.dpr * oy);
+			c.tail.draw(ctx, c.px, c.py, 1 / Z);
+			ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+		}
 		const P = this.ptr;
 		const hel = this.hoverEl;
 		if (P && !mob && hel && hel.isConnected) {
@@ -889,92 +915,3 @@ export class OrbitEngine {
 		}
 	}
 }
-
-/**
- * The black hole: accretion disk, halftone haze, shadow and photon ring. It outputs premultiplied colour
- * with coverage, so the starfield shows through wherever it isn't opaque (between the haze dots, the
- * disk's gaps, and everything outside it).
- */
-const FRAG = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-uniform vec2 uC; uniform float uR; uniform float uT; uniform float uTy; uniform float uScan; uniform float uPx;
-float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
-vec3 band(float k){
-  if(k < 1.5) return vec3(0.231,0.051,0.369);
-  if(k < 2.5) return vec3(0.761,0.094,0.478);
-  if(k < 3.5) return vec3(1.0,0.353,0.122);
-  if(k < 4.5) return vec3(1.0,0.788,0.235);
-  return vec3(1.0,0.957,0.839);
-}
-float dens(float ang0, float r, float sh){
-  float ang = ang0 + sh;
-  float arms = 0.5 + 0.5*sin(3.0*ang + log(r)*9.0);
-  float str = 0.5 + 0.5*sin(17.0*ang + r*31.0 + 2.0*sin(5.0*ang - uT*0.6));
-  return 0.2 + 0.55*arms + 0.3*str;
-}
-// Light laid over what's drawn so far, with coverage equal to its brightest channel. That's close to adding
-// it, since the stars and background it covers are so dark.
-void glow(inout vec3 col, inout float al, vec3 l){
-  float la = min(1.0, max(l.r, max(l.g, l.b)));
-  col = min(l, vec3(la)) + col*(1.0 - la);
-  al = la + al*(1.0 - la);
-}
-void main(){
-  vec2 f = gl_FragCoord.xy;
-  vec2 p = (f - uC)/uR;
-  vec2 q = vec2(p.x, p.y/uTy);
-  float rp = length(p); float rq = length(q);
-  // The disk, halftone and photon ring all fade to exactly zero before 1.75 disk radii (allowing for the
-  // halftone cell size); the canvas covers about that box.
-  if(rq >= 1.75){ gl_FragColor = vec4(0.0); return; }
-  vec3 lime = vec3(0.784,1.0,0.18);
-  float a = atan(q.y, q.x);
-  float rs = 0.24; float inner = 0.30;
-  float rqc = max(rq, 0.05);
-  float w = pow(inner/rqc, 1.5);
-  float edge = smoothstep(inner - 0.01, inner + 0.05, rq)*(1.0 - smoothstep(0.5, 1.0, rq));
-  float heat = pow(inner/max(rq, inner), 1.3);
-  float PER = 9.0;
-  float t1 = mod(uT, PER); float t2 = mod(uT + 0.5*PER, PER);
-  float w1 = 1.0 - abs(t1/PER*2.0 - 1.0);
-  float base = a + uT*0.35;
-  float d1 = dens(base, rqc, w*t1*0.8);
-  float d2 = dens(base, rqc, w*t2*0.8);
-  float dd = clamp(edge*mix(d2, d1, w1)*(0.4 + 0.8*heat), 0.0, 0.999);
-  float x = dd*5.5;
-  float k = floor(x);
-  float fill = step(1.0, k);
-  float fe = fract(x); float e = min(fe, 1.0 - fe);
-  float contour = smoothstep(0.09, 0.0, e)*step(0.12, dd);
-  // Premultiplied colour (col) and coverage (al): solid colour bands, or in scan mode lime contour lines.
-  vec3 col = band(k)*fill; float al = fill;
-  vec3 sc = vec3(0.0); float sa = 0.0;
-  glow(sc, sa, lime*(contour*0.85 + 0.04*edge));
-  col = mix(col, sc, uScan); al = mix(al, sa, uScan);
-  // Halftone dots on a grid anchored to the black hole, so they move with it (parallax, camera).
-  float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
-  vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
-  float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
-  float hr = hc*0.36*sqrt(g);
-  float dotm = g > 0.003 ? 1.0 - smoothstep(hr - 0.75*uPx, hr + 0.75*uPx, length(f - cc)) : 0.0;
-  vec3 htc = mix(vec3(0.34,0.06,0.31), lime*0.3, uScan);
-  float m = dotm*(1.0 - fill*(1.0 - uScan));
-  col = mix(col, htc, m); al = mix(al, 1.0, m);
-  float sh = step(rp, rs)*(1.0 - uScan*0.9);
-  col *= 1.0 - sh; al = mix(al, 1.0, sh);
-  float rr0 = rs + 0.014; float rw = 0.018; float off = 0.013;
-  float cr = smoothstep(rw, 0.0, abs(length(p + vec2(off, 0.0)) - rr0));
-  float cg = smoothstep(rw, 0.0, abs(rp - rr0));
-  float cb = smoothstep(rw, 0.0, abs(length(p - vec2(off, 0.0)) - rr0));
-  vec3 ringc = vec3(max(cr, cg), cg, max(cb, cg));
-  glow(col, al, mix(ringc*1.3, lime*cg, uScan));
-  glow(col, al, lime*uScan*smoothstep(0.008, 0.0, abs(rp - rs))*0.9);
-  // Film grain, like the star layer's.
-  col += (hash(f*0.73 + fract(uT*0.37)*91.0) - 0.5)*0.05*al;
-  gl_FragColor = vec4(clamp(col, 0.0, al), al);
-}
-`;
