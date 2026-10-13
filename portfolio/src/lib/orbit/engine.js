@@ -6,6 +6,14 @@ const MIN_SCALE = 0.5;
 /** Frame-rate caps. The motion is slow orbits and a swirl, so lower rates look nearly identical. */
 const FPS_DESKTOP = 60;
 const FPS_TOUCH = 30;
+/**
+ * Parallax: how far (CSS px) the system and, less, the starfield drift when the pointer is at the edge of
+ * the map, so the stars read as farther away. It follows the mouse, or a finger while it's touching.
+ */
+const PARALLAX_SYSTEM = 14;
+const PARALLAX_STARS = 5;
+
+const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
 /**
  * Drives the system map every animation frame: orbits, camera, the WebGL
@@ -50,6 +58,8 @@ export class OrbitEngine {
 		this.hoverEl = null;
 		this.hoverT0 = 0;
 		this.parts = new Map();
+		/** Parallax deflection, -1..1 on each axis: eased (x, y) toward the target (tx, ty). */
+		this.par = { x: 0, y: 0, tx: 0, ty: 0 };
 
 		let seed = 11;
 		const rnd = () => {
@@ -118,19 +128,31 @@ export class OrbitEngine {
 	}
 
 	pointerMove(e) {
-		if (e.pointerType === 'touch') {
-			this.ptr = null;
-			return;
-		}
 		const r = this.root.getBoundingClientRect();
 		const sx = r.width ? this.W / r.width : 1;
 		const sy = r.height ? this.H / r.height : 1;
-		this.ptr = { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+		const x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sy;
+		if (!this.reduced) {
+			this.par.tx = clamp1((x / this.W) * 2 - 1);
+			this.par.ty = clamp1((y / this.H) * 2 - 1);
+		}
+		// Only a mouse gets the hover reticle; a finger only moves the parallax while it's down.
+		this.ptr = e.pointerType === 'touch' ? null : { x, y };
+	}
+
+	/** A finger landing on the map aims the parallax there; lifting it lets the view drift back. */
+	pointerDown(e) {
+		if (e.pointerType === 'touch') this.pointerMove(e);
+	}
+
+	pointerUp(e) {
+		if (e.pointerType === 'touch') this.par.tx = this.par.ty = 0;
 	}
 
 	pointerLeave() {
 		this.ptr = null;
 		this.hoverEl = null;
+		this.par.tx = this.par.ty = 0;
 	}
 
 	pointerOver(e) {
@@ -222,7 +244,7 @@ export class OrbitEngine {
 		gl.enableVertexAttribArray(loc);
 		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 		const U = (n) => gl.getUniformLocation(pr, n);
-		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') };
+		this.u = { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx'), Star: U('uStar') };
 		this.gl = gl;
 		this.onGLChange(true);
 		return true;
@@ -361,7 +383,13 @@ export class OrbitEngine {
 		cam.cx += (tcx - cam.cx) * k;
 		cam.cy += (tcy - cam.cy) * k;
 		const Z = cam.z;
-		const ox = cam.cx - cam.x * Z, oy = cam.cy - cam.y * Z;
+		// Parallax: ease toward the pointer target, then shift the whole system opposite to it.
+		const par = this.par, kp = 1 - Math.exp(-dt * 4);
+		par.x += (par.tx - par.x) * kp;
+		par.y += (par.ty - par.y) * kp;
+		const amp = mob ? 0.7 : 1;
+		const ox = cam.cx - cam.x * Z - par.x * PARALLAX_SYSTEM * amp;
+		const oy = cam.cy - cam.y * Z - par.y * PARALLAX_SYSTEM * amp;
 		const bz = L.bs * (1 + (Z - 1) * 0.32);
 
 		for (const b of all) {
@@ -402,6 +430,13 @@ export class OrbitEngine {
 				p.r = rad;
 				el.style.setProperty('--r', rad.toFixed(1) + 'px');
 			}
+			// The body as you'd point at it: the planet itself, or a giant together with its rings (big moons
+			// orbit outside this, so the first-visit hint can sit right on top of the planet).
+			const disc = b.rings ? rad : (b.size / 2) * sc;
+			if (!(Math.abs(disc - p.disc) < 0.3)) {
+				p.disc = disc;
+				el.style.setProperty('--disc', disc.toFixed(1) + 'px');
+			}
 			// Night side faces away from the black hole.
 			const shadeRot = 'rotate(' + Math.atan2(y - oy, x - ox).toFixed(3) + 'rad)';
 			if (b.shaded && p.shade) p.shade.style.transform = shadeRot;
@@ -438,6 +473,9 @@ export class OrbitEngine {
 			gl.uniform1f(this.u.Ty, L.ty);
 			gl.uniform1f(this.u.Scan, this.scanV);
 			gl.uniform1f(this.u.Px, qq);
+			// The starfield drifts less than the system (GL y runs up).
+			const sa = PARALLAX_STARS * amp * qq;
+			gl.uniform2f(this.u.Star, -par.x * sa, par.y * sa);
 			gl.drawArrays(gl.TRIANGLES, 0, 3);
 		}
 		if (this.frame === 1) this.onReady();
@@ -631,7 +669,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 uC; uniform float uR; uniform float uT; uniform float uTy; uniform float uScan; uniform float uPx;
+uniform vec2 uC; uniform float uR; uniform float uT; uniform float uTy; uniform float uScan; uniform float uPx; uniform vec2 uStar;
 float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 vec3 band(float k){
   if(k < 1.5) return vec3(0.231,0.051,0.369);
@@ -651,7 +689,8 @@ void main(){
   vec3 lime = vec3(0.784,1.0,0.18);
   vec3 col = vec3(0.027,0.024,0.043);
   float cs = 46.0*uPx;
-  vec2 cell = floor(f/cs); vec2 lc = f - cell*cs;
+  vec2 fs = f - uStar;
+  vec2 cell = floor(fs/cs); vec2 lc = fs - cell*cs;
   float h = hash(cell);
   if(h > 0.55){
     vec2 sp = (0.2 + 0.6*vec2(hash(cell+1.3), hash(cell+7.1)))*cs;
@@ -694,7 +733,9 @@ void main(){
     vec3 filled = mix(col, band(k), fill);
     vec3 scanC = col + lime*contour*0.85 + lime*0.04*edge;
     col = mix(filled, scanC, uScan);
-    float hc = 7.0*uPx; vec2 cc = (floor(f/hc) + 0.5)*hc;
+    // Halftone dots on a grid anchored to the black hole, so they move with it (parallax, camera) instead
+    // of the hole sliding under a fixed screen grid.
+    float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
     vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
     float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
     float hr = hc*0.36*sqrt(g);

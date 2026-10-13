@@ -15,6 +15,9 @@
 /* Without WebGL (or while a lost context is being restored) hide the canvas and show the CSS fallback hole. */
 .nogl .glc{visibility:hidden}
 .orbits{position:absolute;inset:0;overflow:hidden;opacity:0;transition:opacity .4s}
+/* The map itself never scrolls, so touches on it go to us rather than becoming a browser pan: a finger can
+   drag the parallax around. The card, intro panel and reader are outside this and still scroll. */
+.orbits,.bh canvas{touch-action:none}
 .bh.ready .orbits{opacity:1}
 .body{position:absolute;left:-22px;top:-22px;width:44px;height:44px;padding:0;margin:0;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;text-decoration:none;will-change:transform,opacity;-webkit-tap-highlight-color:transparent}
 .body::before,.hole-btn::before{content:"";position:absolute;inset:-2px;opacity:0;transition:opacity .15s;pointer-events:none;background:linear-gradient(#c8ff2e,#c8ff2e) 0 0/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 0/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 0/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 0/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 100%/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 100%/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 100%/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 100%/1.5px 9px no-repeat}
@@ -49,6 +52,16 @@
 .body:focus-visible .tip,.body.is-sel .tip{opacity:1}
 @media (hover:hover){.body:hover .tip{opacity:1}}
 .scan .tip{display:none}
+/* First-visit hint above a planet: a small tag and a chunky rounded arrow pointing down at it. It's part of
+   the planet's link, so clicking it opens that planet. */
+.body.hinted{z-index:398!important}
+.hint-tag{position:absolute;left:50%;bottom:calc(50% + var(--disc,8px) + 5px);display:flex;flex-direction:column;align-items:center;gap:3px;transform:translateX(-50%);white-space:nowrap;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;animation:hintin .5s ease-out 1.2s both,hintbob 1.8s ease-in-out 1.7s infinite}
+.hint-text{padding:3px 6px;background:rgba(7,6,11,.78)}
+.hint-arrow{display:block;overflow:visible}
+.hint-arrow path{fill:#c8ff2e;stroke:#c8ff2e;stroke-width:3.5;stroke-linejoin:round}
+@keyframes hintin{from{opacity:0;transform:translate(-50%,6px)}}
+@keyframes hintbob{50%{transform:translate(-50%,-4px)}}
+@media (prefers-reduced-motion:reduce){.hint-tag{animation:hintin .5s ease-out 1.2s both}}
 .bh:not(.scan) .label{display:none}
 .moon{pointer-events:none}
 .moon.active{pointer-events:auto}
@@ -102,7 +115,8 @@
 .desc{margin:16px 0 0;font:400 15px/1.6 'Geist',system-ui,sans-serif;color:rgba(241,238,247,.86)}
 .desc+.desc{margin-top:12px}
 .desc a{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
-.desc.contact{margin-top:8px}
+/* Paragraphs right under a small section heading (sections, Contact). */
+.card-h+.desc{margin-top:8px}
 .facts{margin:20px 0 0;padding:0}
 .fact{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:9px 0;border-top:1px dashed rgba(241,238,247,.14)}
 .fact:last-child{border-bottom:1px dashed rgba(241,238,247,.14)}
