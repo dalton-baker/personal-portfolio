@@ -40,6 +40,8 @@ export const PAYLOADS = {
 	comet: { id: 'comet', label: 'Comet', r: 4, m: 0.05, palette: [['#f4fbff', '#9fb8c8']] }
 };
 
+/** A body is eaten once its centre is within the core's radius plus this much of its own. */
+const EAT = 0.4;
 const LOST = 1800;
 const MAX_BODIES = 40;
 const STEP = 1 / 240;
@@ -63,6 +65,13 @@ export class Sim {
 		this.acc = 0;
 		this.uid = 1;
 		this.hudT = 0;
+		/** Size of the next body thrown (bodies vary a little), chosen ahead so the aiming guide can use it. */
+		this.nextSize = 0.85 + Math.random() * 0.3;
+	}
+
+	/** Radius of the next body to be thrown. */
+	nextRadius() {
+		return PAYLOADS[this.payload].r * this.nextSize;
 	}
 
 	say(msg) {
@@ -131,7 +140,7 @@ export class Sim {
 			if (b.held) continue;
 			let gone = false;
 			for (const s of srcs) {
-				if (Math.hypot(b.x - s.x, b.y - s.y) < s.r + b.r * 0.4) {
+				if (Math.hypot(b.x - s.x, b.y - s.y) < s.r + b.r * EAT) {
 					this.burst(b.x, b.y, b.color, 16, 90);
 					B.splice(i, 1);
 					this.say(core.eat);
@@ -219,7 +228,7 @@ export class Sim {
 		const p = PAYLOADS[this.payload];
 		const [color, dark] = p.palette[this.uid % p.palette.length];
 		const b = {
-			id: this.uid++, kind: p.id, x, y, vx, vy, r: p.r * (0.85 + Math.random() * 0.3), m: p.m, color, dark,
+			id: this.uid++, kind: p.id, x, y, vx, vy, r: this.nextRadius(), m: p.m, color, dark,
 			// Some planets are banded gas worlds (pink, like The Log) or carry rings (like Live Sites).
 			striped: p.id === 'planet' && Math.random() < 0.35,
 			ringed: p.id === 'planet' && Math.random() < 0.15,
@@ -227,6 +236,7 @@ export class Sim {
 			rot: Math.random() * 6, spin: (Math.random() - 0.5) * 2, verts: []
 		};
 		for (let i = 0; i < 8; i++) b.verts.push(0.7 + Math.random() * 0.45);
+		this.nextSize = 0.85 + Math.random() * 0.3;
 		const a = this.accel(x, y, this.sources(this.simT), b);
 		b.ax = a[0];
 		b.ay = a[1];
@@ -346,10 +356,15 @@ export class Sim {
 		}
 	}
 
-	/** Where a throw would go (ignoring the other bodies), and whether it hits the core. */
-	predict(ox, oy, vx, vy, steps = 240) {
+	/**
+	 * Where a throw would go over the next few seconds (ignoring the other bodies), and whether the core
+	 * eats it. It steps exactly like the simulation, so a throw that skims the core is judged the same way;
+	 * `r` is the radius of what's thrown, since a body is eaten a little before its centre reaches the core
+	 * (see collide).
+	 */
+	predict(ox, oy, vx, vy, r = 0, steps = 640) {
 		let x = ox, y = oy, t = this.simT;
-		const h = 1 / 90, pts = [];
+		const h = STEP, pts = [];
 		let srcs = this.sources(t), a = this.accel(x, y, srcs, null), hit = false;
 		for (let i = 0; i < steps; i++) {
 			vx += a[0] * h * 0.5;
@@ -361,8 +376,8 @@ export class Sim {
 			a = this.accel(x, y, srcs, null);
 			vx += a[0] * h * 0.5;
 			vy += a[1] * h * 0.5;
-			if (i % 3 === 0) pts.push(x, y);
-			for (const s of srcs) if (Math.hypot(x - s.x, y - s.y) < s.r) hit = true;
+			if (i % 8 === 0) pts.push(x, y);
+			for (const s of srcs) if (Math.hypot(x - s.x, y - s.y) < s.r + r * EAT) hit = true;
 			if (hit || x * x + y * y > 4e6) {
 				pts.push(x, y);
 				break;
