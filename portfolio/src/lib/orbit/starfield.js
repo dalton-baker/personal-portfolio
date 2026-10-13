@@ -29,9 +29,11 @@ export class Starfield {
 	 */
 	constructor(canvas, reduced) {
 		this.c = canvas;
+		// A browser out of graphics memory can refuse a 2D context; then the starfield just stays empty
+		// (the map's own background shows) and everything else carries on.
 		this.g = canvas.getContext('2d', { alpha: false });
 		this.reduced = reduced;
-		this.grain = makeGrain(this.g);
+		this.grain = this.g ? makeGrain(this.g) : null;
 		this.stars = [];
 		this.sprites = null;
 		this.dpr = 0;
@@ -46,6 +48,7 @@ export class Starfield {
 		const cw = w + STAR_PAD * 2, ch = h + STAR_PAD * 2;
 		this.c.width = Math.round(cw * dpr);
 		this.c.height = Math.round(ch * dpr);
+		if (!this.g) return;
 		if (dpr !== this.dpr) {
 			this.sprites = makeStarSprites(dpr);
 			this.dpr = dpr;
@@ -72,7 +75,7 @@ export class Starfield {
 		// The grain tile jumps to a new offset on every redraw, so it shimmers.
 		const gx = this.reduced ? 0 : Math.floor(Math.random() * GRAIN), gy = this.reduced ? 0 : Math.floor(Math.random() * GRAIN);
 		g.translate(-gx, -gy);
-		g.fillStyle = this.grain;
+		g.fillStyle = this.grain || '#07060b';
 		g.fillRect(gx, gy, c.width / d, c.height / d);
 		g.setTransform(1, 0, 0, 1, 0, 0);
 		g.globalCompositeOperation = 'lighter';
@@ -140,6 +143,7 @@ function starSprite(dpr, reach, rgb, shape) {
 	const c = Math.ceil(reach * dpr), n = c * 2 + 1;
 	const cv = makeCanvas(n, n);
 	const g = cv.getContext('2d');
+	if (!g) return { cv, c }; // blank, rather than failing
 	const img = g.createImageData(n, n), px = img.data;
 	for (let y = 0; y < n; y++) {
 		for (let x = 0; x < n; x++) {
@@ -178,6 +182,7 @@ function makeStarSprites(dpr) {
 function makeGrain(g) {
 	const cv = makeCanvas(GRAIN, GRAIN);
 	const c = cv.getContext('2d');
+	if (!c) return null; // plain background instead
 	const img = c.createImageData(GRAIN, GRAIN), px = img.data;
 	for (let o = 0; o < px.length; o += 4) {
 		const v = (Math.random() - 0.5) * 12.75;
