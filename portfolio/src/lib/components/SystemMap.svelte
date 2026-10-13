@@ -250,6 +250,9 @@
 	class:ready
 	onpointermove={(e) => engine?.pointerMove(e)}
 	onpointerleave={() => engine?.pointerLeave()}
+	onpointerdown={(e) => engine?.pointerDown(e)}
+	onpointerup={(e) => engine?.pointerUp(e)}
+	onpointercancel={(e) => engine?.pointerUp(e)}
 	onpointerover={(e) => engine?.pointerOver(e)}
 	onclick={onMapClick}
 	role="presentation"

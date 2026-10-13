@@ -15,6 +15,9 @@
 /* Without WebGL (or while a lost context is being restored) hide the canvas and show the CSS fallback hole. */
 .nogl .glc{visibility:hidden}
 .orbits{position:absolute;inset:0;overflow:hidden;opacity:0;transition:opacity .4s}
+/* The map itself never scrolls, so touches on it go to us rather than becoming a browser pan: a finger can
+   drag the parallax around. The card, intro panel and reader are outside this and still scroll. */
+.orbits,.bh canvas{touch-action:none}
 .bh.ready .orbits{opacity:1}
 .body{position:absolute;left:-22px;top:-22px;width:44px;height:44px;padding:0;margin:0;border:0;background:transparent;cursor:pointer;display:grid;place-items:center;text-decoration:none;will-change:transform,opacity;-webkit-tap-highlight-color:transparent}
 .body::before,.hole-btn::before{content:"";position:absolute;inset:-2px;opacity:0;transition:opacity .15s;pointer-events:none;background:linear-gradient(#c8ff2e,#c8ff2e) 0 0/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 0/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 0/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 0/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 100%/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 0 100%/1.5px 9px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 100%/9px 1.5px no-repeat,linear-gradient(#c8ff2e,#c8ff2e) 100% 100%/1.5px 9px no-repeat}
