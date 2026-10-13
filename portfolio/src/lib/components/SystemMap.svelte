@@ -51,7 +51,7 @@
 		};
 	});
 
-	let root, glCanvas, fxCanvas, holeEl;
+	let root, starCanvas, glCanvas, fxCanvas, holeEl;
 	let readerEl = $state();
 	let progEl = $state();
 	const els = {};
@@ -100,7 +100,7 @@
 	onMount(() => {
 		startHint();
 		engine = new OrbitEngine({
-			root, glCanvas, fxCanvas, holeEl, els,
+			root, starCanvas, glCanvas, fxCanvas, holeEl, els,
 			getState: () => ({ sel, host: hostId, reading, closing, scan }),
 			onGLChange: (ok) => (noGL = !ok),
 			onReady: () => (ready = true)
@@ -257,6 +257,7 @@
 	onclick={onMapClick}
 	role="presentation"
 >
+	<canvas bind:this={starCanvas} class="starc" aria-hidden="true"></canvas>
 	<canvas bind:this={glCanvas} class="glc" aria-hidden="true"></canvas>
 	<canvas bind:this={fxCanvas} class="fxc" aria-hidden="true"></canvas>
 

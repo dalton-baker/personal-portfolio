@@ -12,6 +12,10 @@
 .bh button{font:inherit;color:inherit}
 .bh canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .bh .fxc{pointer-events:none}
+/* The starfield overhangs the map by STAR_PAD (engine.js) on each side, so the parallax never shows its edge. */
+.bh .starc{inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px)}
+/* The black hole canvas only covers a box around the hole; the engine sizes, places and scales it. */
+.bh .glc{inset:0 auto auto 0;transform-origin:0 0}
 /* Without WebGL (or while a lost context is being restored) hide the canvas and show the CSS fallback hole. */
 .nogl .glc{visibility:hidden}
 .orbits{position:absolute;inset:0;overflow:hidden;opacity:0;transition:opacity .4s}
@@ -33,11 +37,11 @@
 @media (hover:hover){.body:hover{z-index:399!important}}
 .body.moon.active{z-index:400!important}
 .body:focus-visible,.hole-btn:focus-visible,.post:focus-visible,.scanbtn:focus-visible,.lnk:focus-visible,.x:focus-visible{outline:2px solid #c8ff2e;outline-offset:2px}
-.dotwrap{position:relative;display:block;will-change:transform}
+.dotwrap{position:relative;display:block}
 .dot{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:block;z-index:1}
-.shade{position:absolute;inset:0;border-radius:50%;will-change:transform}
+.shade{position:absolute;inset:0;border-radius:50%}
 /* A planet's decorative moon; the engine moves it around the planet. */
-.sat{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none;will-change:transform}
+.sat{position:absolute;left:50%;top:50%;z-index:2;pointer-events:none}
 .rays{position:absolute;left:50%;top:50%;width:330%;height:330%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:0;background:repeating-conic-gradient(from 0deg,rgba(159,208,255,.9) 0 5deg,rgba(159,208,255,0) 5deg 30deg);-webkit-mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);mask:radial-gradient(circle,#000 18%,rgba(0,0,0,0) 62%);animation:spin 14s linear infinite}
 @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 /* Scan label, just right of the body's drawn extent (--r includes rings and big moons; set by the engine). */

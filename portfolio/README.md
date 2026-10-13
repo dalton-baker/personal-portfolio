@@ -29,6 +29,7 @@ Every body and post is its own prerendered page, so links to them load straight 
 - `src/routes/[[slug]]/` is the only map route. Navigating between bodies and posts keeps the
   same component mounted, so the animation continues while the URL changes.
 - `src/lib/components/SystemMap.svelte` renders the map UI, the info card and the post reader.
-- `src/lib/orbit/engine.js` runs the per-frame animation: orbits, camera, the WebGL black hole and
-  the 2D effects canvas.
+- `src/lib/orbit/engine.js` runs the per-frame animation: orbits, camera and three canvases, from the
+  back: the starfield, the WebGL black hole (a box around the hole, at full resolution) and the 2D
+  effects (orbits, belt, rings). Planets and moons are HTML elements it moves and scales.
 - `src/lib/orbit/system-map.css` holds the map styles, ported from the design mockup.
