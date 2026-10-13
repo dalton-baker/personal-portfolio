@@ -182,6 +182,15 @@
 		if (progEl) progEl.style.transform = 'scaleX(' + Math.min(1, p).toFixed(4) + ')';
 	}
 
+	/** Anything on the map that isn't empty space: bodies, buttons, links, the card, the reader, the lightbox. */
+	const NOT_SPACE = 'a, button, .card, .mpanel, .reader, .lb';
+
+	/** Clicking empty space on the map leaves whatever is selected and returns to the full system view. */
+	function onMapClick(e) {
+		if (!sel || reading || e.button !== 0 || e.target.closest(NOT_SPACE)) return;
+		closeCard();
+	}
+
 	function onKey(e) {
 		if (e.key !== 'Escape') return;
 		if (lightbox.src) lightbox.src = '';
@@ -192,6 +201,7 @@
 
 <svelte:window onkeydown={onKey} />
 
+<!-- svelte-ignore a11y_click_events_have_key_events (clicking empty space is a mouse shortcut; Escape does the same from the keyboard) -->
 <div
 	bind:this={root}
 	class="bh"
@@ -202,6 +212,7 @@
 	onpointermove={(e) => engine?.pointerMove(e)}
 	onpointerleave={() => engine?.pointerLeave()}
 	onpointerover={(e) => engine?.pointerOver(e)}
+	onclick={onMapClick}
 	role="presentation"
 >
 	<canvas bind:this={glCanvas} class="glc" aria-hidden="true"></canvas>

@@ -172,6 +172,9 @@
 
 @media (min-width:760px){
 	.bh{cursor:crosshair}
+	/* While something is selected, empty space zooms back out to the full map. */
+	.bh.card-open{cursor:zoom-out}
+	.bh .card{cursor:auto}
 	.bh .body,.bh .hole-btn{cursor:none}
 	.mpanel{display:none}
 	.hud{display:none}
