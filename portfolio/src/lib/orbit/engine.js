@@ -20,13 +20,16 @@ const FPS_TOUCH = 30;
  * Parallax: the system and, less, the starfield (so the stars read as farther away) drift against the
  * pointer's movement, then settle back once it stops. It follows movement rather than where the pointer
  * is, so a mouse arriving at the edge of the page doesn't slide the view across. A finger dragging on the
- * map does the same. SYSTEM and STARS are the largest drift (CSS px), GAIN is how much of that a move
- * across the whole map gives, and SETTLE is how quickly (seconds) the drift eases back.
+ * map does the same. It's kept small and slow on purpose, since a whole scene lurching after a fast flick
+ * of the mouse is the kind of motion that makes people queasy.
+ * SYSTEM and STARS are the largest drift (CSS px), GAIN is how much of that a move across the whole map
+ * gives, EASE is how slowly (seconds) the view follows the drift, and SETTLE how slowly the drift eases back.
  */
-const PARALLAX_SYSTEM = 10;
-const PARALLAX_STARS = 4;
+const PARALLAX_SYSTEM = 6;
+const PARALLAX_STARS = 2.5;
 const PARALLAX_GAIN = 2;
-const PARALLAX_SETTLE = 1.2;
+const PARALLAX_EASE = 0.6;
+const PARALLAX_SETTLE = 1.5;
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
@@ -502,7 +505,7 @@ export class OrbitEngine {
 		const Z = cam.z;
 		// Parallax: the drift settles back toward the centre and the view eases after it, shifting the whole
 		// system against the pointer's movement.
-		const par = this.par, settle = Math.exp(-dt / PARALLAX_SETTLE), kp = 1 - Math.exp(-dt * 4);
+		const par = this.par, settle = Math.exp(-dt / PARALLAX_SETTLE), kp = 1 - Math.exp(-dt / PARALLAX_EASE);
 		par.tx *= settle;
 		par.ty *= settle;
 		par.x += (par.tx - par.x) * kp;
