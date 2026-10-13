@@ -99,9 +99,11 @@
 				tick().then(resetReaderScroll);
 				return;
 			}
+			// The iris opens from the post's moon. Clamp that point onto the map: from an off-screen moon (say,
+			// following a link from another planet's card) the final circle wouldn't cover the page.
 			const p = engine ? engine.screenPos(post) : { x: 0, y: 0 };
-			readX = p.x;
-			readY = p.y;
+			readX = Math.min(Math.max(p.x, 0), root.clientWidth);
+			readY = Math.min(Math.max(p.y, 0), root.clientHeight);
 			instant = false;
 			closing = false;
 			reading = post;

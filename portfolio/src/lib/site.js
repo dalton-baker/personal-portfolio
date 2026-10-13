@@ -133,6 +133,7 @@ export const bodies = [
 		slug: 'heartland-tanks', kind: 'moon', host: 'live-sites', name: 'Heartland Tanks', category: 'Live site',
 		mt: 2.375, phase: 2.6, size: 1.4, base: '#8fd67c', dark: '#30692a',
 		body: 'Custom website for a South Dakota-based tire tank manufacturer. Built for simplicity, performance, and easy maintenance.',
+		facts: [F('Runs on', 'Prerendered SvelteKit · Cloudflare')],
 		links: [L('heartlandtanks.com', 'https://heartlandtanks.com/')]
 	},
 	{
@@ -146,13 +147,14 @@ export const bodies = [
 		slug: 'department-of-truth', kind: 'moon', host: 'live-sites', name: 'Dalton’s Department of Truth', category: 'Blog',
 		mt: 2.72, phase: 5.7, size: 1.2, base: '#3ddbc4', dark: '#0e6b5f',
 		body: 'A tongue-in-cheek conspiracy blog exploring absurd ideas.',
+		facts: [F('Runs on', 'SvelteKit · Cloudflare · D1 · R2')],
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]
 	},
 	{
 		slug: 'omniscreenz', kind: 'moon', host: 'live-sites', name: 'OmniScreenz', category: 'Live site',
 		mt: 4.45, phase: 1.9, size: 2.6, base: '#ffb35c', dark: '#8a4a12',
 		body: 'I built this website for a coworker at [Omnitech](/omnitech). He makes screensavers and video games, and I wanted him to have a place to show them off.',
-		facts: [F('Runs on', 'SvelteKit · Cloudflare')],
+		facts: [F('Runs on', 'SvelteKit · Cloudflare · D1 · R2')],
 		links: [L('omniscreenz.com', 'https://omniscreenz.com/')]
 	},
 	// A Pluto–Charon style binary on the outermost orbit: the game, and its screensaver as the moon.
