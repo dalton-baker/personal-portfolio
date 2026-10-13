@@ -220,13 +220,19 @@ export class OrbitEngine {
 		if (this.hoverEl === this.cometEl) this.hoverEl = null;
 	}
 
-	/** Moves the comet along, or counts down to the next one while the whole system is in view. */
+	/**
+	 * Moves the comet along, or counts down to the next one, while the whole system is in view. Selecting
+	 * something or opening a post ends a comet in flight (its path was laid out for the overview).
+	 */
 	updateComet(dt, L, Z, ox, oy, st) {
 		const el = this.cometEl;
 		if (!el) return;
 		let c = this.comet;
+		if (st.sel || st.cover) {
+			if (c) this.endComet();
+			return;
+		}
 		if (!c) {
-			if (st.sel || st.cover) return;
 			this.cometWait -= dt;
 			if (this.cometWait > 0) return;
 			c = this.comet = this.newComet(L, Z, ox, oy);
