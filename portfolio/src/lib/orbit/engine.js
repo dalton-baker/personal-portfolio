@@ -35,7 +35,7 @@ const PARALLAX_SETTLE = 1.5;
 
 /**
  * The comet: now and then, while the whole system is in view, one swings around the black hole on a
- * parabolic path (fastest as it passes closest). Clicking it opens Gravity Well. WAIT is how long the map
+ * parabolic path (fastest as it passes closest). Clicking it opens Slingshot. WAIT is how long the map
  * has to sit idle before the first one and between them (seconds, random within the range); PASS is how
  * long it takes to cross.
  */

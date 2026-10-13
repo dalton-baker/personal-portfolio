@@ -1,5 +1,5 @@
 /**
- * A comet's tails, drawn on a 2D canvas (the map's effects canvas, and Gravity Well's comets). Both point
+ * A comet's tails, drawn on a 2D canvas (the map's effects canvas, and Slingshot's comets). Both point
  * away from the star or black hole: a faint straight ion tail, and a dust tail of halftone dots that bends
  * back along the comet's path. (x, y) is the nucleus, (ax, ay) the unit vector away from what it orbits,
  * (vx, vy) its unit direction of travel, len the tail length and s the size of a pixel, in canvas units.

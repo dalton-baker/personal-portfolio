@@ -30,7 +30,7 @@
 	let readX = $state(0);
 	let readY = $state(0);
 	/**
-	 * Gravity Well, the comet's game, open over the map (it lags the URL while its close animation plays).
+	 * Slingshot, the comet's game, open over the map (it lags the URL while its close animation plays).
 	 * It opens with an iris from where the comet was caught, or instantly when its page is loaded directly.
 	 */
 	let playing = $state(untrack(() => slug === game.slug));
@@ -534,8 +534,8 @@
 			style={gameClosing ? '--ox:50%;--oy:50%' : `--ox:${Math.round(gameX)}px;--oy:${Math.round(gameY)}px`}
 		>
 			<!-- Loaded on demand, so the map doesn't carry the game's code. -->
-			{#await import('$lib/game/GravityWell.svelte') then { default: GravityWell }}
-				<GravityWell onclose={closeGame} />
+			{#await import('$lib/game/Slingshot.svelte') then { default: Slingshot }}
+				<Slingshot onclose={closeGame} />
 			{/await}
 		</div>
 	{/if}

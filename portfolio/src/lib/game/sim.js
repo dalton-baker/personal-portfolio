@@ -1,6 +1,6 @@
 /**
- * Gravity Well's physics and rules, with no drawing. Units are game units around the core at (0, 0);
- * GravityWell.svelte scales them to the screen.
+ * Slingshot's physics and rules, with no drawing. Units are game units around the core at (0, 0);
+ * Slingshot.svelte scales them to the screen.
  *
  * Bodies are thrown by dragging back from a point and letting go. Gravity pulls them toward the core (and,
  * a little, toward each other). Each level is a lane, a ring between two radii: keep a body inside it for

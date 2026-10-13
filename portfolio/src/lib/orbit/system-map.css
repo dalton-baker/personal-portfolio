@@ -168,7 +168,7 @@
 .comet{z-index:390;--r:5px;--disc:4px}
 .comet-core{width:7px;height:7px;border-radius:50%;background:#f4fbff;box-shadow:0 0 0 2px rgba(191,233,255,.3),0 0 12px 5px rgba(191,233,255,.4)}
 .scan .comet-core{background:transparent;box-shadow:inset 0 0 0 1.5px #c8ff2e}
-/* Gravity Well, over the map: it opens and closes with the same iris as the reader. */
+/* Slingshot, over the map: it opens and closes with the same iris as the reader. */
 .game{position:absolute;inset:0;z-index:700;background:#07060b;color:#f1eef7;cursor:auto;overflow:hidden;animation:iris .75s cubic-bezier(.7,0,.2,1) .2s both}
 .game.instant{animation:none}
 .game.out{animation:irisout .42s cubic-bezier(.6,0,.4,1) both}

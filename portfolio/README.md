@@ -36,7 +36,7 @@ Every body and post is its own prerendered page, so links to them load straight 
   (`starfield.worker.js`, on an OffscreenCanvas) where the browser supports it; `starfield-host.js`
   starts it. `blackhole.js` holds the black hole shader, which the game uses too.
 - Now and then a comet swings past the black hole (`engine.js`, `comet.js`); catching it opens
-  Gravity Well, a slingshot orbit game in `src/lib/game/` with its own page at `/gravity-well`.
+  Slingshot, an orbit game in `src/lib/game/` with its own page at `/slingshot`.
   Its code only loads when it opens. `/?comet` sends a comet across straight away.
 - `src/lib/fonts/` holds the self-hosted fonts, trimmed to the weights and characters the site uses
   by `scripts/trim-fonts.py` (instructions at the top of the script).

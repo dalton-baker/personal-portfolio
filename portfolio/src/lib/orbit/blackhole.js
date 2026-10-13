@@ -1,5 +1,5 @@
 /**
- * The black hole shader, shared by the map (engine.js) and the Gravity Well game.
+ * The black hole shader, shared by the map (engine.js) and the Slingshot game.
  */
 
 /** WebGL context options: transparent (premultiplied) so the starfield shows around and through the disk. */

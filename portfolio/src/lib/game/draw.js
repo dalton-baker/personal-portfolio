@@ -2,7 +2,7 @@ import { LEVELS, PAYLOADS, REVS } from './sim.js';
 import { drawCometTail } from '$lib/orbit/comet.js';
 
 /**
- * Gravity Well's 2D layer, in the map's style: lanes, the cores other than the black hole (WebGL draws that
+ * Slingshot's 2D layer, in the map's style: lanes, the cores other than the black hole (WebGL draws that
  * one), trails, bodies, the aiming line and its predicted path, and bursts. Drawing happens in game units
  * (the view's scale `s` and centre `cx`, `cy`), so `px` is one CSS pixel in game units.
  */

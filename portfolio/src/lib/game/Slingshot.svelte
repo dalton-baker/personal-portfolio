@@ -6,8 +6,8 @@
 	import { StarfieldHost } from '$lib/orbit/starfield-host.js';
 
 	/**
-	 * Gravity Well: fling bodies around a core and hold them in orbit. It opens over the map when the comet
-	 * is caught (and at /gravity-well). The physics is in sim.js and the drawing in draw.js; the black hole is
+	 * Slingshot: fling bodies around a core and hold them in orbit. It opens over the map when the comet
+	 * is caught (and at /slingshot). The physics is in sim.js and the drawing in draw.js; the black hole is
 	 * the map's own shader, and the stars are the map's starfield.
 	 */
 
@@ -208,7 +208,7 @@
 
 	<div class="gw-top">
 		<div class="gw-head">
-			<div class="kicker">sys://gravity-well</div>
+			<div class="kicker">sys://slingshot — orbit game</div>
 			<h1 class="gw-title">Slingshot</h1>
 		</div>
 		<button class="rback" onclick={onclose}>

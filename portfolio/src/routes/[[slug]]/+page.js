@@ -4,7 +4,7 @@ import { game } from '$lib/game';
 
 /**
  * Every body and post gets its own prerendered page: /about, /log, /telescope, ..., and so does the comet's
- * game (/gravity-well). The home page is listed too (no slug), so it doesn't depend on the default '*'
+ * game (/slingshot). The home page is listed too (no slug), so it doesn't depend on the default '*'
  * prerender entry.
  */
 export function entries() {
