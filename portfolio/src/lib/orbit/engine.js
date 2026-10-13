@@ -618,7 +618,7 @@ export class OrbitEngine {
 			if (st.scan) {
 				ctx.font = '500 10px "Geist Mono", ui-monospace, monospace';
 				ctx.fillStyle = 'rgba(200,255,46,0.9)';
-				const label = (hel.getAttribute('aria-label') || '').replace(/^Post: /, '').replace(/:.*$/, '');
+				const label = hel.dataset.name || '';
 				ctx.fillText(label.toUpperCase(), P.x + 20, P.y - 16);
 			}
 		}

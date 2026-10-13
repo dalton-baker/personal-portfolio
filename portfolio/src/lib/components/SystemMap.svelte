@@ -227,10 +227,11 @@
 			class:is-sel={sel === hole.id}
 			href="/{hole.id}"
 			aria-label={hole.aria}
+			data-name={hole.name}
 			aria-current={slug === hole.id ? 'page' : undefined}
 		>
 			<span class="fb"></span>
-			<span class="hole-label">{scan ? 'Event horizon // about' : 'About'}</span>
+			<span class="hole-label">{hole.name}</span>
 		</a>
 		{#each orbiters as b (b.id)}
 			<a
@@ -240,6 +241,7 @@
 				class:is-sel={sel === b.id}
 				href="/{b.id}"
 				aria-label={b.aria}
+				data-name={b.name}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
 				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
