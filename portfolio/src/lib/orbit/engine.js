@@ -139,6 +139,9 @@ export class OrbitEngine {
 	destroy() {
 		cancelAnimationFrame(this.raf);
 		this.starWorker?.terminate();
+		this.starPending?.terminate();
+		this.starPending = null;
+		clearTimeout(this.starTimer);
 		this.ro?.disconnect();
 		this.glCanvas.removeEventListener('webglcontextlost', this.onContextLost);
 		this.glCanvas.removeEventListener('webglcontextrestored', this.onContextRestored);
@@ -225,6 +228,7 @@ export class OrbitEngine {
 		}
 		this.starWorker?.postMessage({ type: 'size', w: this.W, h: this.H, dpr });
 		this.starfield?.size(this.W, this.H, dpr);
+		this.measured = true;
 	}
 
 	/**
@@ -233,18 +237,56 @@ export class OrbitEngine {
 	 */
 	initStars() {
 		const c = this.starCanvas;
+		let worker = null;
 		if (typeof c.transferControlToOffscreen === 'function' && typeof Worker === 'function') {
 			try {
-				const worker = new Worker(new URL('./starfield.worker.js', import.meta.url), { type: 'module' });
-				const off = c.transferControlToOffscreen();
-				worker.postMessage({ type: 'init', canvas: off, reduced: this.reduced }, [off]);
-				this.starWorker = worker;
-				return;
+				worker = new Worker(new URL('./starfield.worker.js', import.meta.url), { type: 'module' });
 			} catch {
-				// Fall through to drawing here (the canvas is only handed over once the worker exists).
+				worker = null;
 			}
 		}
-		this.starfield = new Starfield(c, this.reduced);
+		if (!worker) return this.drawStarsHere();
+		// The canvas can only be handed over once, so wait for the worker to say it has loaded and can draw.
+		// If it fails to load, can't draw there, or doesn't answer, terminate it and draw here instead.
+		const fail = () => {
+			if (this.starPending !== worker) return;
+			clearTimeout(this.starTimer);
+			this.starPending = null;
+			worker.terminate();
+			this.drawStarsHere();
+		};
+		this.starPending = worker;
+		this.starTimer = setTimeout(fail, 4000);
+		worker.onerror = fail;
+		worker.onmessage = ({ data }) => {
+			if (this.starPending !== worker) return;
+			if (data.type !== 'ready') return fail();
+			clearTimeout(this.starTimer);
+			this.starPending = null;
+			worker.onerror = worker.onmessage = null;
+			const off = c.transferControlToOffscreen();
+			worker.postMessage({ type: 'init', canvas: off, reduced: this.reduced }, [off]);
+			this.starWorker = worker;
+			this.syncStars();
+		};
+	}
+
+	drawStarsHere() {
+		this.starfield = new Starfield(this.starCanvas, this.reduced);
+		this.syncStars();
+	}
+
+	/** Brings a starfield that just started up to date: its size, the scan tint, and whether it's paused. */
+	syncStars() {
+		if (!this.measured) return; // measure() sizes it
+		const dpr = this.dpr, w = this.starWorker, f = this.starfield;
+		w?.postMessage({ type: 'size', w: this.W, h: this.H, dpr });
+		w?.postMessage({ type: 'scan', on: this.starScan });
+		w?.postMessage({ type: 'run', on: this.starRun });
+		if (f) {
+			f.size(this.W, this.H, dpr);
+			f.scanTarget = f.scan = this.starScan ? 1 : 0;
+		}
 	}
 
 	/** Pauses the starfield (reader covering the map, hidden tab) or lets it run again. */

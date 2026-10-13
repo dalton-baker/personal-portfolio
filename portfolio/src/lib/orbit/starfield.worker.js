@@ -1,6 +1,6 @@
 /**
- * Draws the starfield off the main thread. The page transfers the star canvas here and sends its size,
- * the scan mode, and when to pause (the reader covering the map, a hidden tab).
+ * Draws the starfield off the main thread. Once this reports it's ready, the page transfers the star canvas
+ * here and sends its size, the scan mode, and when to pause (the reader covering the map, a hidden tab).
  */
 import { Starfield, STAR_FPS } from './starfield.js';
 
@@ -18,6 +18,16 @@ function loop() {
 	last = now;
 	timer = setTimeout(loop, 1000 / STAR_FPS);
 }
+
+// The page only hands its canvas over once it hears this, since it can't take the canvas back if this
+// worker can't draw on it.
+let canDraw = false;
+try {
+	canDraw = !!new OffscreenCanvas(1, 1).getContext('2d');
+} catch {
+	canDraw = false;
+}
+self.postMessage({ type: canDraw ? 'ready' : 'unsupported' });
 
 self.onmessage = ({ data: m }) => {
 	if (m.type === 'init') {
