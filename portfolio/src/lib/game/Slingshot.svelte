@@ -457,6 +457,18 @@
 		border-radius: 50%;
 		background: #c8ff2e;
 	}
+	/* The site's hover (a lime fill with dark text), restated: the chips' own background would otherwise
+	   win and leave dark text on a dark button. */
+	@media (hover: hover) {
+		.gw :global(.lnk.gw-chip:hover) {
+			border-color: #c8ff2e;
+			background: #c8ff2e;
+			color: #07060b;
+		}
+		.gw :global(.lnk.gw-chip.on:hover)::before {
+			background: #07060b;
+		}
+	}
 	.gw :global(.lnk:focus-visible) {
 		outline: 2px solid #c8ff2e;
 		outline-offset: 2px;
