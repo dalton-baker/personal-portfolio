@@ -733,7 +733,9 @@ void main(){
     vec3 filled = mix(col, band(k), fill);
     vec3 scanC = col + lime*contour*0.85 + lime*0.04*edge;
     col = mix(filled, scanC, uScan);
-    float hc = 7.0*uPx; vec2 cc = (floor(f/hc) + 0.5)*hc;
+    // Halftone dots on a grid anchored to the black hole, so they move with it (parallax, camera) instead
+    // of the hole sliding under a fixed screen grid.
+    float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
     vec2 pc = (cc - uC)/uR; float rcc = length(vec2(pc.x, pc.y/uTy));
     float g = pow(smoothstep(1.55, 0.8, rcc), 2.0)*step(0.62, rcc);
     float hr = hc*0.36*sqrt(g);
