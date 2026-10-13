@@ -301,8 +301,10 @@
 				<span class="tip" aria-hidden="true">{b.label}</span>
 				{#if hintId === b.id}
 					<span class="hint-tag" aria-hidden="true"
-						><span class="hint-text">{hintVerb} me</span
-						><svg class="hint-arrow" width="18" height="12" viewBox="0 0 18 12"><path d="M3.5 3h11L9 9z"></path></svg></span
+						><span class="hint-bob"
+							><span class="hint-text">{hintVerb} me</span
+							><svg class="hint-arrow" width="18" height="12" viewBox="0 0 18 12"><path d="M3.5 3h11L9 9z"></path></svg></span
+						></span
 					>
 				{/if}
 			</a>
@@ -311,7 +313,7 @@
 
 	<header class="hdr">
 		<div class="kicker">sys://daltonsbaker.com — system map</div>
-		<h1>Dalton<br />Baker</h1>
+		<h1 data-text={'Dalton\nBaker'}>Dalton<br />Baker</h1>
 		<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 		<div class="hdr-actions">{@render scanToggle()}</div>
 	</header>
@@ -343,7 +345,7 @@
 	{#if !sel}
 		<section class="mpanel" aria-label="Intro">
 			<div class="kicker">sys://daltonsbaker.com</div>
-			<h1>Dalton Baker</h1>
+			<h1 data-text="Dalton Baker">Dalton Baker</h1>
 			<p class="tagline">Software engineer. Maker. Builder of things both useful and ridiculous.</p>
 		</section>
 	{/if}

@@ -1,4 +1,5 @@
 <script>
+	import '$lib/fonts/fonts.css';
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 

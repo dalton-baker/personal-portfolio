@@ -59,13 +59,15 @@
 /* First-visit hint above a planet: a small tag and a chunky rounded arrow pointing down at it. It's part of
    the planet's link, so clicking it opens that planet. */
 .body.hinted{z-index:398!important}
-.hint-tag{position:absolute;left:50%;bottom:calc(50% + var(--disc,8px) + 5px);display:flex;flex-direction:column;align-items:center;gap:3px;transform:translateX(-50%);white-space:nowrap;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;animation:hintin .5s ease-out 1.2s both,hintbob 1.8s ease-in-out 1.7s infinite}
+.hint-tag{position:absolute;left:50%;bottom:calc(50% + var(--disc,8px) + 5px);transform:translateX(-50%);white-space:nowrap;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;animation:hintin .5s ease-out 1.2s both}
+/* The bob is on its own element: two transform animations on one element can't both run on the compositor. */
+.hint-bob{display:flex;flex-direction:column;align-items:center;gap:3px;animation:hintbob 1.8s ease-in-out 1.7s infinite}
 .hint-text{padding:3px 6px;background:rgba(7,6,11,.78)}
 .hint-arrow{display:block;overflow:visible}
 .hint-arrow path{fill:#c8ff2e;stroke:#c8ff2e;stroke-width:3.5;stroke-linejoin:round}
 @keyframes hintin{from{opacity:0;transform:translate(-50%,6px)}}
-@keyframes hintbob{50%{transform:translate(-50%,-4px)}}
-@media (prefers-reduced-motion:reduce){.hint-tag{animation:hintin .5s ease-out 1.2s both}}
+@keyframes hintbob{50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.hint-bob{animation:none}}
 .bh:not(.scan) .label{display:none}
 .moon{pointer-events:none}
 .moon.active{pointer-events:auto}
@@ -86,10 +88,18 @@
 .nogl .fb{display:block;position:absolute;inset:31%;border-radius:50%;background:#000;box-shadow:0 0 0 3px #fff4d6,0 0 0 10px #ff5a1f,0 0 0 18px #c2187a,0 0 0 26px #3b0d5e}
 .hdr{position:absolute;left:36px;top:30px;max-width:400px;z-index:400;pointer-events:none}
 .kicker{font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c8ff2e}
-.hdr h1,.mpanel h1{margin:14px 0 0;font:800 46px/.92 'Unbounded',system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:#f1eef7;pointer-events:none;user-select:none;animation:glitch 7s steps(1) infinite}
+.hdr h1,.mpanel h1{position:relative;isolation:isolate;margin:14px 0 0;font:800 46px/.92 'Unbounded',system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:#f1eef7;pointer-events:none;user-select:none;animation:glitch 7s steps(1) infinite}
 .hdr{user-select:none}
-@keyframes glitch{0%,90%,100%{text-shadow:none;transform:none}91%{text-shadow:-3px 0 #ff2e88,3px 0 #c8ff2e;transform:translateX(2px)}93%{text-shadow:4px 0 #ff2e88,-3px 0 #c8ff2e;transform:translateX(-3px) skewX(-8deg)}95%{text-shadow:-1px 0 #ff2e88,1px 0 #c8ff2e;transform:none}}
-@media (prefers-reduced-motion:reduce){.hdr h1,.mpanel h1,.rays{animation:none}}
+/* The glitch's colour fringes are two copies of the name (data-text) behind it, flashed and shifted with
+   opacity and transform only, so the compositor runs the whole animation. The empty alt text keeps screen
+   readers from reading the copies. */
+.hdr h1::before,.hdr h1::after,.mpanel h1::before,.mpanel h1::after{content:attr(data-text) / "";position:absolute;left:0;top:0;width:100%;z-index:-1;white-space:pre-line;opacity:0;animation:7s steps(1) infinite}
+.hdr h1::before,.mpanel h1::before{color:#ff2e88;animation-name:glitchpink}
+.hdr h1::after,.mpanel h1::after{color:#c8ff2e;animation-name:glitchlime}
+@keyframes glitch{0%,90%,100%{transform:none}91%{transform:translateX(2px)}93%{transform:translateX(-3px) skewX(-8deg)}95%{transform:none}}
+@keyframes glitchpink{0%,90%,100%{opacity:0;transform:none}91%{opacity:1;transform:translateX(-3px)}93%{opacity:1;transform:translateX(4px)}95%{opacity:1;transform:translateX(-1px)}}
+@keyframes glitchlime{0%,90%,100%{opacity:0;transform:none}91%{opacity:1;transform:translateX(3px)}93%{opacity:1;transform:translateX(-3px)}95%{opacity:1;transform:translateX(1px)}}
+@media (prefers-reduced-motion:reduce){.hdr h1,.mpanel h1,.hdr h1::before,.hdr h1::after,.mpanel h1::before,.mpanel h1::after,.rays{animation:none}}
 .tagline{margin:14px 0 0;font:500 16px/1.4 'Geist',system-ui,sans-serif;color:#f1eef7}
 .hud{position:absolute;right:28px;top:28px;display:flex;align-items:center;gap:14px;z-index:420;font:400 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;color:rgba(241,238,247,.55)}
 .hdr-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
@@ -101,11 +111,13 @@
 @media (hover:hover){.scanbtn:hover .frame{background:#c8ff2e}.scanbtn:hover .frame::before{background:#161c0b}}
 .bh .scanbtn.on{color:#07060b}
 .scanbtn.on .frame,.scanbtn.on .frame::before{background:#c8ff2e}
-.led{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45}
-.scanbtn:not(.on) .led{animation:standby 2.4s ease-in-out infinite}
-@keyframes standby{50%{opacity:1;box-shadow:0 0 8px currentColor}}
+.led{position:relative;width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45}
+/* The standby pulse fades a fixed glow in and out (opacity only, so the compositor runs it). */
+.led::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 8px currentColor;opacity:0}
+.scanbtn:not(.on) .led,.scanbtn:not(.on) .led::after{animation:standby 2.4s ease-in-out infinite}
+@keyframes standby{50%{opacity:1}}
 .scanbtn.on .led{opacity:1;background:#07060b}
-@media (prefers-reduced-motion:reduce){.scanbtn .led{animation:none}}
+@media (prefers-reduced-motion:reduce){.scanbtn .led,.scanbtn .led::after{animation:none}}
 .card{position:absolute;top:20px;right:20px;bottom:20px;width:392px;overflow:auto;padding:0 0 26px;background:#0e0d15;z-index:500;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,22px 100%,0 calc(100% - 22px));animation:cardin .3s cubic-bezier(.2,.9,.2,1)}
 @keyframes cardin{0%{opacity:0;transform:translateX(24px) skewX(-4deg)}60%{opacity:1}100%{opacity:1;transform:none}}
 @keyframes sheetin{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}

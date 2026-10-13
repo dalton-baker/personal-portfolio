@@ -10,7 +10,9 @@ const config = {
 			pages: 'dist',
 			assets: 'dist',
 			fallback: '404.html'
-		})
+		}),
+		// Inline the stylesheets into each page (they're small) so the first paint doesn't wait on extra requests.
+		inlineStyleThreshold: 64 * 1024
 	}
 };
 
