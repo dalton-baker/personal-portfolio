@@ -322,13 +322,12 @@ export function drawScene(c, sim, view, drag, t, dt, gl) {
 		c.globalAlpha = 1;
 	}
 
-	// Comets shed their tails (not while they're held for a re-throw).
+	// Comets' tails, pointing away from the core.
 	for (const b of sim.bodies) {
 		if (b.kind !== 'comet') continue;
 		let tail = tails.get(b);
-		// Thrown comets move fast for their size, so their dust holds on to most of their speed.
-		if (!tail) tails.set(b, (tail = new CometTail(90, 0.88)));
-		tail.update(dt, b.x, b.y, b.vx, b.vy, cometStrength(Math.hypot(b.x, b.y), 140), !b.held);
+		if (!tail) tails.set(b, (tail = new CometTail(80)));
+		tail.update(dt, b.x, b.y, b.vx, b.vy, cometStrength(Math.hypot(b.x, b.y), 140));
 		tail.draw(c, b.x, b.y, px);
 	}
 
