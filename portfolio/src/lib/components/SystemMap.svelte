@@ -99,9 +99,11 @@
 				tick().then(resetReaderScroll);
 				return;
 			}
+			// The iris opens from the post's moon. Clamp that point onto the map: from an off-screen moon (say,
+			// following a link from another planet's card) the final circle wouldn't cover the page.
 			const p = engine ? engine.screenPos(post) : { x: 0, y: 0 };
-			readX = p.x;
-			readY = p.y;
+			readX = Math.min(Math.max(p.x, 0), root.clientWidth);
+			readY = Math.min(Math.max(p.y, 0), root.clientHeight);
 			instant = false;
 			closing = false;
 			reading = post;
@@ -182,6 +184,15 @@
 		if (progEl) progEl.style.transform = 'scaleX(' + Math.min(1, p).toFixed(4) + ')';
 	}
 
+	/** Anything on the map that isn't empty space: bodies, buttons, links, the card, the reader, the lightbox. */
+	const NOT_SPACE = 'a, button, .card, .mpanel, .reader, .lb';
+
+	/** Clicking empty space on the map leaves whatever is selected and returns to the full system view. */
+	function onMapClick(e) {
+		if (!sel || reading || e.button !== 0 || e.target.closest(NOT_SPACE)) return;
+		closeCard();
+	}
+
 	function onKey(e) {
 		if (e.key !== 'Escape') return;
 		if (lightbox.src) lightbox.src = '';
@@ -192,6 +203,7 @@
 
 <svelte:window onkeydown={onKey} />
 
+<!-- svelte-ignore a11y_click_events_have_key_events (clicking empty space is a mouse shortcut; Escape does the same from the keyboard) -->
 <div
 	bind:this={root}
 	class="bh"
@@ -202,6 +214,7 @@
 	onpointermove={(e) => engine?.pointerMove(e)}
 	onpointerleave={() => engine?.pointerLeave()}
 	onpointerover={(e) => engine?.pointerOver(e)}
+	onclick={onMapClick}
 	role="presentation"
 >
 	<canvas bind:this={glCanvas} class="glc" aria-hidden="true"></canvas>
@@ -214,10 +227,11 @@
 			class:is-sel={sel === hole.id}
 			href="/{hole.id}"
 			aria-label={hole.aria}
+			data-name={hole.name}
 			aria-current={slug === hole.id ? 'page' : undefined}
 		>
 			<span class="fb"></span>
-			<span class="hole-label">{scan ? 'Event horizon // about' : 'About'}</span>
+			<span class="hole-label">{hole.name}</span>
 		</a>
 		{#each orbiters as b (b.id)}
 			<a
@@ -227,6 +241,7 @@
 				class:is-sel={sel === b.id}
 				href="/{b.id}"
 				aria-label={b.aria}
+				data-name={b.label}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
 				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
@@ -240,8 +255,8 @@
 						<span class="sat" style={b.sat.style}><span class="dot" style={b.sat.dotStyle}><span class="shade" style={b.sat.shadeStyle}></span></span></span>
 					{/if}
 				</span>
-				<span class="label" style={b.labelStyle}><span class="lname">{b.name}</span></span>
-				<span class="tip" aria-hidden="true">{b.name}</span>
+				<span class="label"><span class="lname">{b.label}</span></span>
+				<span class="tip" aria-hidden="true">{b.label}</span>
 			</a>
 		{/each}
 	</nav>

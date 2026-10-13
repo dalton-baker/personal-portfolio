@@ -3,7 +3,8 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
 /**
  * Everything on the system map except the blog posts (those live in $lib/posts).
  *
- * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ...
+ * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ... `name` titles its card; an optional
+ * shorter `label` is used for its name on the map (hover and scan labels).
  *
  * `body` is the card text: a string, or an array of paragraphs. [Text](/slug) inside it links to
  * another body or post. `contact` adds a Contact section above the card's links.
@@ -87,17 +88,20 @@ export const bodies = [
 	{
 		slug: 'web-tools', kind: 'rock', name: 'Web Tools', category: 'Tool',
 		t: 0.32, phase: 1.2, size: 10, base: '#b9b2a8', dark: '#56504a',
-		body: 'A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.',
+		body: [
+			'A browser-based, locally-running collection of web dev tools, including image utilities for icons, WebP conversions, and more.',
+			'I mostly built this for myself. I got tired of searching for simple tools online and ending up on sketchy websites packed with ads. So I started making my own and putting them all in one place.'
+		],
 		links: [L('tools.dalt.dev', 'https://tools.dalt.dev/')]
 	},
 	{
-		slug: 'cosmos-db-query-converter', kind: 'rock', name: 'Cosmos DB Query Converter', category: 'Package',
+		slug: 'cosmos-db-query-converter', kind: 'rock', name: 'Cosmos DB Query Converter', label: 'Cosmos Query NuGet', category: 'Package',
 		t: 0.36, phase: 3.1, size: 9, base: '#c9c1d6', dark: '#5a5268',
 		body: 'A lightweight NuGet package for writing native Cosmos DB SQL queries with automatic parameterization.',
 		links: [L('NuGet', 'https://www.nuget.org/packages/DBaker.CosmosDbQueryConverter')]
 	},
 	{
-		slug: 'dependency-registration-attributes', kind: 'rock', name: 'Dependency Registration Attributes', category: 'Package',
+		slug: 'dependency-registration-attributes', kind: 'rock', name: 'Dependency Registration Attributes', label: 'DI Attributes NuGet', category: 'Package',
 		t: 0.4, phase: 5.0, size: 11, base: '#a9b8ad', dark: '#4b5a4f',
 		body: 'A lightweight NuGet package that simplifies dependency injection by letting you register services using C# attributes.',
 		links: [L('NuGet', 'https://www.nuget.org/packages/DBaker.DepRegAttributes')]
@@ -133,6 +137,7 @@ export const bodies = [
 		slug: 'heartland-tanks', kind: 'moon', host: 'live-sites', name: 'Heartland Tanks', category: 'Live site',
 		mt: 2.375, phase: 2.6, size: 1.4, base: '#8fd67c', dark: '#30692a',
 		body: 'Custom website for a South Dakota-based tire tank manufacturer. Built for simplicity, performance, and easy maintenance.',
+		facts: [F('Runs on', 'Prerendered SvelteKit · Cloudflare')],
 		links: [L('heartlandtanks.com', 'https://heartlandtanks.com/')]
 	},
 	{
@@ -146,13 +151,14 @@ export const bodies = [
 		slug: 'department-of-truth', kind: 'moon', host: 'live-sites', name: 'Dalton’s Department of Truth', category: 'Blog',
 		mt: 2.72, phase: 5.7, size: 1.2, base: '#3ddbc4', dark: '#0e6b5f',
 		body: 'A tongue-in-cheek conspiracy blog exploring absurd ideas.',
+		facts: [F('Runs on', 'SvelteKit · Cloudflare · D1 · R2')],
 		links: [L('truth.dalt.dev', 'https://truth.dalt.dev')]
 	},
 	{
 		slug: 'omniscreenz', kind: 'moon', host: 'live-sites', name: 'OmniScreenz', category: 'Live site',
 		mt: 4.45, phase: 1.9, size: 2.6, base: '#ffb35c', dark: '#8a4a12',
 		body: 'I built this website for a coworker at [Omnitech](/omnitech). He makes screensavers and video games, and I wanted him to have a place to show them off.',
-		facts: [F('Runs on', 'SvelteKit · Cloudflare')],
+		facts: [F('Runs on', 'SvelteKit · Cloudflare · D1 · R2')],
 		links: [L('omniscreenz.com', 'https://omniscreenz.com/')]
 	},
 	// A Pluto–Charon style binary on the outermost orbit: the game, and its screensaver as the moon.

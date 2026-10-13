@@ -69,11 +69,13 @@
 		object-fit: cover;
 		transition: opacity 0.15s;
 	}
-	.g-thumb:hover {
-		border-color: #ff2e88;
-	}
-	.g-thumb:hover img {
-		opacity: 0.85;
+	@media (hover: hover) {
+		.g-thumb:hover {
+			border-color: #ff2e88;
+		}
+		.g-thumb:hover img {
+			opacity: 0.85;
+		}
 	}
 	.g-thumb:focus-visible {
 		outline: 2px solid #c8ff2e;

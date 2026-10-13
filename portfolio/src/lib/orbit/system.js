@@ -73,6 +73,7 @@ function decorate(b) {
 	// Outer edge of a giant's always-visible rings (in planet radii), so its frame and label clear them.
 	if (b.rings) b.ringsOuter = Math.max(...b.rings.filter((r) => !r[3]).map((r) => r[1]));
 	if (b.kind === 'moon') b.mspeed ??= 0.32 * Math.pow(0.9 / b.mt, 0.8);
+	b.label ??= b.name;
 	b.paras = toParas(b.body);
 	b.summary = b.paras[0].map((seg) => seg.text).join('');
 	b.facts = b.facts || [];
@@ -93,7 +94,6 @@ function decorate(b) {
 			shadeStyle: 'background:linear-gradient(90deg,rgba(0,0,0,0) 0 47%,#55514b 47% 100%)'
 		};
 	}
-	b.labelStyle = `margin-left:${Math.round(s / 2 + 12)}px`;
 	b.aria = b.post ? 'Post: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
 	if (b.kind === 'giant') b.swatch ??= '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
