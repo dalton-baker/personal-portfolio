@@ -2,10 +2,12 @@
  * System map styles, ported from the design mockup. Kept global (not scoped)
  * so the cascade matches the mockup exactly, including `.bh button` resetting
  * button fonts. Phone layout is a media query instead of a JS class so
- * prerendered pages lay out correctly before hydration.
+ * prerendered pages lay out correctly before hydration. Hover styles sit in (hover:hover) blocks so a tap
+ * on a phone (which leaves the tapped element "hovered") doesn't leave a body looking selected.
  */
 .bh{position:relative;width:100%;height:100vh;height:100dvh;min-height:560px;overflow:hidden;background:#07060b;color:#f1eef7;font-family:'Geist',system-ui,sans-serif}
-.bh a{color:#c8ff2e}.bh a:hover{color:#e4ff9a}
+.bh a{color:#c8ff2e}
+@media (hover:hover){.bh a:hover{color:#e4ff9a}}
 .bh *{box-sizing:border-box}
 .bh button{font:inherit;color:inherit}
 .bh canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -20,10 +22,12 @@
    the black hole's frame sits 6px outside its event horizon. */
 .body::before{inset:min(-2px,calc(16px - var(--r,0px)))}
 .hole-btn::before{inset:calc(50% - var(--hr,30px) - 6px)}
-.body:hover::before,.body:focus-visible::before,.body.is-sel::before,.hole-btn:hover::before,.hole-btn:focus-visible::before,.hole-btn.is-sel::before{opacity:1}
+.body:focus-visible::before,.body.is-sel::before,.hole-btn:focus-visible::before,.hole-btn.is-sel::before{opacity:1}
+@media (hover:hover){.body:hover::before,.hole-btn:hover::before{opacity:1}}
 /* Hovered or selected bodies draw above their neighbours (still under the header and card); a giant's
    moons stay above the giant's own label while they're in play. */
-.body:hover,.body:focus-visible,.body.is-sel{z-index:399!important}
+.body:focus-visible,.body.is-sel{z-index:399!important}
+@media (hover:hover){.body:hover{z-index:399!important}}
 .body.moon.active{z-index:400!important}
 .body:focus-visible,.hole-btn:focus-visible,.post:focus-visible,.scanbtn:focus-visible,.lnk:focus-visible,.x:focus-visible{outline:2px solid #c8ff2e;outline-offset:2px}
 .dotwrap{position:relative;display:block;will-change:transform}
@@ -35,12 +39,14 @@
 @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 .label{position:absolute;left:50%;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:3px;white-space:nowrap;pointer-events:none}
 .lname{font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(241,238,247,.78);transition:color .15s}
-.body:hover .lname,.body.is-sel .lname{color:#c8ff2e}
+.body.is-sel .lname{color:#c8ff2e}
+@media (hover:hover){.body:hover .lname{color:#c8ff2e}}
 /* Name under a body on hover or when selected, like the black hole's "About"; it sits just below the frame,
    on a dark plate so it stays readable over the accretion disk.
    --r is the body's drawn radius, set by the engine. */
 .tip{position:absolute;left:50%;top:calc(50% + max(24px,var(--r,0px) + 6px) + 3px);padding:3px 5px;background:rgba(7,6,11,.78);transform:translateX(-50%);white-space:nowrap;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;opacity:0;transition:opacity .15s;pointer-events:none}
-.body:hover .tip,.body:focus-visible .tip,.body.is-sel .tip{opacity:1}
+.body:focus-visible .tip,.body.is-sel .tip{opacity:1}
+@media (hover:hover){.body:hover .tip{opacity:1}}
 .scan .tip{display:none}
 .bh:not(.scan) .label{display:none}
 .moon{pointer-events:none}
@@ -50,10 +56,12 @@
 .scan .shade,.scan .rays{display:none}
 .hole-btn{position:absolute;left:-60px;top:-60px;width:120px;height:120px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;z-index:150;will-change:transform;-webkit-tap-highlight-color:transparent}
 .hole-label{position:absolute;left:50%;top:calc(50% + var(--hr,30px) + 6px);transform:translateX(-50%);margin-top:5px;padding:3px 5px;background:rgba(7,6,11,.78);white-space:nowrap;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e;opacity:0;transition:opacity .15s}
-.hole-btn:hover .hole-label,.hole-btn:focus-visible .hole-label,.hole-btn.is-sel .hole-label{opacity:1}
+.hole-btn:focus-visible .hole-label,.hole-btn.is-sel .hole-label{opacity:1}
+@media (hover:hover){.hole-btn:hover .hole-label{opacity:1}}
 /* In scan mode it's always shown, styled like the other bodies' scan labels until hovered or selected. */
 .scan .hole-label{opacity:1}
-.scan .hole-btn:not(:hover):not(:focus-visible):not(.is-sel) .hole-label{color:rgba(241,238,247,.78);letter-spacing:.1em}
+.scan .hole-btn:not(:focus-visible):not(.is-sel) .hole-label{color:rgba(241,238,247,.78);letter-spacing:.1em}
+@media (hover:hover){.scan .hole-btn:hover:not(.is-sel) .hole-label{color:#c8ff2e;letter-spacing:.12em}}
 .fb{display:none}
 .nogl .fb{display:block;position:absolute;inset:31%;border-radius:50%;background:#000;box-shadow:0 0 0 3px #fff4d6,0 0 0 10px #ff5a1f,0 0 0 18px #c2187a,0 0 0 26px #3b0d5e}
 .hdr{position:absolute;left:36px;top:30px;max-width:400px;z-index:400;pointer-events:none}
@@ -70,8 +78,7 @@
 .bh .scanbtn{position:relative;isolation:isolate;pointer-events:auto;display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 22px 0 14px;border:0;background:transparent;cursor:pointer;font:500 11.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#c8ff2e}
 .scanbtn .frame{position:absolute;inset:0;z-index:-1;background:#67821c;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);transition:background .15s}
 .scanbtn .frame::before{content:"";position:absolute;inset:1.5px;background:#07060b;clip-path:polygon(0 0,calc(100% - 11.1px) 0,100% 11.1px,100% 100%,0 100%);transition:background .15s}
-.scanbtn:hover .frame{background:#c8ff2e}
-.scanbtn:hover .frame::before{background:#161c0b}
+@media (hover:hover){.scanbtn:hover .frame{background:#c8ff2e}.scanbtn:hover .frame::before{background:#161c0b}}
 .bh .scanbtn.on{color:#07060b}
 .scanbtn.on .frame,.scanbtn.on .frame::before{background:#c8ff2e}
 .led{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45}
@@ -87,7 +94,7 @@
 .card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .tag{font:500 10.5px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#c8ff2e}
 .x{flex:none;width:44px;height:44px;margin-right:-12px;display:grid;place-items:center;border:0;background:transparent;cursor:pointer;color:rgba(241,238,247,.7)}
-.x:hover{color:#c8ff2e}
+@media (hover:hover){.x:hover{color:#c8ff2e}}
 .card h2{margin:10px 0 0;font:800 30px/1.02 'Unbounded',system-ui,sans-serif;letter-spacing:-.025em;color:#f1eef7}
 .desc{margin:16px 0 0;font:400 15px/1.6 'Geist',system-ui,sans-serif;color:rgba(241,238,247,.86)}
 .desc+.desc{margin-top:12px}
@@ -101,13 +108,14 @@
 .card-h{margin-top:22px;font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,238,247,.5)}
 .posts{list-style:none;margin:8px -10px 0;padding:0}
 .post{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr);gap:4px 8px;padding:11px 10px;min-height:44px;border:0;background:transparent;text-align:left;text-decoration:none;cursor:pointer;border-left:2px solid transparent}
-.post:hover{background:rgba(241,238,247,.05);border-left-color:#ff2e88}
+@media (hover:hover){.post:hover{background:rgba(241,238,247,.05);border-left-color:#ff2e88}}
 .pn{grid-row:span 2;font:500 11px/1.6 'Geist Mono',ui-monospace,monospace;color:#ff2e88}
 .pt{font:500 15px/1.3 'Geist',system-ui,sans-serif;color:#f1eef7}
 .pd{font:400 10.5px/1.4 'Geist Mono',ui-monospace,monospace;color:rgba(241,238,247,.5)}
 /* A selected moon: its entry in The Log's list expands with the summary and a Read post button. */
 .post-item.on{background:rgba(255,46,136,.08);box-shadow:inset 2px 0 #ff2e88}
-.post-item.on .post,.post-item.on .post:hover{background:transparent;border-left-color:transparent}
+.post-item.on .post{background:transparent;border-left-color:transparent}
+@media (hover:hover){.post-item.on .post:hover{background:transparent;border-left-color:transparent}}
 .post-more{padding:2px 10px 16px 50px;animation:postin .22s cubic-bezier(.2,.9,.2,1)}
 @keyframes postin{from{opacity:0;transform:translateY(-4px)}}
 .post-dek{margin:0 0 14px;font:400 14px/1.55 'Geist',system-ui,sans-serif;color:rgba(241,238,247,.78)}
@@ -116,13 +124,13 @@
 .post-more .links{margin-top:14px}
 .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 .bh .lnk{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 16px;border:1.5px solid rgba(241,238,247,.25);color:#f1eef7;text-decoration:none;font:500 12px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
-.bh .lnk:hover{border-color:#c8ff2e;background:#c8ff2e;color:#07060b}
+@media (hover:hover){.bh .lnk:hover{border-color:#c8ff2e;background:#c8ff2e;color:#07060b}}
 .mpanel{position:absolute;left:0;right:0;bottom:0;max-height:45%;overflow:auto;padding:18px 18px 24px;background:#0e0d15;z-index:400;clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%)}
 .mpanel h1{font-size:34px;margin-top:10px}
 .mpanel .tagline{font-size:15px;margin-top:10px}
 /* "Read post" is a button in the mockup and inherits its 16px font from .bh button; it is a link here, so restate that. */
 .bh .lnk.primary{border-color:#ff2e88;background:#ff2e88;color:#07060b;cursor:pointer;font:400 16px/normal 'Geist Mono',ui-monospace,monospace}
-.bh .lnk.primary:hover{background:#c8ff2e;border-color:#c8ff2e}
+@media (hover:hover){.bh .lnk.primary:hover{background:#c8ff2e;border-color:#c8ff2e}}
 .reader{position:absolute;inset:0;z-index:700;overflow-y:auto;overflow-x:hidden;background:#0b0a11;color:#f1eef7;cursor:auto;animation:iris .75s cubic-bezier(.7,0,.2,1) .2s both}
 .reader.instant{animation:none}
 @keyframes iris{from{clip-path:circle(0px at var(--ox) var(--oy))}to{clip-path:circle(150% at var(--ox) var(--oy))}}
@@ -132,7 +140,7 @@
 .rprog{position:absolute;left:0;right:0;bottom:-1px;height:2px}
 .rprog-fill{height:100%;background:#ff2e88;transform-origin:0 50%;transform:scaleX(0)}
 .rback{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 12px;border:1.5px solid #c8ff2e;background:transparent;cursor:pointer;font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#c8ff2e}
-.rback:hover{background:#c8ff2e;color:#07060b}
+@media (hover:hover){.rback:hover{background:#c8ff2e;color:#07060b}}
 .rcrumb{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:500 11px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#ff2e88}
 .rcol{max-width:720px;margin:0 auto;padding:64px 24px 96px}
 .rkicker{font:500 11.5px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(241,238,247,.55)}
@@ -147,7 +155,7 @@
 .rnav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
 .rnext{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:18px;min-height:44px;text-align:left;text-decoration:none;border:1.5px solid rgba(241,238,247,.14);background:transparent;cursor:pointer}
 .rnext.right{align-items:flex-end;text-align:right}
-.rnext:hover{border-color:#ff2e88}
+@media (hover:hover){.rnext:hover{border-color:#ff2e88}}
 .rnext-k{font:500 10.5px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#ff2e88}
 .rnext-t{font:600 15px/1.3 'Geist',system-ui,sans-serif;color:#f1eef7}
 .rback2{margin-top:28px}
@@ -162,7 +170,7 @@
 .prose li{margin-bottom:6px;padding-left:.35em}
 .prose li::marker{font:500 14px 'Geist Mono',ui-monospace,monospace;color:#ff2e88}
 .prose a{color:#c8ff2e;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
-.prose a:hover{color:#e4ff9a}
+@media (hover:hover){.prose a:hover{color:#e4ff9a}}
 .prose strong,.prose b{font-weight:600;color:#f1eef7}
 .prose code{font:400 .84em 'Geist Mono',ui-monospace,monospace;color:#e6f7b8;background:#13111c;padding:.15em .4em}
 .prose pre{margin:30px 0;padding:18px 20px;background:#13111c;border-left:2px solid #c8ff2e;overflow-x:auto;font:400 13.5px/1.7 'Geist Mono',ui-monospace,monospace;color:#e6f7b8;white-space:pre}
