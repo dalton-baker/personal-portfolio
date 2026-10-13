@@ -365,7 +365,7 @@ export function drawScene(c, sim, view, drag, t, dt, gl) {
 	// what's about to be thrown.
 	if (drag) {
 		const r = drag.body ? drag.body.r : sim.nextRadius();
-		const v = sim.launchVel(drag), pr = sim.predict(drag.ox, drag.oy, v[0], v[1], r), pts = pr.pts, n = pts.length / 2;
+		const v = sim.launchVel(drag), pr = sim.predict(drag.ox, drag.oy, v[0], v[1], r, drag.body), pts = pr.pts, n = pts.length / 2;
 		for (let i = 0; i < n; i++) {
 			c.fillStyle = lime(0.9 * (1 - i / n) + 0.08);
 			c.beginPath();

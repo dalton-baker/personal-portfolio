@@ -365,12 +365,12 @@ export class Sim {
 	 * the simulation, so a throw that skims the core is judged the same way; `r` is the radius of what's
 	 * thrown, since a body is eaten a little before its centre reaches the core (see collide). It ignores the
 	 * other bodies, except in empty space, where they're all there is to pull on it (then it counts them
-	 * where they are now).
+	 * where they are now); `self` is the body being re-thrown, if it is one, so it doesn't pull on itself.
 	 */
-	predict(ox, oy, vx, vy, r = 0, steps = 640) {
+	predict(ox, oy, vx, vy, r = 0, self = null, steps = 640) {
 		let x = ox, y = oy, t = this.simT;
 		const h = STEP, pts = [];
-		const others = this.core === 'empty' ? {} : null;
+		const others = this.core === 'empty' ? self || {} : null;
 		let srcs = this.sources(t), a = this.accel(x, y, srcs, others), hit = false;
 		for (let i = 0; i < steps; i++) {
 			vx += a[0] * h * 0.5;
