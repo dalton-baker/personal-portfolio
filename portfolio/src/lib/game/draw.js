@@ -1,5 +1,5 @@
 import { LEVELS, PAYLOADS, REVS } from './sim.js';
-import { drawCometTail } from '$lib/orbit/comet.js';
+import { CometTail, cometStrength } from '$lib/orbit/comet.js';
 
 /**
  * Slingshot's 2D layer, in the map's style: lanes, the cores other than the black hole (WebGL draws that
@@ -79,12 +79,10 @@ function blob(c, x, y, r, verts, rot) {
 export function drawBody(c, b, px) {
 	const x = b.x, y = b.y, r = Math.max(b.r, 3.5 * px), away = Math.atan2(y, x);
 	if (b.kind === 'comet') {
-		const sp = Math.hypot(b.vx || 0, b.vy || 0), d = Math.hypot(x, y) || 1;
-		const len = Math.min(70, 14 + 9000 / d) * (b.held ? 0.4 : 1);
-		drawCometTail(c, x, y, x / d, y / d, sp ? b.vx / sp : 0, sp ? b.vy / sp : 0, len, px * 0.9);
-		c.fillStyle = 'rgba(191,233,255,0.35)';
+		// Just the nucleus and a faint coma; its tails are drawn by drawScene.
+		c.fillStyle = 'rgba(191,233,255,0.3)';
 		c.beginPath();
-		c.arc(x, y, r * 1.9, 0, TAU);
+		c.arc(x, y, r * 2.2, 0, TAU);
 		c.fill();
 		c.fillStyle = b.color;
 		c.beginPath();
@@ -250,11 +248,15 @@ function frame(c, x, y, h, px) {
 	c.stroke();
 }
 
+/** Each thrown comet's tails, kept with the body. */
+const tails = new WeakMap();
+
 /**
  * Draws a frame. `view` is { W, H, dpr, s, cx, cy, compact }; `drag` the throw being aimed, if any;
- * `t` the time (s) for the cores' motion; `gl` whether WebGL is drawing the black hole.
+ * `t` the time (s) for the cores' motion and `dt` the time since the last frame; `gl` whether WebGL is
+ * drawing the black hole.
  */
-export function drawScene(c, sim, view, drag, t, gl) {
+export function drawScene(c, sim, view, drag, t, dt, gl) {
 	const { W, H, dpr, s, cx, cy } = view, px = 1 / s;
 	c.setTransform(dpr, 0, 0, dpr, 0, 0);
 	c.clearRect(0, 0, W, H);
@@ -318,6 +320,16 @@ export function drawScene(c, sim, view, drag, t, gl) {
 			c.stroke();
 		}
 		c.globalAlpha = 1;
+	}
+
+	// Comets shed their tails (not while they're held for a re-throw).
+	for (const b of sim.bodies) {
+		if (b.kind !== 'comet') continue;
+		let tail = tails.get(b);
+		// Thrown comets move fast for their size, so their dust holds on to most of their speed.
+		if (!tail) tails.set(b, (tail = new CometTail(90, 0.88)));
+		tail.update(dt, b.x, b.y, b.vx, b.vy, cometStrength(Math.hypot(b.x, b.y), 140), !b.held);
+		tail.draw(c, b.x, b.y, px);
 	}
 
 	// Bodies, with the selection frame on locked ones and a progress arc while one's in the lane.

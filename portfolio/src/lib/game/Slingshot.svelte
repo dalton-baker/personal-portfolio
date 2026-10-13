@@ -164,7 +164,7 @@
 				sync();
 			}
 			const showHole = sim.core === 'hole' && !!prog;
-			if (ctx && view.W) drawScene(ctx, sim, view, drag, t, showHole);
+			if (ctx && view.W) drawScene(ctx, sim, view, drag, t, dt, showHole);
 			glCanvas.style.display = showHole ? '' : 'none';
 			if (showHole) {
 				gl.viewport(0, 0, hole.w, hole.w);

@@ -1,7 +1,7 @@
 import { kep, all, byId, moons, hosts, pulsar, belt } from './system.js';
 import { StarfieldHost } from './starfield-host.js';
 import { HOLE_GL_OPTIONS, createHoleProgram } from './blackhole.js';
-import { drawCometTail } from './comet.js';
+import { CometTail, cometStrength } from './comet.js';
 
 /** The canvases render at the device's pixel ratio, up to 3x (current phones). */
 const MAX_DPR = 3;
@@ -34,13 +34,13 @@ const PARALLAX_EASE = 0.6;
 const PARALLAX_SETTLE = 1.5;
 
 /**
- * The comet: now and then, while the whole system is in view, one swings around the black hole on a
- * parabolic path (fastest as it passes closest). Clicking it opens Slingshot. WAIT is how long the map
- * has to sit idle before the first one and between them (seconds, random within the range); PASS is how
- * long it takes to cross.
+ * The comet: now and then one crosses the map on a parabolic orbit around the black hole (fastest as it
+ * passes closest). Clicking it opens Slingshot. WAIT is how long the map waits before the first one and
+ * between them (seconds, random within the range; it doesn't count while a post or the game covers the
+ * map), and PASS how long one takes to cross the view.
  */
-const COMET_FIRST_WAIT = [15, 40];
-const COMET_WAIT = [50, 110];
+const COMET_FIRST_WAIT = [8, 20];
+const COMET_WAIT = [25, 55];
 const COMET_PASS = 16;
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
@@ -101,7 +101,7 @@ export class OrbitEngine {
 		this.par = { x: 0, y: 0, tx: 0, ty: 0 };
 		/** Where the pointer was at its last move, or null until it moves over the map (or a finger lands). */
 		this.parPrev = null;
-		/** The comet in flight (see newComet), or null; idle map time left before the next one. */
+		/** The comet in flight (see newComet), or null; time left before the next one. */
 		this.comet = null;
 		this.cometWait = between(COMET_FIRST_WAIT);
 		this.cometSpd = 1;
@@ -190,27 +190,42 @@ export class OrbitEngine {
 	}
 
 	/**
-	 * A new flyby, in map units around the hole: its closest approach q (from just outside the disk to the
-	 * belt), the way it's turned and which way it goes round. On a parabola r = q (1 + D^2), where
-	 * D = tan(angle / 2), and (Barker's equation) the time from the closest point is k (D + D^3 / 3). It
-	 * starts and ends just off screen, crossing in COMET_PASS seconds.
+	 * A new flyby, in map units around the hole. On a parabola with closest approach q, r = q (1 + D^2) where
+	 * D = tan(angle from the closest point / 2), and (Barker's equation) the time from the closest point is
+	 * k (D + D^3 / 3). With the whole system in view it swings close past the hole; zoomed in on something,
+	 * the orbit is aimed through a point near the middle of the view instead (for a point at distance d,
+	 * reached at D, q = d / (1 + D^2)). Either way it's timed to cross the view in COMET_PASS seconds, from
+	 * just off screen to just off screen. Null if no such path is in view.
 	 */
-	newComet(L, Z, ox, oy) {
-		const q = L.rmin * (0.95 + Math.random() * 0.75), rot = Math.random() * Math.PI * 2, dir = Math.random() < 0.5 ? 1 : -1;
-		const m = 60;
-		// How far along the parabola (as D) it is off screen, going each way from the closest point.
-		const edge = (sign) => {
-			let D = 0.05;
-			for (; D < 40; D *= 1.08) {
-				const r = q * (1 + D * D), th = rot + 2 * Math.atan(sign * D) * dir;
-				const x = ox + r * Math.cos(th) * Z, y = oy + r * Math.sin(th) * L.ty * Z;
-				if (x < -m || y < -m || x > this.W + m || y > this.H + m) break;
+	newComet(L, Z, ox, oy, st) {
+		const W = this.W, H = this.H, m = 60, dir = Math.random() < 0.5 ? 1 : -1;
+		const inView = (x, y) => x > -m && y > -m && x < W + m && y < H + m;
+		let q = L.rmin * (0.95 + Math.random() * 0.75), rot = Math.random() * Math.PI * 2, u0 = 0;
+		if (st.sel) {
+			const spread = 0.5 * Math.min(W, H), sx = this.cam.cx + (Math.random() - 0.5) * spread, sy = this.cam.cy + (Math.random() - 0.5) * spread;
+			const wx = (sx - ox) / Z, wy = (sy - oy) / (Z * L.ty), d = Math.hypot(wx, wy);
+			if (d > L.rmin * 1.2) {
+				const D = (Math.random() * 2 - 1) * 1.3;
+				u0 = Math.atan(D);
+				q = d / (1 + D * D);
+				rot = Math.atan2(wy, wx) - 2 * u0 * dir;
 			}
-			return D + (D * D * D) / 3;
+		}
+		// Walk along the orbit (u = atan D) both ways from that point to where it leaves the view.
+		const shown = (u) => {
+			const D = Math.tan(u), r = q * (1 + D * D), th = rot + 2 * u * dir;
+			return inView(ox + r * Math.cos(th) * Z, oy + r * Math.sin(th) * L.ty * Z);
 		};
-		const before = edge(-1), after = edge(1);
-		const T = COMET_PASS * (this.reduced ? 1.6 : 1), k = T / (before + after);
-		return { q, k, t: -k * before, end: k * after, rot, dir };
+		const walk = (sign) => {
+			let u = u0;
+			while (Math.abs(u) < 1.55 && shown(u + sign * 0.004)) u += sign * 0.004;
+			return u;
+		};
+		const a = walk(-1), b = walk(1);
+		if (b - a < 0.05) return null;
+		const f = (u) => Math.tan(u) + Math.tan(u) ** 3 / 3;
+		const k = (COMET_PASS * (this.reduced ? 1.6 : 1)) / (f(b) - f(a));
+		return { q, k, t: k * f(a), end: k * f(b), rot, dir, tail: new CometTail(L.rmin) };
 	}
 
 	endComet() {
@@ -221,41 +236,46 @@ export class OrbitEngine {
 	}
 
 	/**
-	 * Moves the comet along, or counts down to the next one, while the whole system is in view. Selecting
-	 * something or opening a post ends a comet in flight (its path was laid out for the overview).
+	 * Moves the comet along, or counts down to the next one. A post or the game covering the map ends a
+	 * comet in flight; anything else (a planet's card, the camera zooming) it just flies through.
 	 */
 	updateComet(dt, L, Z, ox, oy, st) {
 		const el = this.cometEl;
 		if (!el) return;
 		let c = this.comet;
-		if (st.sel || st.cover) {
+		if (st.cover) {
 			if (c) this.endComet();
 			return;
 		}
 		if (!c) {
 			this.cometWait -= dt;
 			if (this.cometWait > 0) return;
-			c = this.comet = this.newComet(L, Z, ox, oy);
+			c = this.comet = this.newComet(L, Z, ox, oy, st);
+			if (!c) {
+				this.cometWait = 3;
+				return;
+			}
 			this.cometSpd = 1;
 			el.style.display = '';
 		}
 		// It slows right down while the pointer is on it, so it can be caught.
 		this.cometSpd += ((this.hoverEl === el ? 0.2 : 1) - this.cometSpd) * Math.min(1, dt * 6);
 		c.t += dt * this.cometSpd;
-		if (c.t > c.end) return this.endComet();
 		// Solve Barker's equation for D (a cubic with one real root), then place it on the parabola.
 		const m = c.t / c.k, w = Math.cbrt(1.5 * m + Math.sqrt(2.25 * m * m + 1)), D = w - 1 / w;
 		const r = c.q * (1 + D * D), th = c.rot + 2 * Math.atan(D) * c.dir;
 		c.r = r;
-		c.px = r * Math.cos(th);
-		c.py = r * Math.sin(th) * L.ty;
-		// Direction of travel (the parabola's tangent), for the bend of the dust tail.
-		const tx = D * Math.cos(th) - c.dir * Math.sin(th), ty = (D * Math.sin(th) + c.dir * Math.cos(th)) * L.ty;
-		const tl = Math.hypot(tx, ty) || 1;
-		c.vx = tx / tl;
-		c.vy = ty / tl;
+		const px = r * Math.cos(th), py = r * Math.sin(th) * L.ty;
+		// Its velocity (map units per second), for the tails it sheds.
+		const vx = c.px != null && dt > 0 ? (px - c.px) / dt : 0, vy = c.py != null && dt > 0 ? (py - c.py) / dt : 0;
+		c.px = px;
+		c.py = py;
+		c.tail.update(dt, px, py, vx, vy, cometStrength(r, L.rmin * 1.2));
 		c.sx = ox + c.px * Z;
 		c.sy = oy + c.py * Z;
+		// It's done once it's past the end of its pass and off screen (the camera may have moved since).
+		const out = c.sx < -80 || c.sy < -80 || c.sx > this.W + 80 || c.sy > this.H + 80;
+		if (c.t > c.end && (out || c.t > c.end + 25)) return this.endComet();
 		const sx = Math.round(c.sx * 10), sy = Math.round(c.sy * 10);
 		if (sx !== c.tx || sy !== c.ty) {
 			c.tx = sx;
@@ -859,9 +879,10 @@ export class OrbitEngine {
 		ctx.globalAlpha = 1;
 		const c = this.comet;
 		if (c && c.sx != null) {
-			// Tails grow as it nears the hole.
-			const ax = c.px / c.r, ay = c.py / c.r, len = Math.min(150, 26 + 80 * Math.pow(L.rmin / c.r, 0.9)) * bz;
-			drawCometTail(ctx, c.sx, c.sy, ax, ay, c.vx, c.vy, len, bz);
+			// The tails live in map units around the hole, so they hold together while the camera moves.
+			ctx.setTransform(this.dpr * Z, 0, 0, this.dpr * Z, this.dpr * ox, this.dpr * oy);
+			c.tail.draw(ctx, c.px, c.py, 1 / Z);
+			ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 		}
 		const P = this.ptr;
 		const hel = this.hoverEl;
