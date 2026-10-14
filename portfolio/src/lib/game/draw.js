@@ -135,15 +135,24 @@ function drawGiant(c, R) {
 	c.restore();
 }
 
-/** A star without WebGL: its flames and disk bands as flat circles (see stars.js). */
+/** A star without WebGL: a faint haze, a disk in the star's main tone, and its bright rim (see stars.js). */
 function drawFlatStar(c, x, y, R, name) {
 	const p = PALETTES[name];
-	for (const [k, col] of [[1.22, p.flame[1]], [1.12, p.flame[0]], [1, p.disk[2]], [0.8, p.disk[1]], [0.48, p.disk[0]]]) {
-		c.fillStyle = col;
-		c.beginPath();
-		c.arc(x, y, R * k, 0, TAU);
-		c.fill();
-	}
+	c.globalAlpha = 0.18;
+	c.fillStyle = p.haze;
+	c.beginPath();
+	c.arc(x, y, R * 1.6, 0, TAU);
+	c.fill();
+	c.globalAlpha = 1;
+	c.fillStyle = p.tones[2];
+	c.beginPath();
+	c.arc(x, y, R, 0, TAU);
+	c.fill();
+	c.strokeStyle = p.rim;
+	c.lineWidth = R * 0.08;
+	c.beginPath();
+	c.arc(x, y, R * 0.96, 0, TAU);
+	c.stroke();
 }
 
 /** The black hole without WebGL: the map's fallback rings. */

@@ -1,32 +1,42 @@
 import { buildProgram } from '$lib/orbit/blackhole.js';
 
 /**
- * Slingshot's stars, drawn by WebGL on the black hole's canvas, in the map's flat, posterized style: up to
- * two (the star, or the binary pair). Each is a disk of flat colour bands whose edges wobble as its surface
- * flows, with sunspots (a dark blob in a lighter ring) that drift and change shape, inside two bands of
- * flame like the black hole's disk. Around it are a flat four-point starburst, like the background's
- * sparkle stars, and a halftone haze like the black hole's. Like the black hole, it outputs premultiplied
- * colour with coverage over the starfield.
+ * Slingshot's stars, drawn by WebGL on the black hole's canvas in the map's flat, posterized style: up to
+ * two (the star, or the binary pair). Each is a circle of mottled, posterized surface (dark patches, the
+ * star's colour, bright active regions) that slowly flows, with a bright rim and a faint, even haze. The
+ * big star (detail 1) also has dark sunspots and, now and then, a small arc of flare looping out from its
+ * edge; the binary's small stars (detail 0) keep to coarser mottling and the rim, so they stay clean when
+ * they're small, fast and close together. Like the black hole, it outputs premultiplied colour with
+ * coverage over the starfield.
  */
 
-/** Palettes, centre out: disk bands, the two flames, the haze's dots near and far, and the sunspots. */
+/** Palettes: surface tones dark to hot, the rim, the haze, sunspot penumbra and umbra, and flares. */
 export const PALETTES = {
-	yellow: {
-		disk: ['#fff4d6', '#ffe58a', '#ffc93c'],
-		flame: ['#ff5a1f', '#c2187a'],
-		dots: ['#ffb12e', '#7a1f5c'],
-		spot: ['#e0701a', '#5a1d08']
+	sun: {
+		tones: ['#c2410c', '#ff6a13', '#ff9f2b', '#ffd166', '#fff4d6'],
+		rim: '#ffd98a',
+		haze: '#ff8a1f',
+		spot: ['#a8330a', '#3d1004'],
+		flare: '#ffb83a'
 	},
 	blue: {
-		disk: ['#f2f8ff', '#bcdcff', '#6fa8ff'],
-		flame: ['#3f6fe8', '#2a2f8a'],
-		dots: ['#6fa8ff', '#2a2f8a'],
-		spot: ['#4f7fe0', '#16245e']
+		tones: ['#2a55c8', '#3f7cff', '#6fa8ff', '#a9cfff', '#e6f2ff'],
+		rim: '#e0f0ff',
+		haze: '#5f95ff',
+		spot: ['#2a55c8', '#16245e'],
+		flare: '#bcdcff'
+	},
+	yellow: {
+		tones: ['#e07a10', '#ffb12e', '#ffd166', '#fff1c2', '#fffaf0'],
+		rim: '#fff1c2',
+		haze: '#ffb12e',
+		spot: ['#c25a0c', '#5a1d08'],
+		flare: '#ffd166'
 	}
 };
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-const flat = (p) => [...p.disk, ...p.flame, ...p.dots, ...p.spot].flatMap(rgb);
+const flat = (p) => [...p.tones, p.rim, p.haze, ...p.spot, p.flare].flatMap(rgb);
 
 const FRAG = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -34,10 +44,10 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 uC; uniform float uT; uniform float uPx; uniform float uGlow;
-uniform vec4 uS0; uniform vec4 uS1; uniform vec2 uSpots;
-// Each star's palette: disk bands 0-2, flames 3-4, dots near/far 5-6, spot penumbra/umbra 7-8.
-uniform vec3 uP0[9]; uniform vec3 uP1[9];
+uniform vec2 uC; uniform float uT; uniform float uPx;
+uniform vec4 uS0; uniform vec4 uS1; uniform vec2 uSpots; uniform vec2 uDetail;
+// Each star's palette: tones 0-4 (dark to hot), rim 5, haze 6, spot penumbra 7 and umbra 8, flare 9.
+uniform vec3 uP0[10]; uniform vec3 uP1[10];
 
 float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
 float noise(vec2 p){
@@ -51,81 +61,79 @@ float fbm(vec2 p){
 }
 // Premultiplied "over".
 void over(inout vec4 acc, vec3 c, float a){ acc = vec4(c*a + acc.rgb*(1.0 - a), a + acc.a*(1.0 - a)); }
-// Coverage of "v < edge", antialiased over w.
+// Coverage of "v < edge" and "v > edge", antialiased over w.
 float inside(float v, float edge, float w){ return clamp((edge - v)/w + 0.5, 0.0, 1.0); }
+float above(float v, float edge, float w){ return 1.0 - inside(v, edge, w); }
 
-// A star's position in its own radii, and the glare's (sized as if it were at least uGlow px across).
+// A position in the star's radii (s = centre in px from uC with y up, radius in px, and whether it's there).
 vec2 local(vec2 f, vec4 s){ return (f - uC - s.xy)/s.z; }
-float glowR(vec4 s){ return max(s.z, uGlow); }
 
-// The four-point starburst, with shorter diagonals, its length breathing a little.
-void burst(inout vec4 acc, vec2 f, vec4 s, vec3 c, float seed){
+// A faint, even haze around the star, fading out a little way from its edge.
+void haze(inout vec4 acc, vec2 f, vec4 s, vec3 c, float detail){
   if (s.w < 0.5) return;
-  float g = glowR(s), w = uPx/g;
-  vec2 p = (f - uC - s.xy)/g;
-  float L = 3.0 + 0.2*sin(uT*1.3 + seed);
-  float a = 0.0;
-  for (int k = 0; k < 2; k++) {
-    vec2 q = k == 0 ? abs(p) : abs(vec2(p.x + p.y, p.x - p.y))*0.7071;
-    float l = k == 0 ? L : L*0.5, wd = k == 0 ? 0.075 : 0.05;
-    a = max(a, inside(q.y, wd*(1.0 - q.x/l), w)*step(q.x, l));
-    a = max(a, inside(q.x, wd*(1.0 - q.y/l), w)*step(q.y, l));
-  }
-  over(acc, c, a*0.92);
+  float e = max(length(local(f, s)) - 1.0, 0.0);
+  float a = mix(0.2, 0.22, detail)*(1.0 - smoothstep(0.0, mix(0.45, 0.9, detail), e))*(0.65 + 0.35*exp(-e*5.0));
+  over(acc, c, a);
 }
 
-// Two bands of flame around the disk; their edges wobble and flow like the black hole's disk.
-void flames(inout vec4 acc, vec2 f, vec4 s, vec3 inner, vec3 outer, float seed){
+// Now and then, a small arc of flare loops out from a random point on the edge, grows, and fades. Three
+// independent timers, each skipping most of its turns, so they come rarely and at odd moments.
+void flares(inout vec4 acc, vec2 f, vec4 s, vec3 c, float seed){
   if (s.w < 0.5) return;
   vec2 p = local(f, s);
-  float d = length(p), a = atan(p.y, p.x), w = 1.2*uPx/s.z;
-  vec2 ring = vec2(cos(a), sin(a));
-  float wob = 0.07*sin(5.0*a - uT*1.2 + seed) + 0.05*sin(9.0*a + uT*1.9 + seed*2.0) + 0.12*(fbm(ring*1.8 + vec2(uT*0.35, seed)) - 0.5);
-  float r1 = 1.22 + wob, r2 = 1.0 + (r1 - 1.0)*0.55 + 0.03*sin(7.0*a - uT*2.3 + seed);
-  over(acc, outer, inside(d, r1, w));
-  over(acc, inner, inside(d, r2, w));
+  float w = 1.2*uPx/s.z;
+  for (int k = 0; k < 3; k++) {
+    float fk = float(k), tt = uT/(5.0 + fk*2.3) + fk*0.37 + seed;
+    float slot = floor(tt), q = fract(tt)/0.6;
+    if (q > 1.0 || hash(vec2(slot, fk + seed)) > 0.45) continue;
+    float ang = hash(vec2(slot*1.7, fk*3.1 + seed))*6.2832;
+    vec2 foot = vec2(cos(ang), sin(ang));
+    // A loop standing on the edge: an arc stretched outward, so it's taller than it is wide.
+    float rr = (0.09 + 0.1*hash(vec2(slot, 9.1 + fk)))*smoothstep(0.0, 0.45, q);
+    vec2 r = p - foot*(1.0 + rr*0.35);
+    vec2 lp = vec2(dot(r, vec2(-foot.y, foot.x)), dot(r, foot)*0.62);
+    float ring = abs(length(lp) - rr);
+    over(acc, c, inside(ring, 0.032*(1.0 - 0.35*q), w)*(1.0 - smoothstep(0.65, 1.0, q)));
+  }
 }
 
-// The disk: flat bands whose edges wobble as the surface flows, and sunspots that drift and change shape.
-void disk(inout vec4 acc, vec2 f, vec4 s, vec3 b0, vec3 b1, vec3 b2, vec3 pen, vec3 umb, float spots, float seed){
+// The disk: mottled, posterized surface that slowly flows, sunspots (big star), and a bright rim.
+void disk(inout vec4 acc, vec2 f, vec4 s, vec3 P[10], float spots, float detail, float seed){
   if (s.w < 0.5) return;
   vec2 p = local(f, s);
   float d = length(p), w = 1.2*uPx/s.z;
   float cover = inside(d, 1.0, w);
   if (cover <= 0.0) return;
-  vec2 flow = vec2(uT*0.12, -uT*0.08);
-  vec2 warp = vec2(fbm(p*1.6 + flow + seed), fbm(p*1.6 - flow + seed + 5.2));
-  float v = d + (fbm(p*2.2 + (warp - 0.5)*1.4 + vec2(-uT*0.1, uT*0.15)) - 0.5)*0.3;
-  vec3 c = b2;
-  c = mix(c, b1, inside(v, 0.8, w*1.5));
-  c = mix(c, b0, inside(v, 0.48, w*1.5));
-  float n = fbm(p*2.8 + (warp - 0.5)*2.0 + seed*1.7), t0 = 0.66 + (1.0 - spots)*0.2;
-  float keep = inside(d, 0.86, w*4.0);
-  c = mix(c, pen, (1.0 - inside(n, t0, w*0.8))*keep);
-  c = mix(c, umb, (1.0 - inside(n, t0 + 0.06, w*0.8))*keep);
+  float k = mix(1.5, 2.6, detail), nw = 0.012;
+  vec2 flow = vec2(uT*0.06, -uT*0.045);
+  vec2 warp = vec2(fbm(p*k*0.7 + flow + seed), fbm(p*k*0.7 - flow + seed + 5.2));
+  float n = fbm(p*k + (warp - 0.5)*1.6 + vec2(-uT*0.05, uT*0.07) + seed*1.3);
+  // Tone bands; the small stars sit in their bright tones, with only gentle mottling.
+  vec4 t = mix(vec4(0.1, 0.36, 0.56, 0.7), vec4(0.31, 0.47, 0.6, 0.69), detail);
+  vec3 c = P[0];
+  c = mix(c, P[1], above(n, t.x, nw));
+  c = mix(c, P[2], above(n, t.y, nw));
+  c = mix(c, P[3], above(n, t.z, nw));
+  c = mix(c, P[4], above(n, t.w, nw));
+  if (spots > 0.0) {
+    float m = fbm(p*3.2 + (warp - 0.5)*2.0 + seed*2.3 - flow*0.5), t0 = 0.68 + (1.0 - spots)*0.25;
+    float keep = inside(d, 0.84, w*4.0);
+    c = mix(c, P[7], above(m, t0, nw)*keep);
+    c = mix(c, P[8], above(m, t0 + 0.05, nw)*keep);
+  }
+  c = mix(c, P[5], above(d, 1.0 - mix(0.07, 0.05, detail), w));
   over(acc, c, cover);
 }
 
 void main(){
   vec2 f = gl_FragCoord.xy;
   vec4 acc = vec4(0.0);
-  // Halftone haze on one grid for both stars (anchored to the middle, like the black hole's): dots big and
-  // bright near a star, shrinking away from it, coloured by whichever star they belong to most.
-  float hc = 7.0*uPx; vec2 cc = uC + (floor((f - uC)/hc) + 0.5)*hc;
-  float g0 = uS0.w > 0.5 ? pow(clamp((3.4 - length(cc - uC - uS0.xy)/glowR(uS0))/2.4, 0.0, 1.0), 1.5) : 0.0;
-  float g1 = uS1.w > 0.5 ? pow(clamp((3.4 - length(cc - uC - uS1.xy)/glowR(uS1))/2.4, 0.0, 1.0), 1.5) : 0.0;
-  float gl = max(g0, g1);
-  if (gl > 0.002) {
-    vec3 dc = g0 >= g1 ? mix(uP0[6], uP0[5], g0) : mix(uP1[6], uP1[5], g1);
-    float hr = hc*0.46*sqrt(gl);
-    over(acc, dc, inside(length(f - cc), hr, uPx*1.2));
-  }
-  burst(acc, f, uS1, uP1[1], 11.7);
-  burst(acc, f, uS0, uP0[1], 3.1);
-  flames(acc, f, uS1, uP1[3], uP1[4], 11.7);
-  flames(acc, f, uS0, uP0[3], uP0[4], 3.1);
-  disk(acc, f, uS1, uP1[0], uP1[1], uP1[2], uP1[7], uP1[8], uSpots.y, 11.7);
-  disk(acc, f, uS0, uP0[0], uP0[1], uP0[2], uP0[7], uP0[8], uSpots.x, 3.1);
+  haze(acc, f, uS1, uP1[6], uDetail.y);
+  haze(acc, f, uS0, uP0[6], uDetail.x);
+  if (uDetail.y > 0.5) flares(acc, f, uS1, uP1[9], 11.7);
+  if (uDetail.x > 0.5) flares(acc, f, uS0, uP0[9], 3.1);
+  disk(acc, f, uS1, uP1, uSpots.y, uDetail.y, 11.7);
+  disk(acc, f, uS0, uP0, uSpots.x, uDetail.x, 3.1);
   gl_FragColor = acc;
 }
 `;
@@ -139,7 +147,7 @@ export function createStarProgram(gl) {
 	const cache = [null, null];
 	return {
 		use: p.use,
-		u: { C: U('uC'), T: U('uT'), Px: U('uPx'), Glow: U('uGlow'), S0: U('uS0'), S1: U('uS1'), Spots: U('uSpots') },
+		u: { C: U('uC'), T: U('uT'), Px: U('uPx'), S0: U('uS0'), S1: U('uS1'), Spots: U('uSpots'), Detail: U('uDetail') },
 		palette(i, name) {
 			if (cache[i] === name) return;
 			cache[i] = name;

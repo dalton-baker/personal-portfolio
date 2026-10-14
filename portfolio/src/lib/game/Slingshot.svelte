@@ -18,7 +18,7 @@
 	/** The black hole's disk radius in game units, so its photon ring sits at the core's edge (30 units). */
 	const HOLE_R = 110;
 	/** How far (game units) the WebGL canvas reaches from the middle: the black hole's haze, or a star's glare. */
-	const REACH = { hole: HOLE_R * 1.75, star: 200 };
+	const REACH = { hole: HOLE_R * 1.75, star: 120 };
 	/** Most pixels the WebGL canvas renders; past that (a big, sharp screen) it renders lower and is scaled up. */
 	const GL_BUDGET = 1.6e6;
 	const MAX_DPR = 3;
@@ -198,7 +198,6 @@
 					gl.uniform2f(u.C, mid, mid);
 					gl.uniform1f(u.T, t);
 					gl.uniform1f(u.Px, hole.q);
-					gl.uniform1f(u.Glow, 32 * k);
 					[u.S0, u.S1].forEach((loc, i) => {
 						const s = srcs[i];
 						if (s) gl.uniform4f(loc, s.x * k, -s.y * k, s.r * k, 1);
@@ -206,6 +205,7 @@
 					});
 					defs.forEach((def, i) => starProg.palette(i, def.palette));
 					gl.uniform2f(u.Spots, defs[0].spots, (defs[1] || defs[0]).spots);
+					gl.uniform2f(u.Detail, defs[0].detail, (defs[1] || defs[0]).detail);
 				}
 				gl.drawArrays(gl.TRIANGLES, 0, 3);
 			}
