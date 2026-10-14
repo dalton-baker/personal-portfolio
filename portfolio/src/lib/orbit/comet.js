@@ -1,10 +1,11 @@
 /**
  * A comet's tails (on the map, and for Slingshot's comets). The comet orbits whatever sits at (0, 0) and
  * both tails point away from it, as a real comet's do:
- * - the ion tail: a long, solid, tapering ribbon pointing straight away from the core, whose far end
- *   wiggles (a slow wave runs down it) and bends a little back along the comet's path;
- * - the dust tail: a fainter, warmer, wider ribbon that curves back along the path.
- * Both grow as the comet nears the core. Everything is in the caller's units; `unit` sets the scale.
+ * - the ion tail: a long, solid ribbon pointing straight away from the core, easing into a slight curve
+ *   back along the comet's path, with a little drift only past that curve;
+ * - the dust tail: a fainter, warmer ribbon that fans out as it curves back along the path.
+ * Both start as wide as the nucleus and grow longer as the comet nears the core. Everything is in the
+ * caller's units; `unit` sets the scale.
  */
 
 let coma = null;
@@ -34,6 +35,8 @@ export class CometTail {
 		this.unit = unit;
 		this.t = Math.random() * 10;
 		this.strength = -1;
+		/** Opacity, for fading a comet out. */
+		this.alpha = 1;
 		/** Unit vector pointing back along the comet's path (smoothed), for the bend. */
 		this.bx = 0;
 		this.by = 0;
@@ -57,16 +60,18 @@ export class CometTail {
 	}
 
 	/**
-	 * The centre line of a tail from the nucleus at (x, y): `len` long, heading along (ax, ay) and bending
-	 * back by `bend` (a fraction of its length, reached at the end), with a wiggle of `amp` (also a fraction
-	 * of its length) that grows toward the end and travels outward.
+	 * The centre line of a tail from the nucleus at (x, y), `len` long, heading along (ax, ay): straight at
+	 * first, then from `curveFrom` (a fraction of the way along) it curves back along the path by `bend` (a
+	 * fraction of its length, reached at the end), and only from `driftFrom` on does it drift a little, by up
+	 * to `drift` of its length, slowly.
 	 */
-	line(x, y, ax, ay, len, bend, amp, waves, speed, phase) {
+	line(x, y, ax, ay, len, curveFrom, bend, driftFrom, drift, phase) {
 		const nx = -ay, ny = ax, bx = this.bx, by = this.by;
 		for (let i = 0; i < N; i++) {
 			const f = i / (N - 1), s = f * len;
-			const w = amp * len * f * f * Math.sin(f * waves * Math.PI * 2 - this.t * speed + phase);
-			const b = bend * len * f * f;
+			const c = Math.max(0, (f - curveFrom) / (1 - curveFrom)), e = Math.max(0, (f - driftFrom) / (1 - driftFrom));
+			const b = bend * len * c * c;
+			const w = drift * len * e * e * Math.sin(f * Math.PI * 1.6 - this.t * 1.3 + phase);
 			this.xs[i] = x + ax * s + bx * b + nx * w;
 			this.ys[i] = y + ay * s + by * b + ny * w;
 		}
@@ -96,28 +101,45 @@ export class CometTail {
 		return g;
 	}
 
-	/** Draws both tails and the glow around the nucleus at (x, y); `px` is one screen pixel in these units. */
-	draw(ctx, x, y, px) {
-		const u = this.unit, s = Math.max(0.3, this.strength), d = Math.hypot(x, y) || 1, ax = x / d, ay = y / d;
-		const len = u * (0.75 + 0.85 * s), w0 = Math.max(u * 0.075, 5 * px);
+	/**
+	 * Draws both tails and the glow around the nucleus at (x, y); `px` is one screen pixel in these units.
+	 * The tails start as wide as the nucleus (`head`, 7 screen pixels unless given) and point away from
+	 * (0, 0) unless a direction (ax, ay) is given.
+	 */
+	draw(ctx, x, y, px, ax, ay, head = 7 * px) {
+		if (ax == null || (!ax && !ay)) {
+			const d = Math.hypot(x, y) || 1;
+			ax = x / d;
+			ay = y / d;
+		}
+		const len = this.unit * (0.75 + 0.85 * Math.max(0.3, this.strength));
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = this.alpha;
 
-		// Dust: shorter, wider and fainter, curving back along the path, its end swaying slowly.
-		this.line(x, y, ax, ay, len * 0.72, 0.42, 0.05, 0.8, 1.6, 1.3);
-		ctx.fillStyle = this.fade(ctx, '255,236,214', [[0, 0.32], [0.45, 0.14], [1, 0]]);
-		this.ribbon(ctx, (f) => w0 * (0.9 + 1.6 * f));
+		// Dust: shorter and fainter, fanning out as it curves back along the path.
+		this.line(x, y, ax, ay, len * 0.72, 0.15, 0.4, 0.6, 0.012, 1.3);
+		ctx.fillStyle = this.fade(ctx, '255,236,214', [[0, 0.3], [0.45, 0.13], [1, 0]]);
+		this.ribbon(ctx, (f) => head * (1 + 3.2 * f));
 
-		// Ion: long and straight from the head, a slow wave rippling its end.
-		this.line(x, y, ax, ay, len, 0.12, 0.07, 1.4, 2.6, 0);
+		// Ion: long and straight, easing into a slight curve, with a little drift only past that.
+		this.line(x, y, ax, ay, len, 0.35, 0.13, 0.6, 0.018, 0);
+		const cx = Float32Array.from(this.xs), cy = Float32Array.from(this.ys);
+		const wide = (f) => head * (1 + 0.9 * f);
 		ctx.fillStyle = this.fade(ctx, '170,220,255', [[0, 0.55], [0.35, 0.26], [1, 0]]);
-		this.ribbon(ctx, (f) => w0 * (1 - 0.8 * f));
+		this.ribbon(ctx, wide);
 		ctx.fillStyle = this.fade(ctx, '228,246,255', [[0, 0.85], [0.3, 0.3], [0.75, 0]]);
-		this.ribbon(ctx, (f) => w0 * 0.38 * (1 - 0.85 * f));
-		// A couple of fainter strands running along it, out of step, so it has some texture.
-		ctx.lineWidth = Math.max(px, w0 * 0.08);
-		for (const [off, ph] of [[0.28, 1.7], [-0.3, 3.9]]) {
-			this.line(x - ay * w0 * off, y + ax * w0 * off, ax, ay, len * 0.9, 0.13, 0.078, 1.5, 2.4, ph);
+		this.ribbon(ctx, (f) => head * 0.5 * (1 + 0.3 * f));
+		// Two fainter strands inside it, following its line, for a little texture.
+		ctx.lineWidth = Math.max(px * 0.75, head * 0.1);
+		for (const [side, ph] of [[0.55, 1.7], [-0.5, 3.9]]) {
+			for (let i = 0; i < N; i++) {
+				const f = i / (N - 1), a = Math.max(0, i - 1), b = Math.min(N - 1, i + 1);
+				const tx = cx[b] - cx[a], ty = cy[b] - cy[a], tl = Math.hypot(tx, ty) || 1;
+				const e = Math.max(0, (f - 0.6) / 0.4), off = (side * wide(f)) / 2 + 0.012 * len * e * e * Math.sin(f * 5 - this.t * 1.7 + ph);
+				this.xs[i] = cx[i] - (ty / tl) * off;
+				this.ys[i] = cy[i] + (tx / tl) * off;
+			}
 			ctx.strokeStyle = this.fade(ctx, '190,230,255', [[0, 0.3], [0.6, 0.09], [1, 0]]);
 			ctx.beginPath();
 			ctx.moveTo(this.xs[0], this.ys[0]);
@@ -126,7 +148,7 @@ export class CometTail {
 		}
 
 		const r = 15 * px;
-		ctx.globalAlpha = 0.5;
+		ctx.globalAlpha = 0.5 * this.alpha;
 		ctx.drawImage(comaSprite(), x - r, y - r, r * 2, r * 2);
 		ctx.restore();
 	}

@@ -23,7 +23,9 @@ export const CORES = {
 	hole: { id: 'hole', label: 'Black hole', gm: 4.0e7, r: 30, eat: 'Consumed by the black hole. Spaghettified.' },
 	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 40, eat: 'Vaporized. Stars are hot, turns out.' },
 	giant: { id: 'giant', label: 'Ringed giant', gm: 2.0e7, r: 46, eat: 'Swallowed by the giant. No refunds.' },
-	binary: { id: 'binary', label: 'Binary pair', gm: 3.4e7, r: 18, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.' }
+	binary: { id: 'binary', label: 'Binary pair', gm: 3.4e7, r: 18, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.' },
+	// Nothing in the middle: the bodies only pull on each other, so there are no lanes to hold (it's a sandbox).
+	empty: { id: 'empty', label: 'Empty space', gm: 0, r: 0, eat: '' }
 };
 
 /**
@@ -78,9 +80,10 @@ export class Sim {
 		this.toast = msg;
 	}
 
-	/** Where the core's mass is at time t: one point, or two for the binary pair. */
+	/** Where the core's mass is at time t: one point, two for the binary pair, or none in empty space. */
 	sources(t) {
 		const c = CORES[this.core];
+		if (c.id === 'empty') return [];
 		if (c.id === 'binary') {
 			const a = c.sep / 2, ang = t * c.omega, cs = Math.cos(ang) * a, sn = Math.sin(ang) * a;
 			return [{ x: cs, y: sn, gm: c.gm / 2, r: c.r }, { x: -cs, y: -sn, gm: c.gm / 2, r: c.r * 0.85 }];
@@ -226,7 +229,8 @@ export class Sim {
 	/** A new body of the current payload kind, launched from (x, y). */
 	spawn(x, y, vx, vy) {
 		const p = PAYLOADS[this.payload];
-		const [color, dark] = p.palette[this.uid % p.palette.length];
+		// The same colour the aiming ghost showed (draw.js picks the next one along).
+		const [color, dark] = p.palette[(this.uid + 1) % p.palette.length];
 		const b = {
 			id: this.uid++, kind: p.id, x, y, vx, vy, r: this.nextRadius(), m: p.m, color, dark,
 			// Some planets are banded gas worlds (pink, like The Log) or carry rings (like Live Sites).
@@ -357,15 +361,17 @@ export class Sim {
 	}
 
 	/**
-	 * Where a throw would go over the next few seconds (ignoring the other bodies), and whether the core
-	 * eats it. It steps exactly like the simulation, so a throw that skims the core is judged the same way;
-	 * `r` is the radius of what's thrown, since a body is eaten a little before its centre reaches the core
-	 * (see collide).
+	 * Where a throw would go over the next few seconds, and whether the core eats it. It steps exactly like
+	 * the simulation, so a throw that skims the core is judged the same way; `r` is the radius of what's
+	 * thrown, since a body is eaten a little before its centre reaches the core (see collide). It ignores the
+	 * other bodies, except in empty space, where they're all there is to pull on it (then it counts them
+	 * where they are now); `self` is the body being re-thrown, if it is one, so it doesn't pull on itself.
 	 */
-	predict(ox, oy, vx, vy, r = 0, steps = 640) {
+	predict(ox, oy, vx, vy, r = 0, self = null, steps = 640) {
 		let x = ox, y = oy, t = this.simT;
 		const h = STEP, pts = [];
-		let srcs = this.sources(t), a = this.accel(x, y, srcs, null), hit = false;
+		const others = this.core === 'empty' ? self || {} : null;
+		let srcs = this.sources(t), a = this.accel(x, y, srcs, others), hit = false;
 		for (let i = 0; i < steps; i++) {
 			vx += a[0] * h * 0.5;
 			vy += a[1] * h * 0.5;
@@ -373,7 +379,7 @@ export class Sim {
 			y += vy * h;
 			t += h;
 			srcs = this.sources(t);
-			a = this.accel(x, y, srcs, null);
+			a = this.accel(x, y, srcs, others);
 			vx += a[0] * h * 0.5;
 			vy += a[1] * h * 0.5;
 			if (i % 8 === 0) pts.push(x, y);
@@ -393,7 +399,10 @@ export class Sim {
 		this.core = id;
 		this.complete = false;
 		this.revs = 0;
-		this.say('Core swapped to ' + CORES[id].label.toLowerCase() + '. System cleared.');
+		if (id === 'empty') {
+			this.sandbox = true;
+			this.say('Empty space. No core, just the bodies pulling on each other.');
+		} else this.say('Core swapped to ' + CORES[id].label.toLowerCase() + '. System cleared.');
 	}
 
 	clear() {
@@ -419,6 +428,14 @@ export class Sim {
 	}
 
 	toggleSandbox() {
+		// Empty space is sandbox only (there's nothing to hold a lane around), so back in the lanes the black
+		// hole returns.
+		if (this.sandbox && this.core === 'empty') {
+			this.setCore('hole');
+			this.sandbox = false;
+			this.say('Back to the lanes, around a black hole again.');
+			return;
+		}
 		this.sandbox = !this.sandbox;
 		this.complete = false;
 		this.say(this.sandbox ? 'Sandbox. No rules, only Newton.' : 'Back to the lanes.');
