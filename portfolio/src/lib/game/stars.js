@@ -2,11 +2,11 @@ import { buildProgram } from '$lib/orbit/blackhole.js';
 
 /**
  * Slingshot's stars, drawn by WebGL on the black hole's canvas in the map's flat, posterized style: up to
- * two (the star, or the binary pair), each a circle with a bright rim and a faint, even haze. The big star
- * (detail 1) has a mottled, posterized surface (dark patches, the star's colour, bright active regions)
- * that slowly flows, dark sunspots and, now and then, a small arc of flare looping out from its edge. The
- * binary's small stars (detail 0) are just their colour with a lighter core, so they read as points of light
- * rather than planets when they're small, fast and close together. Like the black hole, it outputs premultiplied colour with
+ * two (the star, or the binary pair). Each is a circle of mottled, posterized surface (dark patches, the
+ * star's colour, bright active regions) that slowly flows, with a few dark sunspots, a bright rim and a
+ * faint, even haze. The big star (detail 1) also throws out, now and then, a small arc of flare from its
+ * edge; the binary's smaller stars (lower detail) have coarser mottling and no flares, so they stay clear
+ * when they're small, fast and close together. Like the black hole, it outputs premultiplied colour with
  * coverage over the starfield.
  */
 
@@ -20,17 +20,17 @@ export const PALETTES = {
 		flare: '#ffb83a'
 	},
 	blue: {
-		tones: ['#2a55c8', '#3f7cff', '#6fa8ff', '#a9cfff', '#e6f2ff'],
-		rim: '#e0f0ff',
-		haze: '#5f95ff',
-		spot: ['#2a55c8', '#16245e'],
-		flare: '#bcdcff'
+		tones: ['#3a6df0', '#5a92ff', '#7fb2ff', '#a9cfff', '#d6eaff'],
+		rim: '#e6f2ff',
+		haze: '#4f86ff',
+		spot: ['#1f3fa8', '#0c1a4a'],
+		flare: '#8fc0ff'
 	},
-	yellow: {
-		tones: ['#e07a10', '#ffb12e', '#ffd166', '#fff1c2', '#fffaf0'],
+	gold: {
+		tones: ['#d9790f', '#ffa62b', '#ffc93c', '#ffe58a', '#fff8e0'],
 		rim: '#fff1c2',
 		haze: '#ffb12e',
-		spot: ['#c25a0c', '#5a1d08'],
+		spot: ['#b35a0a', '#4a1d05'],
 		flare: '#ffd166'
 	}
 };
@@ -96,20 +96,14 @@ void flares(inout vec4 acc, vec2 f, vec4 s, vec3 c, float seed){
   }
 }
 
-// The disk: for the big star, mottled, posterized surface that slowly flows, with sunspots; for the small
-// ones, their colour with a lighter core. Both get a bright rim.
+// The disk: mottled, posterized surface that slowly flows (coarser for lower detail), sunspots, and a bright rim.
 void disk(inout vec4 acc, vec2 f, vec4 s, vec3 P[10], float spots, float detail, float seed){
   if (s.w < 0.5) return;
   vec2 p = local(f, s);
   float d = length(p), w = 1.2*uPx/s.z;
   float cover = inside(d, 1.0, w);
   if (cover <= 0.0) return;
-  if (detail < 0.5) {
-    vec3 b = mix(P[2], P[3], 1.0 - smoothstep(0.25, 0.8, d));
-    over(acc, mix(b, P[5], above(d, 0.93, w)), cover);
-    return;
-  }
-  float k = mix(1.5, 2.6, detail), nw = 0.012;
+  float k = mix(1.4, 2.6, detail), nw = 0.012;
   vec2 flow = vec2(uT*0.06, -uT*0.045);
   vec2 warp = vec2(fbm(p*k*0.7 + flow + seed), fbm(p*k*0.7 - flow + seed + 5.2));
   float n = fbm(p*k + (warp - 0.5)*1.6 + vec2(-uT*0.05, uT*0.07) + seed*1.3);

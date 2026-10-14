@@ -23,11 +23,11 @@ export const CORES = {
 	hole: { id: 'hole', label: 'Black hole', gm: 4.0e7, r: 30, eat: 'Consumed by the black hole. Spaghettified.' },
 	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 55, palette: 'sun', spots: 1, detail: 1, eat: 'Vaporized. Stars are hot, turns out.' },
 	giant: { id: 'giant', label: 'Ringed giant', gm: 2.0e7, r: 46, eat: 'Swallowed by the giant. No refunds.' },
-	// A bigger blue star and a smaller yellow one (their shares of the mass, radii and palettes in stars.js;
-	// they're drawn simpler than the big star), `sep` apart.
+	// A bigger blue star and a smaller gold one (their shares of the mass, radii, palettes in stars.js, how
+	// spotted they are and how detailed: coarser than the big star, with no flares), `sep` apart.
 	binary: {
 		id: 'binary', label: 'Binary pair', gm: 3.4e7, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.',
-		stars: [{ share: 0.57, r: 20, palette: 'blue', spots: 0, detail: 0 }, { share: 0.43, r: 15, palette: 'yellow', spots: 0, detail: 0 }]
+		stars: [{ share: 0.57, r: 20, palette: 'blue', spots: 0.6, detail: 0.4 }, { share: 0.43, r: 15, palette: 'gold', spots: 0.6, detail: 0.4 }]
 	},
 	// Nothing in the middle: the bodies only pull on each other, so there are no lanes to hold (it's a sandbox).
 	empty: { id: 'empty', label: 'Empty space', gm: 0, r: 0, eat: '' }
