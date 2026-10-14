@@ -184,9 +184,14 @@ export class OrbitEngine {
 		return this.comet && this.comet.sx != null ? { x: this.comet.sx, y: this.comet.sy } : null;
 	}
 
-	/** The comet was caught (its game opened), so it's gone until the next one. */
+	/**
+	 * The comet was caught (its game is opening): it holds still under the iris opening from it, and is
+	 * gone once the map is covered (see tick).
+	 */
 	catchComet() {
-		if (this.comet) this.endComet();
+		if (!this.comet) return;
+		this.comet.caught = true;
+		this.cometSpd = 0;
 	}
 
 	/**
@@ -225,29 +230,31 @@ export class OrbitEngine {
 		if (b - a < 0.05) return null;
 		const f = (u) => Math.tan(u) + Math.tan(u) ** 3 / 3;
 		const k = (COMET_PASS * (this.reduced ? 1.6 : 1)) / (f(b) - f(a));
-		return { q, k, t: k * f(a), end: k * f(b), rot, dir, tail: new CometTail(L.rmin) };
+		return { q, k, t: k * f(a), end: k * f(b), rot, dir, alpha: 1, tail: new CometTail(L.rmin) };
 	}
 
 	endComet() {
 		this.comet = null;
 		this.cometWait = between(COMET_WAIT);
-		if (this.cometEl) this.cometEl.style.display = 'none';
+		if (this.cometEl) {
+			this.cometEl.style.display = 'none';
+			this.cometEl.style.opacity = '';
+		}
 		if (this.hoverEl === this.cometEl) this.hoverEl = null;
 	}
 
 	/**
-	 * Moves the comet along, or counts down to the next one. A post or the game covering the map ends a
-	 * comet in flight; anything else (a planet's card, the camera zooming) it just flies through.
+	 * Moves the comet along, or counts down to the next one. It flies on through anything (a planet's card,
+	 * the camera zooming, a post or the game opening over the map) until it's off screen, or the map is
+	 * covered (see tick).
 	 */
 	updateComet(dt, L, Z, ox, oy, st) {
 		const el = this.cometEl;
 		if (!el) return;
 		let c = this.comet;
-		if (st.cover) {
-			if (c) this.endComet();
-			return;
-		}
 		if (!c) {
+			// No new one while a post or the game covers the map.
+			if (st.cover) return;
 			this.cometWait -= dt;
 			if (this.cometWait > 0) return;
 			c = this.comet = this.newComet(L, Z, ox, oy, st);
@@ -258,8 +265,9 @@ export class OrbitEngine {
 			this.cometSpd = 1;
 			el.style.display = '';
 		}
-		// It slows right down while the pointer is on it, so it can be caught.
-		this.cometSpd += ((this.hoverEl === el ? 0.2 : 1) - this.cometSpd) * Math.min(1, dt * 6);
+		// It slows right down while the pointer is on it, so it can be caught, and once caught it holds still.
+		const target = c.caught ? 0 : this.hoverEl === el ? 0.2 : 1;
+		this.cometSpd += (target - this.cometSpd) * Math.min(1, dt * (c.caught ? 20 : 6));
 		c.t += dt * this.cometSpd;
 		// Solve Barker's equation for D (a cubic with one real root), then place it on the parabola.
 		const m = c.t / c.k, w = Math.cbrt(1.5 * m + Math.sqrt(2.25 * m * m + 1)), D = w - 1 / w;
@@ -275,7 +283,16 @@ export class OrbitEngine {
 		c.sy = oy + c.py * Z;
 		// It's done once it's past the end of its pass and off screen (the camera may have moved since).
 		const out = c.sx < -80 || c.sy < -80 || c.sx > this.W + 80 || c.sy > this.H + 80;
-		if (c.t > c.end && (out || c.t > c.end + 25)) return this.endComet();
+		if (c.t > c.end && out) return this.endComet();
+		// Still in view well after its pass (the camera zoomed out since, say), or caught and then left
+		// before the map was covered: it fades out rather than blinking away.
+		if ((!c.caught && c.t > c.end + 12) || (c.caught && !st.cover)) c.fading = true;
+		if (c.fading) {
+			c.alpha -= dt / 1.5;
+			if (c.alpha <= 0) return this.endComet();
+			el.style.opacity = c.alpha.toFixed(3);
+		}
+		c.tail.alpha = c.alpha;
 		const sx = Math.round(c.sx * 10), sy = Math.round(c.sy * 10);
 		if (sx !== c.tx || sy !== c.ty) {
 			c.tx = sx;
@@ -441,8 +458,9 @@ export class OrbitEngine {
 		if (document.hidden) return;
 		const st = this.getState();
 		if (st.cover && !st.closing && this.realT - this.readT0 > 1.1) {
-			// The reader or the game covers the map, so stop rendering until it closes.
+			// The reader or the game covers the map, so stop rendering until it closes (and any comet is gone).
 			this.frameClock = this.lastFrame = now;
+			if (this.comet) this.endComet();
 			this.stars?.run(false);
 			return;
 		}

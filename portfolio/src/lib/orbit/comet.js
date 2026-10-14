@@ -35,6 +35,8 @@ export class CometTail {
 		this.unit = unit;
 		this.t = Math.random() * 10;
 		this.strength = -1;
+		/** Opacity, for fading a comet out. */
+		this.alpha = 1;
 		/** Unit vector pointing back along the comet's path (smoothed), for the bend. */
 		this.bx = 0;
 		this.by = 0;
@@ -113,6 +115,7 @@ export class CometTail {
 		const len = this.unit * (0.75 + 0.85 * Math.max(0.3, this.strength));
 		ctx.save();
 		ctx.globalCompositeOperation = 'lighter';
+		ctx.globalAlpha = this.alpha;
 
 		// Dust: shorter and fainter, fanning out as it curves back along the path.
 		this.line(x, y, ax, ay, len * 0.72, 0.15, 0.4, 0.6, 0.012, 1.3);
@@ -145,7 +148,7 @@ export class CometTail {
 		}
 
 		const r = 15 * px;
-		ctx.globalAlpha = 0.5;
+		ctx.globalAlpha = 0.5 * this.alpha;
 		ctx.drawImage(comaSprite(), x - r, y - r, r * 2, r * 2);
 		ctx.restore();
 	}
