@@ -6,11 +6,11 @@
 export const HOLE_GL_OPTIONS = { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'low-power' };
 
 /**
- * Compiles the shader and sets up the triangle it's drawn on. Returns the uniform locations (C centre,
- * R disk radius, T time, Ty tilt, Scan scan-mode mix, Px canvas pixels per CSS pixel, all in canvas
- * pixels with y up) and the largest size the context can draw, or null if it can't be built.
+ * Compiles a full-screen fragment shader and sets up the triangle it's drawn on. Returns `use()` (makes it
+ * the current program, for a context that draws more than one), `U(name)` for its uniform locations and
+ * `max`, the largest size the context can draw; or null if it can't be built.
  */
-export function createHoleProgram(gl) {
+export function buildProgram(gl, frag) {
 	const mk = (type, src) => {
 		const s = gl.createShader(type);
 		gl.shaderSource(s, src);
@@ -22,26 +22,37 @@ export function createHoleProgram(gl) {
 		return s;
 	};
 	const vs = mk(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }');
-	const fs = mk(gl.FRAGMENT_SHADER, FRAG);
+	const fs = mk(gl.FRAGMENT_SHADER, frag);
 	if (!vs || !fs) return null;
 	const pr = gl.createProgram();
 	gl.attachShader(pr, vs);
 	gl.attachShader(pr, fs);
 	gl.linkProgram(pr);
 	if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
-	gl.useProgram(pr);
 	const buf = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buf);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 	const loc = gl.getAttribLocation(pr, 'p');
-	gl.enableVertexAttribArray(loc);
-	gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-	const U = (n) => gl.getUniformLocation(pr, n);
-	const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
-	return {
-		u: { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') },
-		max: Math.min(vp[0], vp[1], gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096)
+	const use = () => {
+		gl.useProgram(pr);
+		gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+		gl.enableVertexAttribArray(loc);
+		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 	};
+	use();
+	const vp = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+	return { use, U: (n) => gl.getUniformLocation(pr, n), max: Math.min(vp[0], vp[1], gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), 4096) };
+}
+
+/**
+ * The black hole's program. Its uniforms (C centre, R disk radius, T time, Ty tilt, Scan scan-mode mix, Px
+ * canvas pixels per CSS pixel) are in canvas pixels with y up.
+ */
+export function createHoleProgram(gl) {
+	const p = buildProgram(gl, FRAG);
+	if (!p) return null;
+	const U = p.U;
+	return { use: p.use, max: p.max, u: { C: U('uC'), R: U('uR'), T: U('uT'), Ty: U('uTy'), Scan: U('uScan'), Px: U('uPx') } };
 }
 
 /**

@@ -21,9 +21,14 @@ export const LEVELS = [
 /** What sits in the middle: its pull (gm), how close a body can get before it's gone (r), and its epitaph. */
 export const CORES = {
 	hole: { id: 'hole', label: 'Black hole', gm: 4.0e7, r: 30, eat: 'Consumed by the black hole. Spaghettified.' },
-	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 40, eat: 'Vaporized. Stars are hot, turns out.' },
+	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 55, palette: 'sun', spots: 1, detail: 1, eat: 'Vaporized. Stars are hot, turns out.' },
 	giant: { id: 'giant', label: 'Ringed giant', gm: 2.0e7, r: 46, eat: 'Swallowed by the giant. No refunds.' },
-	binary: { id: 'binary', label: 'Binary pair', gm: 3.4e7, r: 18, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.' },
+	// A bigger blue star and a smaller gold one (their shares of the mass, radii, palettes in stars.js, how
+	// spotted they are and how detailed: coarser than the big star, with no flares), `sep` apart.
+	binary: {
+		id: 'binary', label: 'Binary pair', gm: 3.4e7, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.',
+		stars: [{ share: 0.57, r: 20, palette: 'blue', spots: 0.6, detail: 0.4 }, { share: 0.43, r: 15, palette: 'gold', spots: 0.6, detail: 0.4 }]
+	},
 	// Nothing in the middle: the bodies only pull on each other, so there are no lanes to hold (it's a sandbox).
 	empty: { id: 'empty', label: 'Empty space', gm: 0, r: 0, eat: '' }
 };
@@ -85,8 +90,12 @@ export class Sim {
 		const c = CORES[this.core];
 		if (c.id === 'empty') return [];
 		if (c.id === 'binary') {
-			const a = c.sep / 2, ang = t * c.omega, cs = Math.cos(ang) * a, sn = Math.sin(ang) * a;
-			return [{ x: cs, y: sn, gm: c.gm / 2, r: c.r }, { x: -cs, y: -sn, gm: c.gm / 2, r: c.r * 0.85 }];
+			// Both circle their shared centre of mass, the heavier one closer in, so it only wobbles.
+			const [a, b] = c.stars, ang = t * c.omega, cs = Math.cos(ang), sn = Math.sin(ang), ra = c.sep * b.share, rb = c.sep * a.share;
+			return [
+				{ x: cs * ra, y: sn * ra, gm: c.gm * a.share, r: a.r },
+				{ x: -cs * rb, y: -sn * rb, gm: c.gm * b.share, r: b.r }
+			];
 		}
 		return [{ x: 0, y: 0, gm: c.gm, r: c.r }];
 	}
