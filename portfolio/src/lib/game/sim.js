@@ -21,13 +21,13 @@ export const LEVELS = [
 /** What sits in the middle: its pull (gm), how close a body can get before it's gone (r), and its epitaph. */
 export const CORES = {
 	hole: { id: 'hole', label: 'Black hole', gm: 4.0e7, r: 30, eat: 'Consumed by the black hole. Spaghettified.' },
-	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 40, colour: [1, 0.8, 0.42], spots: 1, eat: 'Vaporized. Stars are hot, turns out.' },
+	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 40, palette: 'yellow', spots: 1, eat: 'Vaporized. Stars are hot, turns out.' },
 	giant: { id: 'giant', label: 'Ringed giant', gm: 2.0e7, r: 46, eat: 'Swallowed by the giant. No refunds.' },
-	// A bigger blue star and a smaller yellow one (their shares of the mass, radii, colours and how spotted
-	// they are), `sep` apart.
+	// A bigger blue star and a smaller yellow one (their shares of the mass, radii, palettes in stars.js and
+	// how spotted they are), `sep` apart.
 	binary: {
 		id: 'binary', label: 'Binary pair', gm: 3.4e7, sep: 96, omega: 2.1, eat: 'Fell into the binary pair. Chaotic, as advertised.',
-		stars: [{ share: 0.57, r: 20, colour: [0.32, 0.56, 1], spots: 0.35 }, { share: 0.43, r: 15, colour: [1, 0.78, 0.28], spots: 0.8 }]
+		stars: [{ share: 0.57, r: 20, palette: 'blue', spots: 0.35 }, { share: 0.43, r: 15, palette: 'yellow', spots: 0.8 }]
 	},
 	// Nothing in the middle: the bodies only pull on each other, so there are no lanes to hold (it's a sandbox).
 	empty: { id: 'empty', label: 'Empty space', gm: 0, r: 0, eat: '' }

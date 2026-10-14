@@ -1,5 +1,6 @@
 import { LEVELS, CORES, PAYLOADS, REVS } from './sim.js';
 import { CometTail, cometStrength } from '$lib/orbit/comet.js';
+import { PALETTES } from './stars.js';
 
 /**
  * Slingshot's 2D layer, in the map's style: lanes, the cores WebGL doesn't draw (it draws the black hole and
@@ -134,25 +135,15 @@ function drawGiant(c, R) {
 	c.restore();
 }
 
-/** A star without WebGL: a white-hot disk going to its colour, in a glow. `rgb` is 0-1. */
-function drawFlatStar(c, x, y, R, rgb) {
-	const col = rgb.map((v) => Math.round(v * 255)).join(',');
-	const glow = c.createRadialGradient(x, y, R * 0.8, x, y, R * 4);
-	glow.addColorStop(0, 'rgba(' + col + ',0.75)');
-	glow.addColorStop(0.3, 'rgba(' + col + ',0.22)');
-	glow.addColorStop(1, 'rgba(' + col + ',0)');
-	c.fillStyle = glow;
-	c.beginPath();
-	c.arc(x, y, R * 4, 0, TAU);
-	c.fill();
-	const disk = c.createRadialGradient(x, y, 0, x, y, R);
-	disk.addColorStop(0, '#fffdf6');
-	disk.addColorStop(0.7, '#fff3d8');
-	disk.addColorStop(1, 'rgb(' + col + ')');
-	c.fillStyle = disk;
-	c.beginPath();
-	c.arc(x, y, R, 0, TAU);
-	c.fill();
+/** A star without WebGL: its flames and disk bands as flat circles (see stars.js). */
+function drawFlatStar(c, x, y, R, name) {
+	const p = PALETTES[name];
+	for (const [k, col] of [[1.22, p.flame[1]], [1.12, p.flame[0]], [1, p.disk[2]], [0.8, p.disk[1]], [0.48, p.disk[0]]]) {
+		c.fillStyle = col;
+		c.beginPath();
+		c.arc(x, y, R * k, 0, TAU);
+		c.fill();
+	}
 }
 
 /** The black hole without WebGL: the map's fallback rings. */
@@ -185,7 +176,7 @@ function drawCore(c, sim, t, px, gl) {
 	} else if (id === 'hole') {
 		if (!gl) drawFlatHole(c, 30);
 	} else if (id === 'star') {
-		if (!gl) drawFlatStar(c, 0, 0, CORES.star.r, CORES.star.colour);
+		if (!gl) drawFlatStar(c, 0, 0, CORES.star.r, CORES.star.palette);
 	} else if (id === 'giant') drawGiant(c, 46);
 	else {
 		// The binary pair: each star's orbit around their centre of mass (WebGL draws the stars themselves).
@@ -199,7 +190,7 @@ function drawCore(c, sim, t, px, gl) {
 			c.stroke();
 		}
 		c.setLineDash([]);
-		if (!gl) srcs.forEach((sr, i) => drawFlatStar(c, sr.x, sr.y, sr.r, stars[i].colour));
+		if (!gl) srcs.forEach((sr, i) => drawFlatStar(c, sr.x, sr.y, sr.r, stars[i].palette));
 	}
 }
 
