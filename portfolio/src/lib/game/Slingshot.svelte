@@ -3,12 +3,13 @@
 	import { Sim, LEVELS, CORES, PAYLOADS, REVS } from './sim.js';
 	import { drawScene } from './draw.js';
 	import { HOLE_GL_OPTIONS, createHoleProgram } from '$lib/orbit/blackhole.js';
+	import { createStarProgram } from './stars.js';
 	import { StarfieldHost } from '$lib/orbit/starfield-host.js';
 
 	/**
 	 * Slingshot: fling bodies around a core and hold them in orbit. It opens over the map when the comet
 	 * is caught (and at /slingshot). The physics is in sim.js and the drawing in draw.js; the black hole is
-	 * the map's own shader, and the stars are the map's starfield.
+	 * the map's own shader, the star and binary pair are stars.js, and the background is the map's starfield.
 	 */
 
 	/** @type {{ onclose: () => void }} */
@@ -16,6 +17,10 @@
 
 	/** The black hole's disk radius in game units, so its photon ring sits at the core's edge (30 units). */
 	const HOLE_R = 110;
+	/** How far (game units) the WebGL canvas reaches from the middle: the black hole's haze, or a star's glare. */
+	const REACH = { hole: HOLE_R * 1.75, star: 330 };
+	/** Most pixels the WebGL canvas renders; past that (a big, sharp screen) it renders lower and is scaled up. */
+	const GL_BUDGET = 1.6e6;
 	const MAX_DPR = 3;
 	const CORE_LIST = Object.values(CORES);
 	const PAYLOAD_LIST = Object.values(PAYLOADS);
@@ -89,9 +94,10 @@
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const ctx = canvas.getContext('2d');
 		const stars = new StarfieldHost(starCanvas, reduced);
-		let gl = null, prog = null;
-		/** The black hole's canvas: a square around the core, its buffer size and pixels per CSS pixel. */
-		const hole = { size: 0, w: 0, q: 1 };
+		/** WebGL, with the black hole's program and the stars'. */
+		let gl = null, prog = null, starProg = null, showing = '';
+		/** The WebGL canvas: a square around the core, its buffer size, pixels per CSS pixel, and reach. */
+		const hole = { size: 0, w: 0, q: 1, reach: REACH.hole };
 
 		function initGL() {
 			try {
@@ -100,13 +106,14 @@
 				gl = null;
 			}
 			prog = gl && !gl.isContextLost() ? createHoleProgram(gl) : null;
+			starProg = prog ? createStarProgram(gl) : null;
 			glCanvas.style.visibility = prog ? '' : 'hidden';
 		}
 
 		function sizeHole() {
-			const d = view.dpr, half = Math.ceil(HOLE_R * view.s * 1.75 + 2);
+			const d = view.dpr, half = Math.ceil(hole.reach * view.s + 2);
 			hole.size = half * 2;
-			hole.q = Math.min(d, prog ? prog.max / hole.size : d);
+			hole.q = Math.min(d, prog ? prog.max / hole.size : d, Math.sqrt(GL_BUDGET) / hole.size);
 			hole.w = Math.round(hole.size * hole.q);
 			glCanvas.width = glCanvas.height = hole.w;
 			const st = glCanvas.style;
@@ -135,7 +142,7 @@
 
 		const lost = (e) => {
 			e.preventDefault();
-			prog = null;
+			prog = starProg = null;
 			glCanvas.style.visibility = 'hidden';
 		};
 		const restored = () => {
@@ -163,17 +170,44 @@
 				hudT = 0;
 				sync();
 			}
-			const showHole = sim.core === 'hole' && !!prog;
-			if (ctx && view.W) drawScene(ctx, sim, view, drag, t, dt, showHole);
-			glCanvas.style.display = showHole ? '' : 'none';
-			if (showHole) {
+			// WebGL draws the black hole, the star or the binary pair; draw.js draws the other cores.
+			const core = sim.core, glProg = core === 'hole' ? prog : core === 'star' || core === 'binary' ? starProg : null;
+			if (ctx && view.W) drawScene(ctx, sim, view, drag, t, dt, !!glProg);
+			const show = glProg ? '' : 'none';
+			if (show !== showing) glCanvas.style.display = showing = show;
+			if (glProg) {
+				const reach = glProg === prog ? REACH.hole : REACH.star;
+				if (reach !== hole.reach) {
+					hole.reach = reach;
+					sizeHole();
+				}
+				const mid = hole.w / 2;
+				glProg.use();
 				gl.viewport(0, 0, hole.w, hole.w);
-				gl.uniform2f(prog.u.C, hole.w / 2, hole.w / 2);
-				gl.uniform1f(prog.u.R, HOLE_R * view.s * hole.q);
-				gl.uniform1f(prog.u.T, t);
-				gl.uniform1f(prog.u.Ty, 1);
-				gl.uniform1f(prog.u.Scan, 0);
-				gl.uniform1f(prog.u.Px, hole.q);
+				if (glProg === prog) {
+					gl.uniform2f(prog.u.C, mid, mid);
+					gl.uniform1f(prog.u.R, HOLE_R * view.s * hole.q);
+					gl.uniform1f(prog.u.T, t);
+					gl.uniform1f(prog.u.Ty, 1);
+					gl.uniform1f(prog.u.Scan, 0);
+					gl.uniform1f(prog.u.Px, hole.q);
+				} else {
+					// Game units to canvas pixels (y up), for each star from the simulation.
+					const u = starProg.u, k = view.s * hole.q, srcs = sim.sources(sim.simT);
+					const defs = core === 'star' ? [CORES.star] : CORES.binary.stars;
+					gl.uniform2f(u.C, mid, mid);
+					gl.uniform1f(u.T, t);
+					gl.uniform1f(u.Edge, mid);
+					gl.uniform1f(u.Px, hole.q);
+					gl.uniform1f(u.Glow, 32 * k);
+					[u.S0, u.S1].forEach((loc, i) => {
+						const s = srcs[i];
+						if (s) gl.uniform4f(loc, s.x * k, -s.y * k, s.r * k, 1);
+						else gl.uniform4f(loc, 0, 0, 1, 0);
+					});
+					[u.Col0, u.Col1].forEach((loc, i) => gl.uniform3fv(loc, (defs[i] || defs[0]).colour));
+					gl.uniform2f(u.Spots, defs[0].spots, (defs[1] || defs[0]).spots);
+				}
 				gl.drawArrays(gl.TRIANGLES, 0, 3);
 			}
 			stars.frame(now);

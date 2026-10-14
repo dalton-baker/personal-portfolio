@@ -1,10 +1,11 @@
-import { LEVELS, PAYLOADS, REVS } from './sim.js';
+import { LEVELS, CORES, PAYLOADS, REVS } from './sim.js';
 import { CometTail, cometStrength } from '$lib/orbit/comet.js';
 
 /**
- * Slingshot's 2D layer, in the map's style: lanes, the cores other than the black hole (WebGL draws that
- * one), trails, bodies, the aiming line and its predicted path, and bursts. Drawing happens in game units
- * (the view's scale `s` and centre `cx`, `cy`), so `px` is one CSS pixel in game units.
+ * Slingshot's 2D layer, in the map's style: lanes, the cores WebGL doesn't draw (it draws the black hole and
+ * the stars, unless it's unavailable), trails, bodies, the aiming line and its predicted path, and bursts.
+ * Drawing happens in game units (the view's scale `s` and centre `cx`, `cy`), so `px` is one CSS pixel in
+ * game units.
  */
 
 const TAU = Math.PI * 2;
@@ -24,8 +25,6 @@ const LOG_BANDS = [['#ff2e88', 5], ['#ff8ac1', 3], ['#c2187a', 5], ['#ff5aa5', 3
 /** Live Sites' tan bands (out of 13, turned 176 degrees) and its rings: [inner, outer, opacity] in radii. */
 const GIANT_BANDS = [['#f2deaa', 4], ['#dcbb7c', 3], ['#ead09a', 4], ['#c9a161', 2]];
 const GIANT_RINGS = [[1.45, 1.75, 0.2], [1.75, 2.3, 0.52], [2.45, 2.67, 0.38], [2.77, 2.95, 0.34]];
-/** The accretion disk's colours, from the outside in, for the star. */
-const STAR_BANDS = [[1.5, '#3b0d5e', 0], [1.32, '#c2187a', 1.3], [1.16, '#ff5a1f', 2.1], [1.0, '#ffc93c', 3.4], [0.7, '#fff4d6', 4.6]];
 
 /** Repeating bands across a disc of radius r at (x, y), already clipped to it. */
 function bands(c, x, y, r, list, total, period, angle) {
@@ -113,46 +112,6 @@ export function drawBody(c, b, px) {
 	c.restore();
 }
 
-let corona = null;
-
-/** The star's corona: halftone dots fading out from its edge, built once as a path around (0, 0). */
-function starCorona(R) {
-	if (corona && corona.R === R) return corona.path;
-	const path = new Path2D(), G = R * 2.3, st = 7;
-	for (let gx = -G; gx <= G; gx += st) {
-		for (let gy = -G; gy <= G; gy += st) {
-			const d = Math.hypot(gx, gy);
-			if (d > G || d < R * 1.2) continue;
-			const z = st * 0.36 * Math.sqrt(1 - (d - R * 1.2) / (G - R * 1.2));
-			path.moveTo(gx + z, gy);
-			path.arc(gx, gy, z, 0, TAU);
-		}
-	}
-	corona = { R, path };
-	return path;
-}
-
-/** The star: the accretion disk's colours as wobbling bands, in a corona of halftone dots. */
-function drawStar(c, t, x, y, R) {
-	c.fillStyle = '#7a1f5c';
-	c.save();
-	c.translate(x, y);
-	c.fill(starCorona(R));
-	c.restore();
-	for (const [k, col, ph] of STAR_BANDS) {
-		c.beginPath();
-		for (let i = 0; i <= 72; i++) {
-			const th = (i / 72) * TAU;
-			const rr = R * k * (1 + 0.05 * Math.sin(3 * th - t * 1.4 + ph) + 0.03 * Math.sin(7 * th + t * 2.1 + ph * 2));
-			if (i === 0) c.moveTo(x + Math.cos(th) * rr, y + Math.sin(th) * rr);
-			else c.lineTo(x + Math.cos(th) * rr, y + Math.sin(th) * rr);
-		}
-		c.closePath();
-		c.fillStyle = col;
-		c.fill();
-	}
-}
-
 /** The ringed giant, like Live Sites: tan bands, rings, and a night side. */
 function drawGiant(c, R) {
 	rings(c, 0, 0, R, GIANT_RINGS);
@@ -175,28 +134,25 @@ function drawGiant(c, R) {
 	c.restore();
 }
 
-/** Pluto or Charon, as on the map (State Your Name and its screensaver moon). */
-function drawDwarf(c, x, y, R, charon) {
-	c.save();
+/** A star without WebGL: a white-hot disk going to its colour, in a glow. `rgb` is 0-1. */
+function drawFlatStar(c, x, y, R, rgb) {
+	const col = rgb.map((v) => Math.round(v * 255)).join(',');
+	const glow = c.createRadialGradient(x, y, R * 0.8, x, y, R * 4);
+	glow.addColorStop(0, 'rgba(' + col + ',0.75)');
+	glow.addColorStop(0.3, 'rgba(' + col + ',0.22)');
+	glow.addColorStop(1, 'rgba(' + col + ',0)');
+	c.fillStyle = glow;
+	c.beginPath();
+	c.arc(x, y, R * 4, 0, TAU);
+	c.fill();
+	const disk = c.createRadialGradient(x, y, 0, x, y, R);
+	disk.addColorStop(0, '#fffdf6');
+	disk.addColorStop(0.7, '#fff3d8');
+	disk.addColorStop(1, 'rgb(' + col + ')');
+	c.fillStyle = disk;
 	c.beginPath();
 	c.arc(x, y, R, 0, TAU);
-	c.clip();
-	c.fillStyle = charon ? '#bcb8b3' : '#e2cfb2';
-	c.fillRect(x - R, y - R, R * 2, R * 2);
-	const ell = (fx, fy, w, h, col) => {
-		c.fillStyle = col;
-		c.beginPath();
-		c.ellipse(x - R + fx * 2 * R, y - R + fy * 2 * R, w * R, h * R, 0, 0, TAU);
-		c.fill();
-	};
-	if (charon) ell(0.5, 0.06, 0.92, 0.52, 'rgba(122,52,40,.6)');
-	else {
-		ell(0.52, 0.5, 0.42, 0.36, 'rgba(255,252,245,.85)');
-		ell(0.68, 0.58, 0.36, 0.32, 'rgba(255,252,245,.8)');
-		ell(0.3, 0.72, 0.72, 0.36, 'rgba(112,56,38,.5)');
-	}
-	nightSide(c, x, y, R, Math.atan2(y, x), charon ? '#3c3a38' : '#4a3e34');
-	c.restore();
+	c.fill();
 }
 
 /** The black hole without WebGL: the map's fallback rings. */
@@ -228,19 +184,22 @@ function drawCore(c, sim, t, px, gl) {
 		c.stroke();
 	} else if (id === 'hole') {
 		if (!gl) drawFlatHole(c, 30);
-	} else if (id === 'star') drawStar(c, t, 0, 0, 40);
-	else if (id === 'giant') drawGiant(c, 46);
+	} else if (id === 'star') {
+		if (!gl) drawFlatStar(c, 0, 0, CORES.star.r, CORES.star.colour);
+	} else if (id === 'giant') drawGiant(c, 46);
 	else {
-		const [a, b] = sim.sources(sim.simT);
+		// The binary pair: each star's orbit around their centre of mass (WebGL draws the stars themselves).
+		const srcs = sim.sources(sim.simT), stars = CORES.binary.stars;
 		c.setLineDash([2 * px, 5 * px]);
-		c.strokeStyle = 'rgba(214,226,240,0.3)';
+		c.strokeStyle = 'rgba(214,226,240,0.22)';
 		c.lineWidth = px;
-		c.beginPath();
-		c.arc(0, 0, 48, 0, TAU);
-		c.stroke();
+		for (const sr of srcs) {
+			c.beginPath();
+			c.arc(0, 0, Math.hypot(sr.x, sr.y), 0, TAU);
+			c.stroke();
+		}
 		c.setLineDash([]);
-		drawDwarf(c, a.x, a.y, a.r, false);
-		drawDwarf(c, b.x, b.y, b.r, true);
+		if (!gl) srcs.forEach((sr, i) => drawFlatStar(c, sr.x, sr.y, sr.r, stars[i].colour));
 	}
 }
 
