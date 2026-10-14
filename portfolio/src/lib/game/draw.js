@@ -340,7 +340,7 @@ export function drawScene(c, sim, view, drag, t, dt, gl) {
 		if (!tail) tails.set(b, (tail = new CometTail(80)));
 		const empty = sim.core === 'empty';
 		tail.update(dt, b.x, b.y, b.vx, b.vy, empty ? 0.6 : cometStrength(Math.hypot(b.x, b.y), 140));
-		tail.draw(c, b.x, b.y, px, empty ? tail.bx : undefined, empty ? tail.by : undefined);
+		tail.draw(c, b.x, b.y, px, empty ? tail.bx : undefined, empty ? tail.by : undefined, b.r * 2);
 	}
 
 	// Bodies, with the selection frame on locked ones and a progress arc while one's in the lane.
