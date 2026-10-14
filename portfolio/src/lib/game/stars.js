@@ -2,11 +2,11 @@ import { buildProgram } from '$lib/orbit/blackhole.js';
 
 /**
  * Slingshot's stars, drawn by WebGL on the black hole's canvas in the map's flat, posterized style: up to
- * two (the star, or the binary pair). Each is a circle of mottled, posterized surface (dark patches, the
- * star's colour, bright active regions) that slowly flows, with a bright rim and a faint, even haze. The
- * big star (detail 1) also has dark sunspots and, now and then, a small arc of flare looping out from its
- * edge; the binary's small stars (detail 0) keep to coarser mottling and the rim, so they stay clean when
- * they're small, fast and close together. Like the black hole, it outputs premultiplied colour with
+ * two (the star, or the binary pair), each a circle with a bright rim and a faint, even haze. The big star
+ * (detail 1) has a mottled, posterized surface (dark patches, the star's colour, bright active regions)
+ * that slowly flows, dark sunspots and, now and then, a small arc of flare looping out from its edge. The
+ * binary's small stars (detail 0) are just their colour with a lighter core, so they read as points of light
+ * rather than planets when they're small, fast and close together. Like the black hole, it outputs premultiplied colour with
  * coverage over the starfield.
  */
 
@@ -69,11 +69,10 @@ float above(float v, float edge, float w){ return 1.0 - inside(v, edge, w); }
 vec2 local(vec2 f, vec4 s){ return (f - uC - s.xy)/s.z; }
 
 // A faint, even haze around the star, fading out a little way from its edge.
-void haze(inout vec4 acc, vec2 f, vec4 s, vec3 c, float detail){
+void haze(inout vec4 acc, vec2 f, vec4 s, vec3 c){
   if (s.w < 0.5) return;
   float e = max(length(local(f, s)) - 1.0, 0.0);
-  float a = mix(0.2, 0.22, detail)*(1.0 - smoothstep(0.0, mix(0.45, 0.9, detail), e))*(0.65 + 0.35*exp(-e*5.0));
-  over(acc, c, a);
+  over(acc, c, 0.22*(1.0 - smoothstep(0.0, 0.9, e))*(0.65 + 0.35*exp(-e*5.0)));
 }
 
 // Now and then, a small arc of flare loops out from a random point on the edge, grows, and fades. Three
@@ -97,19 +96,24 @@ void flares(inout vec4 acc, vec2 f, vec4 s, vec3 c, float seed){
   }
 }
 
-// The disk: mottled, posterized surface that slowly flows, sunspots (big star), and a bright rim.
+// The disk: for the big star, mottled, posterized surface that slowly flows, with sunspots; for the small
+// ones, their colour with a lighter core. Both get a bright rim.
 void disk(inout vec4 acc, vec2 f, vec4 s, vec3 P[10], float spots, float detail, float seed){
   if (s.w < 0.5) return;
   vec2 p = local(f, s);
   float d = length(p), w = 1.2*uPx/s.z;
   float cover = inside(d, 1.0, w);
   if (cover <= 0.0) return;
+  if (detail < 0.5) {
+    vec3 b = mix(P[2], P[3], 1.0 - smoothstep(0.25, 0.8, d));
+    over(acc, mix(b, P[5], above(d, 0.93, w)), cover);
+    return;
+  }
   float k = mix(1.5, 2.6, detail), nw = 0.012;
   vec2 flow = vec2(uT*0.06, -uT*0.045);
   vec2 warp = vec2(fbm(p*k*0.7 + flow + seed), fbm(p*k*0.7 - flow + seed + 5.2));
   float n = fbm(p*k + (warp - 0.5)*1.6 + vec2(-uT*0.05, uT*0.07) + seed*1.3);
-  // Tone bands; the small stars sit in their bright tones, with only gentle mottling.
-  vec4 t = mix(vec4(0.1, 0.36, 0.56, 0.7), vec4(0.31, 0.47, 0.6, 0.69), detail);
+  vec4 t = vec4(0.31, 0.47, 0.6, 0.69);
   vec3 c = P[0];
   c = mix(c, P[1], above(n, t.x, nw));
   c = mix(c, P[2], above(n, t.y, nw));
@@ -121,15 +125,15 @@ void disk(inout vec4 acc, vec2 f, vec4 s, vec3 P[10], float spots, float detail,
     c = mix(c, P[7], above(m, t0, nw)*keep);
     c = mix(c, P[8], above(m, t0 + 0.05, nw)*keep);
   }
-  c = mix(c, P[5], above(d, 1.0 - mix(0.07, 0.05, detail), w));
+  c = mix(c, P[5], above(d, 0.93, w));
   over(acc, c, cover);
 }
 
 void main(){
   vec2 f = gl_FragCoord.xy;
   vec4 acc = vec4(0.0);
-  haze(acc, f, uS1, uP1[6], uDetail.y);
-  haze(acc, f, uS0, uP0[6], uDetail.x);
+  haze(acc, f, uS1, uP1[6]);
+  haze(acc, f, uS0, uP0[6]);
   if (uDetail.y > 0.5) flares(acc, f, uS1, uP1[9], 11.7);
   if (uDetail.x > 0.5) flares(acc, f, uS0, uP0[9], 3.1);
   disk(acc, f, uS1, uP1, uSpots.y, uDetail.y, 11.7);

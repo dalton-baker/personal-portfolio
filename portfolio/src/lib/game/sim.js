@@ -21,7 +21,7 @@ export const LEVELS = [
 /** What sits in the middle: its pull (gm), how close a body can get before it's gone (r), and its epitaph. */
 export const CORES = {
 	hole: { id: 'hole', label: 'Black hole', gm: 4.0e7, r: 30, eat: 'Consumed by the black hole. Spaghettified.' },
-	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 40, palette: 'sun', spots: 1, detail: 1, eat: 'Vaporized. Stars are hot, turns out.' },
+	star: { id: 'star', label: 'Star', gm: 3.0e7, r: 55, palette: 'sun', spots: 1, detail: 1, eat: 'Vaporized. Stars are hot, turns out.' },
 	giant: { id: 'giant', label: 'Ringed giant', gm: 2.0e7, r: 46, eat: 'Swallowed by the giant. No refunds.' },
 	// A bigger blue star and a smaller yellow one (their shares of the mass, radii and palettes in stars.js;
 	// they're drawn simpler than the big star), `sep` apart.
