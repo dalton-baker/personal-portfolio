@@ -112,31 +112,33 @@ export function pageMarkdown(slug) {
 	return toAscii(b.post ? postMarkdown(b) : bodyMarkdown(b)) + '\n';
 }
 
-/** The section of llms.txt that lists `bodies`, one line each. */
-function section(title, bodies) {
-	return `## ${title}\n\n` + bodies.map((b) => `- ${link(b.name, `/${b.id}`)}: ${b.post ? `${b.post.dek} (${b.post.displayDate})` : b.summary}`).join('\n');
-}
+/** How the map works and where the hidden game is, for the top of llms.txt and llms-full.txt. */
+const MAP_INTRO = `The site is an interactive "system map": each planet, moon and asteroid is a page, and the blog posts are moons of a gas giant called The Log. It also hides a game: about once a minute a comet swings past the black hole at the center, and clicking it opens ${link(game.title, `/${game.slug}`)}, a gravity sandbox game (${origin}/?comet sends one straight away).`;
+
+/** One llms.txt line per body. */
+const bodyLine = (b) => `- ${link(b.name, `/${b.id}`)}: ${b.post ? `${b.post.dek} (${b.post.displayDate})` : b.summary}`;
+const gameLine = `- ${link(game.title, `/${game.slug}`)}: ${game.description} Interactive only, with no Markdown copy.`;
 
 function llmsTxt(home = false) {
 	const groups = [
-		['Work and businesses', all.filter((b) => b.rocky)],
-		['Posts', all.filter((b) => b.post)],
-		['Websites I built', all.find((b) => b.rings)?.moons ?? []],
-		['Tools and packages', all.filter((b) => b.kind === 'rock')],
-		['Games', all.filter((b) => b.dwarf || b.host?.dwarf)]
+		['Work and businesses', all.filter((b) => b.rocky).map(bodyLine)],
+		['Posts', all.filter((b) => b.post).map(bodyLine)],
+		['Websites I built', (all.find((b) => b.rings)?.moons ?? []).map(bodyLine)],
+		['Tools and packages', all.filter((b) => b.kind === 'rock').map(bodyLine)],
+		['Games', [...all.filter((b) => b.dwarf || b.host?.dwarf).map(bodyLine), gameLine]]
 	];
 	return [
 		`# ${person.name}`,
 		`> ${person.summary} This is ${person.name}'s portfolio, daltonsbaker.com.`,
-		`The site is an interactive "system map": each planet, moon and asteroid is a page, and the blog posts are moons of a gas giant called The Log. Every page also has a plain Markdown copy at the same address plus \`.md\`, which the links below point to. Everything in one file: ${link('llms-full.txt', '/llms-full.txt')}.`,
+		MAP_INTRO,
+		`Every page also has a plain Markdown copy at the same address plus \`.md\`, which the links below point to. Everything in one file: ${link('llms-full.txt', '/llms-full.txt')}.`,
 		`- ${link('About Dalton Baker', `/${hole.id}`)}: background, education, résumé facts and contact`,
-		...groups.filter(([, list]) => list.length).map(([title, list]) => section(title, list)),
+		...groups.filter(([, lines]) => lines.length).map(([title, lines]) => `## ${title}\n\n${lines.join('\n')}`),
 		[
 			'## Optional',
 			'',
 			`- ${link('Résumé (PDF)', resumeUrl)}`,
 			...person.profiles.map((p) => `- ${link(p.label, p.href)}`),
-			`- ${link(game.title, `/${game.slug}`)}: ${game.description} Interactive only.`,
 			`- ${link('Privacy policy', '/privacyPolicy')}`,
 			...(home ? [] : [`- ${link('Sitemap', '/sitemap.xml')}`])
 		].join('\n')
@@ -151,15 +153,12 @@ export function llmsTxtFile() {
 export function llmsFullTxt() {
 	const demote = (md) => md.replace(/^(#{1,5}) /gm, '#$1 ');
 	const pages = slugs.map((slug) => demote(byId[slug].post ? postMarkdown(byId[slug]) : bodyMarkdown(byId[slug])));
-	return (
-		toAscii(
-			[
-				`# ${person.name}: everything on daltonsbaker.com`,
-				`> The full text of every page on ${person.name}'s portfolio, one section per page. The short index is ${link('llms.txt', '/llms.txt')}.`,
-				...pages
-			].join('\n\n---\n\n')
-		) + '\n'
-	);
+	const intro = [
+		`# ${person.name}: everything on daltonsbaker.com`,
+		`> The full text of every page on ${person.name}'s portfolio, one section per page. The short index is ${link('llms.txt', '/llms.txt')}.`,
+		MAP_INTRO
+	].join('\n\n');
+	return toAscii([intro, ...pages].join('\n\n---\n\n')) + '\n';
 }
 
 export function sitemapXml() {
