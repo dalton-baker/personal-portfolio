@@ -1,25 +1,25 @@
 <script>
 	import SystemMap from '$lib/components/SystemMap.svelte';
-	import { byId } from '$lib/orbit/system.js';
-	import { game } from '$lib/game';
+	import { pageHead } from '$lib/head.js';
 
 	let { data } = $props();
 
-	const DEFAULT_DESCRIPTION = 'Dalton Baker: software engineer, maker, and builder of things both useful and ridiculous.';
-
-	const head = $derived.by(() => {
-		if (data.slug === game.slug) return { title: `${game.title} | Dalton Baker`, description: game.description };
-		const b = data.slug ? byId[data.slug] : null;
-		if (!b) return { title: 'Dalton Baker | Portfolio', description: DEFAULT_DESCRIPTION };
-		if (b.post) return { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek };
-		if (b.kind === 'hole') return { title: 'About | Dalton Baker', description: b.summary };
-		return { title: `${b.name} | Dalton Baker`, description: b.summary };
-	});
+	const head = $derived(pageHead(data.slug));
 </script>
 
 <svelte:head>
 	<title>{head.title}</title>
 	<meta name="description" content={head.description} />
+	<link rel="canonical" href={head.url} />
+	{#if head.markdown}<link rel="alternate" type="text/markdown" href={head.markdown} />{/if}
+	<meta property="og:site_name" content="Dalton Baker" />
+	<meta property="og:type" content={head.type} />
+	<meta property="og:url" content={head.url} />
+	<meta property="og:title" content={head.title} />
+	<meta property="og:description" content={head.description} />
+	{#if head.image}<meta property="og:image" content={head.image} />{/if}
+	<meta name="twitter:card" content={head.image ? 'summary_large_image' : 'summary'} />
+	{@html `<script type="application/ld+json">${head.jsonLd}</script>`}
 </svelte:head>
 
 <SystemMap slug={data.slug} />
