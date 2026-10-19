@@ -1,5 +1,7 @@
 <svelte:head>
 	<title>Privacy Policy | Dalton Baker</title>
+	<meta name="description" content="Privacy policy for Dalton Baker's websites and side projects." />
+	<link rel="canonical" href="https://daltonsbaker.com/privacyPolicy" />
 </svelte:head>
 
 <main class="page">

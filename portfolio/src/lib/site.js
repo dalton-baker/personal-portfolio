@@ -29,10 +29,33 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
 const L = (label, href) => ({ label, href });
 const F = (k, v) => ({ k, v });
 
+/** The site's own address, for absolute links (sitemap, llms.txt, structured data). */
+export const origin = 'https://daltonsbaker.com';
+/** The résumé at a fixed address (a copy in static/), for links that outlive a build; the card links the hashed copy. */
+export const resumePdf = '/DaltonBakerResume.pdf';
+export { resumeUrl };
+
 const github = L('GitHub', 'https://github.com/dalton-baker');
 const linkedin = L('LinkedIn', 'https://www.linkedin.com/in/dalton-baker');
 const resume = L('Résumé', resumeUrl);
 const email = L('Email', 'mailto:dalton.s.baker@gmail.com');
+
+/**
+ * Who the site is about, for search engines and AI agents (structured data, llms.txt). Keep it in step with
+ * the About card below.
+ */
+export const person = {
+	name: 'Dalton Baker',
+	tagline: 'Software engineer. Maker. Builder of things both useful and ridiculous.',
+	summary: 'Software engineer in Rapid City, South Dakota. Works at Omnitech, co-founded Reg X Timing (race registration and timing) and co-owns Best Choice Pawn.',
+	jobTitle: 'Software Engineer',
+	worksFor: { name: 'Omnitech Inc.', url: 'https://omnitech-inc.com/' },
+	alumniOf: { name: 'South Dakota School of Mines and Technology', url: 'https://www.sdsmt.edu/' },
+	homeLocation: 'Rapid City, South Dakota',
+	knowsAbout: ['C#', 'ASP.NET Core', 'Blazor', 'SvelteKit', 'Cloudflare'],
+	email: email.href,
+	profiles: [github, linkedin]
+};
 
 /** The asteroid belt: centre orbit and how far its particles spread either side. */
 export const belt = { t: 0.36, spread: 0.055 };

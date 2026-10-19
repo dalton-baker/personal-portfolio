@@ -24,6 +24,31 @@ npm run preview   # build, then serve dist/ with wrangler
 
 Every body and post is its own prerendered page, so links to them load straight into that view.
 
+## For search engines and AI agents
+
+The map is built for people; these give crawlers and agents the same content as plain text. All of
+them are generated at build time from `site.js` and the posts, so new bodies and posts show up
+automatically:
+
+- `/sitemap.xml` lists every page (and `robots.txt` points to it).
+- `/llms.txt` ([llmstxt.org](https://llmstxt.org)) is a short index of the site; `/llms-full.txt` has
+  every page in full.
+- Every map page has a Markdown copy at its address plus `.md` (`/about.md`, `/telescope.md`, and
+  `/index.md` for home), linked from the page with `<link rel="alternate" type="text/markdown">`.
+  Posts are rendered and converted with turndown, so galleries become image and video links.
+- `/.well-known/ard.json` is the [Agentic Resource Discovery](https://agenticresourcediscovery.org/spec/)
+  manifest, also served at its old name `/.well-known/ai-catalog.json`, which Lighthouse 13.5 reads.
+  Its one entry is a small Agent Skill (`/.well-known/skills/dalton-baker/SKILL.md`) that points agents
+  at the files above.
+- Every page's `<head>` carries a canonical URL, Open Graph tags and schema.org JSON-LD
+  (`src/lib/head.js`): a Person and WebSite on every page, plus a ProfilePage, BlogPosting, Blog or
+  WebPage about the body's project.
+
+The text files are folded to plain ASCII, because some clients guess the wrong encoding for `.txt` and
+`.md`. The code is in `src/lib/server/agents.js` and the routes next to it in `src/routes/`. Unknown URLs
+get a real 404 (`not_found_handling: "404-page"` in `wrangler.jsonc`) rather than the home page, so
+crawlers don't index missing pages as copies of it.
+
 ## How it fits together
 
 - `src/routes/[[slug]]/` is the only map route. Navigating between bodies and posts keeps the
