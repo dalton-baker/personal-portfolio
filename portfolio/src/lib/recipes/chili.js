@@ -1,5 +1,5 @@
 export default {
-	title: 'Award-Winning Slow-Braised Beef Chili',
+	title: 'Slow-Braised Beef Chili',
 	date: '2026-10-23',
 	dek: 'This was my first ever chili. It won first place at my job’s chili contest!',
 	makes: 'Approximately 5–6 quarts',
