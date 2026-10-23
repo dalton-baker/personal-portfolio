@@ -1,8 +1,10 @@
 import { bodies, belt } from '$lib/site.js';
 import { posts } from '$lib/posts';
+import { recipes } from '$lib/recipes';
 
 /**
- * Builds the bodies on the map: the site's bodies, their moons, and one moon of The Log per post.
+ * Builds the bodies on the map: the site's bodies, their moons, one moon of The Log per post and one
+ * moon of Recipes per recipe.
  * Each body is decorated with the inline styles its markup needs; moons are linked to their giant
  * (`moon.host`, `giant.moons`). The engine adds live position fields (px, py, sx, sy, ...) every frame.
  */
@@ -42,27 +44,27 @@ export function kep(t) {
 	return 0.15 * Math.pow(1 / (1 + t * 2.2), 1.5);
 }
 
-function postMoons(host) {
-	const n = posts.length;
-	return posts.map((p, i) => {
-		// Spread the moons evenly between an inner and outer orbit.
-		const mt = n > 1 ? 0.85 + (1.05 * i) / (n - 1) : 1.3;
-		return {
-			id: p.slug,
-			kind: 'moon',
-			host: host.id,
-			num: 'P' + p.n,
-			name: p.title,
-			date: p.displayDate,
-			body: p.dek,
-			base: '#e9e4ff',
-			dark: '#6b5e99',
-			mt,
-			phase: (0.4 + i * 1.75) % (Math.PI * 2),
-			size: MOON_SIZES[i % MOON_SIZES.length],
-			post: p
-		};
-	});
+/**
+ * One moon per post (`field` 'post') or recipe ('recipe') around `host`, spread evenly between the
+ * `inner` and `outer` orbits. These moons open in the reader.
+ */
+function readerMoons(host, items, { field, prefix, inner, outer, base, dark }) {
+	const n = items.length;
+	return items.map((p, i) => ({
+		id: p.slug,
+		kind: 'moon',
+		host: host.id,
+		num: prefix + p.n,
+		name: p.title,
+		date: p.displayDate,
+		body: p.dek,
+		base,
+		dark,
+		mt: n > 1 ? inner + ((outer - inner) * i) / (n - 1) : (inner + outer) / 2,
+		phase: (0.4 + i * 1.75) % (Math.PI * 2),
+		size: MOON_SIZES[i % MOON_SIZES.length],
+		[field]: p
+	}));
 }
 
 function decorate(b) {
@@ -95,9 +97,11 @@ function decorate(b) {
 			shadeStyle: 'background:linear-gradient(90deg,rgba(0,0,0,0) 0 47%,#55514b 47% 100%)'
 		};
 	}
-	b.aria = b.post ? 'Post: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
+	b.aria = b.post ? 'Post: ' + b.name : b.recipe ? 'Recipe: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
 	if (b.kind === 'giant') b.swatch ??= '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
+	// Its colour as 'r,g,b', for the orbit lines of its moons.
+	if (b.swatch) b.rgb = [1, 3, 5].map((i) => parseInt(b.swatch.slice(i, i + 2), 16)).join(',');
 	let bg = '';
 	if (b.kind === 'planet' || b.kind === 'moon') bg = 'background:' + (b.surface ? b.surface + ',' : b.rocky ? CRATERS : b.dwarf ? ICE : '') + b.base;
 	else if (b.kind === 'rock') bg = 'background:' + b.base + ';border-radius:44% 56% 38% 62% / 58% 40% 60% 42%';
@@ -118,7 +122,12 @@ const main = bodies
 	});
 const siteMoons = bodies.filter((b) => b.kind === 'moon').map((b) => ({ ...b, id: b.slug }));
 
-export const all = [...main, ...postMoons(main.find((b) => b.isBlog)), ...siteMoons].map(decorate);
+export const all = [
+	...main,
+	...readerMoons(main.find((b) => b.isBlog), posts, { field: 'post', prefix: 'P', inner: 0.85, outer: 1.9, base: '#e9e4ff', dark: '#6b5e99' }),
+	...readerMoons(main.find((b) => b.isRecipes), recipes, { field: 'recipe', prefix: 'R', inner: 0.75, outer: 1.3, base: '#ffe7c4', dark: '#8a4b26' }),
+	...siteMoons
+].map(decorate);
 export const byId = Object.fromEntries(all.map((b) => [b.id, b]));
 
 if (Object.keys(byId).length !== all.length) {
@@ -136,7 +145,7 @@ for (const m of all) {
 export const hole = all.find((b) => b.kind === 'hole');
 export const orbiters = all.filter((b) => b.kind !== 'hole');
 export const moons = all.filter((b) => b.kind === 'moon');
-/** Giants with moons (The Log and the ringed giant). */
+/** Bodies with moons (The Log, the ringed giant, Recipes and the binary dwarf). */
 export const hosts = all.filter((b) => b.moons);
 export const blog = all.find((b) => b.isBlog);
 export const pulsar = all.find((b) => b.kind === 'pulsar');

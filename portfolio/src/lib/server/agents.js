@@ -28,12 +28,15 @@ const link = (text, url) => `[${text}](${href(url)})`;
 
 // Clients guess the encoding of .txt and .md files differently (some ignore the charset), so swap
 // typographic characters for plain ASCII and strip accents.
-const ASCII = { '‘': "'", '’': "'", '“': '"', '”': '"', '–': '-', '—': '--', '…': '...', '·': '-', '×': 'x', '→': '->', '←': '<-', 'µ': 'u', 'μ': 'u', '\u00a0': ' ' };
+const ASCII = { '‘': "'", '’': "'", '“': '"', '”': '"', '–': '-', '—': '--', '…': '...', '·': '-', '×': 'x', '→': '->', '←': '<-', 'µ': 'u', 'μ': 'u', '°': ' degrees ', '\u00a0': ' ' };
 const NON_ASCII = new RegExp(`[${Object.keys(ASCII).join('')}]`, 'g');
+const FRACTIONS = { '¼': '1/4', '½': '1/2', '¾': '3/4' };
 
 function toAscii(text) {
 	return text
 		.replaceAll(' · ', ', ')
+		// 2½ lb -> 2 1/2 lb
+		.replace(/(\d?)([¼½¾])/g, (m, whole, f) => (whole ? whole + ' ' : '') + FRACTIONS[f])
 		.replace(NON_ASCII, (c) => ASCII[c])
 		.normalize('NFKD')
 		.replace(/\p{M}/gu, '');
@@ -82,6 +85,27 @@ function postMarkdown(b) {
 	].join('\n\n');
 }
 
+const items = (list, ordered) => list.map((item, i) => `${ordered ? `${i + 1}.` : '-'} ${item}`).join('\n');
+
+function recipeMarkdown(b) {
+	const r = b.recipe;
+	return [
+		`# ${r.title}`,
+		`A recipe by ${person.name}, recipe ${r.n} in ${link(b.host.name, `/${b.host.id}`)}. Web page: ${pageUrl(r.slug)}`,
+		`> ${r.dek}`,
+		...(r.hero ? [media(r.hero)] : []),
+		`- Makes: ${r.makes}\n- Prep: ${r.prep}\n- Cooking: ${r.cook}`,
+		'## Ingredients',
+		...r.ingredients.map((g) => `### ${g.title}\n\n${items(g.items)}`),
+		'## Instructions',
+		...r.steps.map((g) => `### ${g.title}\n\n${items(g.items, true)}`),
+		...r.tips.map((g) => `## ${g.title}\n\n${items(g.items)}`)
+	].join('\n\n');
+}
+
+/** A page's Markdown, whatever kind of page it is. */
+const markdownOf = (b) => (b.post ? postMarkdown(b) : b.recipe ? recipeMarkdown(b) : bodyMarkdown(b));
+
 function moonList(b) {
 	return b.moons
 		.map((m) => (m.post ? `- ${link(m.name, `/${m.id}`)} (${m.date}): ${m.body}` : `- ${link(m.name, `/${m.id}`)}: ${m.summary}`))
@@ -109,11 +133,11 @@ export function pageMarkdown(slug) {
 	if (slug === 'index') return toAscii(llmsTxt(true)) + '\n';
 	const b = byId[slug];
 	if (!b) return null;
-	return toAscii(b.post ? postMarkdown(b) : bodyMarkdown(b)) + '\n';
+	return toAscii(markdownOf(b)) + '\n';
 }
 
 /** How the map works and where the hidden game is, for the top of llms.txt and llms-full.txt. */
-const MAP_INTRO = `The site is an interactive "system map": each planet, moon and asteroid is a page, and the blog posts are moons of a gas giant called The Log. It also hides a game: about once a minute a comet swings past the black hole at the center, and clicking it opens ${link(game.title, `/${game.slug}`)}, a gravity sandbox game (${origin}/?comet sends one straight away).`;
+const MAP_INTRO = `The site is an interactive "system map": each planet, moon and asteroid is a page, the blog posts are moons of a gas giant called The Log, and the recipes are moons of a planet called Recipes. It also hides a game: about once a minute a comet swings past the black hole at the center, and clicking it opens ${link(game.title, `/${game.slug}`)}, a gravity sandbox game (${origin}/?comet sends one straight away).`;
 
 /** One llms.txt line per body. */
 const bodyLine = (b) => `- ${link(b.name, `/${b.id}`)}: ${b.post ? `${b.post.dek} (${b.post.displayDate})` : b.summary}`;
@@ -123,6 +147,7 @@ function llmsTxt(home = false) {
 	const groups = [
 		['Work and businesses', all.filter((b) => b.rocky).map(bodyLine)],
 		['Posts', all.filter((b) => b.post).map(bodyLine)],
+		['Recipes', all.filter((b) => b.recipe).map(bodyLine)],
 		['Websites I built', (all.find((b) => b.rings)?.moons ?? []).map(bodyLine)],
 		['Tools and packages', all.filter((b) => b.kind === 'rock').map(bodyLine)],
 		['Games', [...all.filter((b) => b.dwarf || b.host?.dwarf).map(bodyLine), gameLine]]
@@ -152,7 +177,7 @@ export function llmsTxtFile() {
 /** Every page in full, About first, then the rest of the map and each post in order. */
 export function llmsFullTxt() {
 	const demote = (md) => md.replace(/^(#{1,5}) /gm, '#$1 ');
-	const pages = slugs.map((slug) => demote(byId[slug].post ? postMarkdown(byId[slug]) : bodyMarkdown(byId[slug])));
+	const pages = slugs.map((slug) => demote(markdownOf(byId[slug])));
 	const intro = [
 		`# ${person.name}: everything on daltonsbaker.com`,
 		`> The full text of every page on ${person.name}'s portfolio, one section per page. The short index is ${link('llms.txt', '/llms.txt')}.`,

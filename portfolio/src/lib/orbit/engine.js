@@ -846,7 +846,7 @@ export class OrbitEngine {
 			const on = sel === m.id, active = m.host === hostB;
 			// Moons in a ring system only show an orbit line when selected; the gaps already show it.
 			if (m.host.rings && !on) continue;
-			const h = m.host, c = h.rings ? '232,206,150' : h.barycenter ? '214,226,240' : '255,46,136';
+			const h = m.host, c = h.rings ? '232,206,150' : h.barycenter ? '214,226,240' : h.rgb;
 			ctx.setLineDash(on ? [] : [2, 5]);
 			ctx.strokeStyle = 'rgba(' + c + ',' + (on ? 0.9 : active ? 0.35 : 0.12) + ')';
 			ctx.beginPath();

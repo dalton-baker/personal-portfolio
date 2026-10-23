@@ -20,9 +20,13 @@ npm run preview   # build, then serve dist/ with wrangler
   (`telescope.svelte` is served at `/telescope`), and each post exports a `meta` block with its
   title, date, summary and hero image. Each post becomes a moon of The Log automatically.
   Use `Gallery` for image grids; clicking a thumbnail opens it full screen.
+- **Recipes** are the `.js` files in `src/lib/recipes/` (`chili.js` is served at `/chili`). Each one
+  exports its title, a short intro, what it makes, prep and cooking times, and lists of ingredients,
+  steps and notes (the fields are listed in `src/lib/recipes/index.js`). Each recipe becomes a moon of
+  the Recipes planet and opens in the same reader as the posts.
 - Images and video stay in `static/`.
 
-Every body and post is its own prerendered page, so links to them load straight into that view.
+Every body, post and recipe is its own prerendered page, so links to them load straight into that view.
 
 ## For search engines and AI agents
 
@@ -41,7 +45,7 @@ automatically:
   Its one entry is a small Agent Skill (`/.well-known/skills/dalton-baker/SKILL.md`) that points agents
   at the files above.
 - Every page's `<head>` carries a canonical URL, Open Graph tags and schema.org JSON-LD
-  (`src/lib/head.js`): a Person and WebSite on every page, plus a ProfilePage, BlogPosting, Blog or
+  (`src/lib/head.js`): a Person and WebSite on every page, plus a ProfilePage, BlogPosting, Blog, Recipe or
   WebPage about the body's project.
 
 The text files are folded to plain ASCII, because some clients guess the wrong encoding for `.txt` and

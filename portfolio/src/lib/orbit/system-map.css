@@ -220,6 +220,17 @@
 .prose figure{margin:36px 0}
 .prose figure.narrow video{display:block;width:100%;max-width:20rem;margin:0 auto;border:1px solid rgba(241,238,247,.12);background:#13111c}
 .prose figcaption{margin-top:10px;font:400 11.5px/1.5 'Geist Mono',ui-monospace,monospace;color:rgba(241,238,247,.5)}
+/* A recipe: what it makes and how long it takes in a row, then the ingredient groups in two columns. */
+.rstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:44px 0 0;border-top:1px dashed rgba(241,238,247,.2);border-bottom:1px dashed rgba(241,238,247,.2)}
+.rstats div{padding:16px 18px 18px 0}
+.rstats div+div{padding-left:18px;border-left:1px dashed rgba(241,238,247,.14)}
+.rstats dt{font:500 10.5px/1.6 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#ff2e88}
+.rstats dd{margin:6px 0 0;font:500 15px/1.45 'Geist',system-ui,sans-serif;color:#f1eef7}
+.ringr{columns:2;column-gap:36px}
+.ringr>div{break-inside:avoid;padding-top:1px}
+.ringr h3{margin:16px 0 10px}
+.ringr ul{margin-bottom:12px;font-size:16px;line-height:1.6}
+.ringr li{margin-bottom:4px}
 
 @media (min-width:760px){
 	.bh{cursor:crosshair}
@@ -238,4 +249,8 @@
 	.card h2{font-size:24px}
 	.rfig.hero{margin:36px -24px}
 	.rbar{gap:12px;padding:0 12px}
+	.rstats{grid-template-columns:1fr}
+	.rstats div,.rstats div+div{padding:12px 0 14px;border-left:0}
+	.rstats div+div{border-top:1px dashed rgba(241,238,247,.14)}
+	.ringr{columns:1}
 }

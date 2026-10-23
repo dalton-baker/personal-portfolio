@@ -88,6 +88,29 @@ function pageNode(slug, url, h) {
 			...(!p.hero.video && { image: abs(p.hero.src) })
 		};
 	}
+	if (b.recipe) {
+		const r = b.recipe;
+		return {
+			'@type': 'Recipe',
+			'@id': `${url}#recipe`,
+			mainEntityOfPage: { '@type': 'WebPage', ...page },
+			name: r.title,
+			description: r.dek,
+			datePublished: r.date,
+			author: { '@id': PERSON_ID },
+			recipeYield: r.makes,
+			recipeIngredient: r.ingredients.flatMap((g) => g.items),
+			recipeInstructions: r.steps.map((g) => ({ '@type': 'HowToSection', name: g.title, itemListElement: g.items.map((text) => ({ '@type': 'HowToStep', text })) })),
+			...(r.hero && { image: abs(r.hero.src) })
+		};
+	}
+	if (b.isRecipes) {
+		return {
+			'@type': 'CollectionPage',
+			...page,
+			hasPart: b.moons.map((m) => ({ '@type': 'Recipe', '@id': `${origin}/${m.id}#recipe`, name: m.name, url: `${origin}/${m.id}` }))
+		};
+	}
 	if (b.isBlog) {
 		return {
 			'@type': 'Blog',
@@ -113,6 +136,7 @@ export function pageHead(slug) {
 		const b = byId[slug];
 		if (!b) return null;
 		if (b.post) h = { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek, type: 'article', image: !b.post.hero.video && abs(b.post.hero.src) };
+		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.hero && abs(b.recipe.hero.src) };
 		else if (b.kind === 'hole') h = { title: 'About | Dalton Baker', description: b.summary, type: 'profile' };
 		else h = { title: `${b.name} | Dalton Baker`, description: b.summary };
 	}

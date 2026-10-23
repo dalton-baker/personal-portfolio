@@ -3,8 +3,10 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { OrbitEngine } from '$lib/orbit/engine.js';
-	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
+	import { all, byId, hole, orbiters } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
+	import { recipes } from '$lib/recipes';
+	import Recipe from './Recipe.svelte';
 	import { game } from '$lib/game';
 	import Lightbox from './Lightbox.svelte';
 	import { lightbox } from './lightbox.svelte.js';
@@ -12,18 +14,22 @@
 	/** The URL segment: a body slug, a post slug, or null for the home page. */
 	let { slug = null } = $props();
 
-	const postSlug = (s) => (s && byId[s]?.post ? s : null);
+	/** Posts and recipes open in the reader; their moons are `readable`. */
+	const readable = (b) => !!(b?.post || b?.recipe);
+	const postSlug = (s) => (s && readable(byId[s]) ? s : null);
 	const isMoon = (id) => byId[id]?.kind === 'moon';
+	/** The body whose card a post or recipe belongs to (The Log or Recipes). */
+	const hostOf = (id) => byId[id].host.id;
 
 	let scan = $state(false);
 	let noGL = $state(false);
 	let ready = $state(false);
 	/**
-	 * A post moon picked while orbiting The Log; its post expands inside The Log's card without changing
-	 * the URL (the post's own URL opens the reader). Other giants' moons are selected through their URLs.
+	 * A post or recipe moon picked while orbiting The Log or Recipes; it expands inside that card without
+	 * changing the URL (its own URL opens the reader). Other giants' moons are selected through their URLs.
 	 */
 	let moonSel = $state(null);
-	/** The post open in the reader. Lags the URL while the close animation plays. */
+	/** The post or recipe open in the reader. Lags the URL while the close animation plays. */
 	let reading = $state(untrack(() => postSlug(slug)));
 	let closing = $state(false);
 	let instant = $state(true);
@@ -43,7 +49,7 @@
 	const sel = $derived.by(() => {
 		if (!slug || slug === game.slug) return null;
 		if (isMoon(slug)) return slug;
-		if (slug === blog.id && moonSel) return moonSel;
+		if (moonSel && slug === hostOf(moonSel)) return moonSel;
 		return slug;
 	});
 	/** The giant whose moons are in play: it, or one of its moons, is selected. */
@@ -52,13 +58,19 @@
 	const card = $derived(sel ? byId[isMoon(sel) ? byId[sel].host.id : sel] : null);
 	const art = $derived.by(() => {
 		if (!reading) return null;
-		const p = byId[reading].post;
-		const i = posts.indexOf(p);
+		const b = byId[reading];
+		const p = b.post ?? b.recipe;
+		const list = b.post ? posts : recipes;
+		const i = list.indexOf(p);
 		return {
 			...p,
+			recipe: b.recipe,
+			noun: b.post ? 'Post' : 'Recipe',
+			host: b.host.name,
 			n: String(p.n).padStart(2, '0'),
-			prev: posts[(i - 1 + posts.length) % posts.length],
-			next: posts[(i + 1) % posts.length]
+			list,
+			prev: list[(i - 1 + list.length) % list.length],
+			next: list[(i + 1) % list.length]
 		};
 	});
 
@@ -174,9 +186,9 @@
 			return;
 		}
 		if (reading && !closing) {
-			// Leaving a post: keep its moon selected if we land back in The Log.
+			// Leaving a post or recipe: keep its moon selected if we land back in its card.
 			const was = reading;
-			moonSel = next === blog.id ? was : null;
+			moonSel = next === hostOf(was) ? was : null;
 			closing = true;
 			closeTimer = setTimeout(() => {
 				reading = null;
@@ -184,7 +196,7 @@
 			}, 430);
 			return;
 		}
-		if (next !== blog.id) moonSel = null;
+		if (moonSel && next !== hostOf(moonSel)) moonSel = null;
 	}
 
 	/** Opens the game with an iris from the comet that was clicked (or the middle of the map). */
@@ -219,29 +231,31 @@
 		else goto('/', { noScroll: true });
 	}
 
-	/** Back to The Log, stepping back through history when that is where the post was opened from. */
+	/** Back to The Log (or Recipes), stepping back through history when that is where the reader was opened from. */
 	function closeRead() {
 		if (!reading || closing) return;
-		if (cameFrom === '/' + blog.id) history.back();
-		else goto('/' + blog.id, { noScroll: true });
+		const back = '/' + hostOf(reading);
+		if (cameFrom === back) history.back();
+		else goto(back, { noScroll: true });
 	}
 
 	const plainClick = (e) => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 	/**
-	 * Moon links select the moon and expand its post in The Log's card; `toggle` (the card's list) collapses
-	 * it again on a second click. Modified clicks still open the post itself.
+	 * Post and recipe moon links select the moon and expand it in its host's card; `toggle` (the card's list)
+	 * collapses it again on a second click. Modified clicks still open the post or recipe itself.
 	 */
 	function previewMoon(e, id, toggle = false) {
 		if (!plainClick(e)) return;
 		e.preventDefault();
-		if (slug !== blog.id) goto('/' + blog.id, { noScroll: true });
+		const host = hostOf(id);
+		if (slug !== host) goto('/' + host, { noScroll: true });
 		moonSel = toggle && moonSel === id ? null : id;
 	}
 
-	/** Clicking The Log while one of its moons is selected goes back to The Log itself. */
-	function selectLog(e) {
-		if (slug !== blog.id || !moonSel || !plainClick(e)) return;
+	/** Clicking The Log (or Recipes) while one of its moons is selected goes back to the planet itself. */
+	function selectHost(e, id) {
+		if (slug !== id || !moonSel || !plainClick(e)) return;
 		e.preventDefault();
 		moonSel = null;
 	}
@@ -333,7 +347,7 @@
 				data-name={b.label}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
-				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
+				onclick={readable(b) ? (e) => previewMoon(e, b.id) : b.isBlog || b.isRecipes ? (e) => selectHost(e, b.id) : undefined}
 			>
 				<span class="dotwrap" style={b.wrapStyle}>
 					{#if b.rays}<span class="rays"></span>{/if}
@@ -446,7 +460,7 @@
 						{#each card.moons as m (m.id)}
 							{@const open = sel === m.id}
 							<li class="post-item" class:on={open}>
-								{#if m.post}
+								{#if readable(m)}
 									<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
 										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
 									</a>
@@ -457,9 +471,9 @@
 								{/if}
 								{#if open}
 									<div class="post-more">
-										{#if m.post}
+										{#if readable(m)}
 											<p class="post-dek">{m.body}</p>
-											<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+											<a class="lnk primary" href="/{m.id}">{m.post ? 'Read post' : 'See recipe'}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
 										{:else}
 											{#each m.paras as para, i (i)}<p class="post-dek">{@render richText(para)}</p>{/each}
 											{#if m.facts.length}
@@ -493,26 +507,32 @@
 				<button class="rback" onclick={closeRead}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Back to orbit
 				</button>
-				<span class="rcrumb">The Log // Post {art.n}</span>
+				<span class="rcrumb">{art.host} // {art.noun} {art.n}</span>
 				<div class="rprog"><div bind:this={progEl} class="rprog-fill"></div></div>
 			</div>
 			<div class="rcol">
-				<div class="rkicker"><b>Post {art.n}</b> · {art.displayDate} · {art.mins} min read</div>
+				<div class="rkicker"><b>{art.noun} {art.n}</b> · {art.displayDate}{art.mins ? ` · ${art.mins} min read` : ''}</div>
 				<h1 class="rtitle">{art.title}</h1>
 				<p class="rdek">{art.dek}</p>
-				<figure class="rfig hero">
-					{#if art.hero.video}
-						<video src={art.hero.src} autoplay loop muted playsinline></video>
-					{:else}
-						<img src={art.hero.src} alt={art.hero.alt} />
-					{/if}
-				</figure>
+				{#if art.hero}
+					<figure class="rfig hero">
+						{#if art.hero.video}
+							<video src={art.hero.src} autoplay loop muted playsinline></video>
+						{:else}
+							<img src={art.hero.src} alt={art.hero.alt} />
+						{/if}
+					</figure>
+				{/if}
 				<div class="prose">
-					<art.component />
+					{#if art.recipe}
+						<Recipe recipe={art.recipe} />
+					{:else}
+						<art.component />
+					{/if}
 				</div>
 				<div class="rend">
 					<div class="rend-h">End of transmission</div>
-					{#if posts.length > 1}
+					{#if art.list.length > 1}
 						<div class="rnav">
 							<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>
 							<a class="rnext right" href="/{art.next.slug}"><span class="rnext-k">Next moon →</span><span class="rnext-t">{art.next.title}</span></a>

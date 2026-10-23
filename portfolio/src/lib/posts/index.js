@@ -15,7 +15,7 @@ const sources = import.meta.glob('./*.svelte', { eager: true, query: '?raw', imp
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-function formatDate(iso) {
+export function formatDate(iso) {
 	const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
 	return `${MONTHS[m - 1]} ${d}, ${y}`;
 }
