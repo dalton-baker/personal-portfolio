@@ -458,7 +458,7 @@
 							<li class="post-item" class:on={open}>
 								{#if readable(m)}
 									<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
-										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span>{#if m.sub}<span class="pd">{m.sub}</span>{/if}
 									</a>
 								{:else}
 									<a class="post" href={open ? `/${card.id}` : `/${m.id}`} aria-expanded={open}>
@@ -507,7 +507,7 @@
 				<div class="rprog"><div bind:this={progEl} class="rprog-fill"></div></div>
 			</div>
 			<div class="rcol">
-				<div class="rkicker"><b>{art.noun} {art.n}</b> · {art.displayDate}{art.mins ? ` · ${art.mins} min read` : ''}</div>
+				<div class="rkicker"><b>{art.noun} {art.n}</b>{art.displayDate ? ` · ${art.displayDate} · ${art.mins} min read` : ''}</div>
 				<h1 class="rtitle">{art.title}</h1>
 				<p class="rdek">{art.dek}</p>
 				{#if art.hero}

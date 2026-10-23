@@ -96,7 +96,6 @@ function pageNode(slug, url, h) {
 			mainEntityOfPage: { '@type': 'WebPage', ...page },
 			name: r.title,
 			description: r.dek,
-			datePublished: r.date,
 			author: { '@id': PERSON_ID },
 			...(r.makes && { recipeYield: r.makes }),
 			recipeIngredient: r.ingredients.flatMap((g) => g.items),

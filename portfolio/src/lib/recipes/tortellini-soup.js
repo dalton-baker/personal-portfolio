@@ -1,7 +1,8 @@
 export default {
 	title: 'Chicken Tortellini Alfredo Soup',
-	date: '2026-10-23',
-	dek: 'This one won first place in the soup and stew category at my previous job’s holiday cook-off in 2023!',
+	order: 1,
+	dek: 'This one won first place in the soup and stew category at Innovative Systems’ 2023 holiday cook-off, back when I worked there!',
+	hero: { src: '/recipes/tortellini-soup-plaque.jpg', alt: 'The Innovative Systems Holiday Cook-Off Champions plaque for the soup/stew category, with Dalton Baker on the 2023 plate' },
 	ingredients: [
 		{
 			items: [
