@@ -22,8 +22,8 @@ npm run preview   # build, then serve dist/ with wrangler
   Use `Gallery` for image grids; clicking a thumbnail opens it full screen.
 - **Recipes** are the `.js` files in `src/lib/recipes/` (`chili.js` is served at `/chili`). Each one
   exports its title, a short intro, what it makes, prep and cooking times, and lists of ingredients,
-  steps and notes (the fields are listed in `src/lib/recipes/index.js`). Each recipe becomes a moon of
-  the Recipes planet and opens in the same reader as the posts.
+  steps and notes (the fields are listed in `src/lib/recipes/index.js`). Recipes are moons of The Log
+  too, after the posts, listed under their own heading in its card, and open in the same reader.
 - Images and video stay in `static/`.
 
 Every body, post and recipe is its own prerendered page, so links to them load straight into that view.

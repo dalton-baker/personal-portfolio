@@ -3,7 +3,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { OrbitEngine } from '$lib/orbit/engine.js';
-	import { all, byId, hole, orbiters } from '$lib/orbit/system.js';
+	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
 	import { recipes } from '$lib/recipes';
 	import Recipe from './Recipe.svelte';
@@ -14,19 +14,17 @@
 	/** The URL segment: a body slug, a post slug, or null for the home page. */
 	let { slug = null } = $props();
 
-	/** Posts and recipes open in the reader; their moons are `readable`. */
+	/** Posts and recipes (The Log's moons) open in the reader. */
 	const readable = (b) => !!(b?.post || b?.recipe);
 	const postSlug = (s) => (s && readable(byId[s]) ? s : null);
 	const isMoon = (id) => byId[id]?.kind === 'moon';
-	/** The body whose card a post or recipe belongs to (The Log or Recipes). */
-	const hostOf = (id) => byId[id].host.id;
 
 	let scan = $state(false);
 	let noGL = $state(false);
 	let ready = $state(false);
 	/**
-	 * A post or recipe moon picked while orbiting The Log or Recipes; it expands inside that card without
-	 * changing the URL (its own URL opens the reader). Other giants' moons are selected through their URLs.
+	 * A post or recipe moon picked while orbiting The Log; it expands inside The Log's card without changing
+	 * the URL (its own URL opens the reader). Other giants' moons are selected through their URLs.
 	 */
 	let moonSel = $state(null);
 	/** The post or recipe open in the reader. Lags the URL while the close animation plays. */
@@ -49,7 +47,7 @@
 	const sel = $derived.by(() => {
 		if (!slug || slug === game.slug) return null;
 		if (isMoon(slug)) return slug;
-		if (moonSel && slug === hostOf(moonSel)) return moonSel;
+		if (slug === blog.id && moonSel) return moonSel;
 		return slug;
 	});
 	/** The giant whose moons are in play: it, or one of its moons, is selected. */
@@ -60,13 +58,13 @@
 		if (!reading) return null;
 		const b = byId[reading];
 		const p = b.post ?? b.recipe;
+		// Previous and next step through the posts, or through the recipes.
 		const list = b.post ? posts : recipes;
 		const i = list.indexOf(p);
 		return {
 			...p,
 			recipe: b.recipe,
 			noun: b.post ? 'Post' : 'Recipe',
-			host: b.host.name,
 			n: String(p.n).padStart(2, '0'),
 			list,
 			prev: list[(i - 1 + list.length) % list.length],
@@ -186,9 +184,9 @@
 			return;
 		}
 		if (reading && !closing) {
-			// Leaving a post or recipe: keep its moon selected if we land back in its card.
+			// Leaving a post: keep its moon selected if we land back in The Log.
 			const was = reading;
-			moonSel = next === hostOf(was) ? was : null;
+			moonSel = next === blog.id ? was : null;
 			closing = true;
 			closeTimer = setTimeout(() => {
 				reading = null;
@@ -196,7 +194,7 @@
 			}, 430);
 			return;
 		}
-		if (moonSel && next !== hostOf(moonSel)) moonSel = null;
+		if (next !== blog.id) moonSel = null;
 	}
 
 	/** Opens the game with an iris from the comet that was clicked (or the middle of the map). */
@@ -231,31 +229,29 @@
 		else goto('/', { noScroll: true });
 	}
 
-	/** Back to The Log (or Recipes), stepping back through history when that is where the reader was opened from. */
+	/** Back to The Log, stepping back through history when that is where the post was opened from. */
 	function closeRead() {
 		if (!reading || closing) return;
-		const back = '/' + hostOf(reading);
-		if (cameFrom === back) history.back();
-		else goto(back, { noScroll: true });
+		if (cameFrom === '/' + blog.id) history.back();
+		else goto('/' + blog.id, { noScroll: true });
 	}
 
 	const plainClick = (e) => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 	/**
-	 * Post and recipe moon links select the moon and expand it in its host's card; `toggle` (the card's list)
+	 * Moon links select the moon and expand its post or recipe in The Log's card; `toggle` (the card's list)
 	 * collapses it again on a second click. Modified clicks still open the post or recipe itself.
 	 */
 	function previewMoon(e, id, toggle = false) {
 		if (!plainClick(e)) return;
 		e.preventDefault();
-		const host = hostOf(id);
-		if (slug !== host) goto('/' + host, { noScroll: true });
+		if (slug !== blog.id) goto('/' + blog.id, { noScroll: true });
 		moonSel = toggle && moonSel === id ? null : id;
 	}
 
-	/** Clicking The Log (or Recipes) while one of its moons is selected goes back to the planet itself. */
-	function selectHost(e, id) {
-		if (slug !== id || !moonSel || !plainClick(e)) return;
+	/** Clicking The Log while one of its moons is selected goes back to The Log itself. */
+	function selectLog(e) {
+		if (slug !== blog.id || !moonSel || !plainClick(e)) return;
 		e.preventDefault();
 		moonSel = null;
 	}
@@ -347,7 +343,7 @@
 				data-name={b.label}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
-				onclick={readable(b) ? (e) => previewMoon(e, b.id) : b.isBlog || b.isRecipes ? (e) => selectHost(e, b.id) : undefined}
+				onclick={readable(b) ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
 			>
 				<span class="dotwrap" style={b.wrapStyle}>
 					{#if b.rays}<span class="rays"></span>{/if}
@@ -454,10 +450,10 @@
 					<p class="desc">{card.contact}</p>
 				{/if}
 				{@render linkButtons(card.links)}
-				{#if card.moons}
-					<div class="card-h">{card.moonsLabel}</div>
+				{#each card.moonGroups ?? [] as group (group.label)}
+					<div class="card-h">{group.label}</div>
 					<ul class="posts">
-						{#each card.moons as m (m.id)}
+						{#each group.moons as m (m.id)}
 							{@const open = sel === m.id}
 							<li class="post-item" class:on={open}>
 								{#if readable(m)}
@@ -488,7 +484,7 @@
 							</li>
 						{/each}
 					</ul>
-				{/if}
+				{/each}
 			</div>
 		</aside>
 	{/if}
@@ -507,7 +503,7 @@
 				<button class="rback" onclick={closeRead}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Back to orbit
 				</button>
-				<span class="rcrumb">{art.host} // {art.noun} {art.n}</span>
+				<span class="rcrumb">The Log // {art.noun} {art.n}</span>
 				<div class="rprog"><div bind:this={progEl} class="rprog-fill"></div></div>
 			</div>
 			<div class="rcol">

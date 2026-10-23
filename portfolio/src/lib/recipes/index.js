@@ -1,7 +1,7 @@
 import { formatDate } from '$lib/posts';
 
 /**
- * Recipes, the moons of the Recipes planet. Every .js file in this folder is a recipe, and its file name
+ * Recipes, which orbit The Log after the posts. Every .js file in this folder is a recipe, and its file name
  * is its URL: chili.js is served at /chili. Each one default-exports:
  *   title        recipe name
  *   date         'YYYY-MM-DD' it went up, also sets the recipe order

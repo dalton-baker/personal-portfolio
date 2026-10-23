@@ -104,13 +104,6 @@ function pageNode(slug, url, h) {
 			...(r.hero && { image: abs(r.hero.src) })
 		};
 	}
-	if (b.isRecipes) {
-		return {
-			'@type': 'CollectionPage',
-			...page,
-			hasPart: b.moons.map((m) => ({ '@type': 'Recipe', '@id': `${origin}/${m.id}#recipe`, name: m.name, url: `${origin}/${m.id}` }))
-		};
-	}
 	if (b.isBlog) {
 		return {
 			'@type': 'Blog',
@@ -119,7 +112,8 @@ function pageNode(slug, url, h) {
 			name: b.name,
 			description: b.summary,
 			author: { '@id': PERSON_ID },
-			blogPost: b.moons.map((m) => ({ '@type': 'BlogPosting', '@id': `${origin}/${m.id}#post`, headline: m.name, url: `${origin}/${m.id}` }))
+			blogPost: b.moons.filter((m) => m.post).map((m) => ({ '@type': 'BlogPosting', '@id': `${origin}/${m.id}#post`, headline: m.name, url: `${origin}/${m.id}` })),
+			hasPart: b.moons.filter((m) => m.recipe).map((m) => ({ '@type': 'Recipe', '@id': `${origin}/${m.id}#recipe`, name: m.name, url: `${origin}/${m.id}` }))
 		};
 	}
 	if (b.moons) return { '@type': 'CollectionPage', ...page, about: b.moons.map(thing).filter(Boolean) };

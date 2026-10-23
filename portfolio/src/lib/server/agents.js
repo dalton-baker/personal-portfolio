@@ -106,8 +106,8 @@ function recipeMarkdown(b) {
 /** A page's Markdown, whatever kind of page it is. */
 const markdownOf = (b) => (b.post ? postMarkdown(b) : b.recipe ? recipeMarkdown(b) : bodyMarkdown(b));
 
-function moonList(b) {
-	return b.moons
+function moonList(moons) {
+	return moons
 		.map((m) => (m.post ? `- ${link(m.name, `/${m.id}`)} (${m.date}): ${m.body}` : `- ${link(m.name, `/${m.id}`)}: ${m.summary}`))
 		.join('\n');
 }
@@ -122,7 +122,7 @@ function bodyMarkdown(b) {
 	];
 	for (const sec of b.sections) out.push(`## ${sec.title}`, ...paras(sec.paras));
 	if (b.facts.length) out.push('## Details', b.facts.map((f) => `- ${f.k}: ${f.v}`).join('\n'));
-	if (b.moons) out.push(`## ${b.isBlog ? 'Posts' : b.moonsLabel.replace(/ in orbit$/, '').replace(/^Moons?$/, 'Related')}`, moonList(b));
+	for (const g of b.moonGroups ?? []) out.push(`## ${g.label.replace(/ in orbit$/, '').replace(/^Moons?$/, 'Related')}`, moonList(g.moons));
 	if (b.contact) out.push('## Contact', b.contact);
 	if (b.links.length) out.push(...(b.contact ? [] : ['## Links']), b.links.map((l) => `- ${link(l.label, l.href)}`).join('\n'));
 	return out.join('\n\n');
@@ -137,7 +137,7 @@ export function pageMarkdown(slug) {
 }
 
 /** How the map works and where the hidden game is, for the top of llms.txt and llms-full.txt. */
-const MAP_INTRO = `The site is an interactive "system map": each planet, moon and asteroid is a page, the blog posts are moons of a gas giant called The Log, and the recipes are moons of a planet called Recipes. It also hides a game: about once a minute a comet swings past the black hole at the center, and clicking it opens ${link(game.title, `/${game.slug}`)}, a gravity sandbox game (${origin}/?comet sends one straight away).`;
+const MAP_INTRO = `The site is an interactive "system map": each planet, moon and asteroid is a page, the blog posts and recipes are moons of a gas giant called The Log. It also hides a game: about once a minute a comet swings past the black hole at the center, and clicking it opens ${link(game.title, `/${game.slug}`)}, a gravity sandbox game (${origin}/?comet sends one straight away).`;
 
 /** One llms.txt line per body. */
 const bodyLine = (b) => `- ${link(b.name, `/${b.id}`)}: ${b.post ? `${b.post.dek} (${b.post.displayDate})` : b.summary}`;
