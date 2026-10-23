@@ -235,6 +235,9 @@
 .ringr h3{margin:16px 0 10px}
 .ringr ul{margin-bottom:12px;font-size:16px;line-height:1.6}
 .ringr li{margin-bottom:4px}
+/* A recipe's photo: small, at the end. */
+.prose .rphoto{max-width:340px;margin:56px auto 0}
+.rphoto img{display:block;width:100%;height:auto;background:#13111c;border:1px solid rgba(241,238,247,.12)}
 
 @media (min-width:760px){
 	.bh{cursor:crosshair}

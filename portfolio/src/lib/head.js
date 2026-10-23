@@ -104,7 +104,7 @@ function pageNode(slug, url, h) {
 				const steps = g.items.map((text) => ({ '@type': 'HowToStep', text }));
 				return g.title ? [{ '@type': 'HowToSection', name: g.title, itemListElement: steps }] : steps;
 			}),
-			...(r.hero && { image: abs(r.hero.src) })
+			...(r.photo && { image: abs(r.photo.src) })
 		};
 	}
 	if (b.isBlog) {
@@ -133,7 +133,7 @@ export function pageHead(slug) {
 		const b = byId[slug];
 		if (!b) return null;
 		if (b.post) h = { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek, type: 'article', image: !b.post.hero.video && abs(b.post.hero.src) };
-		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.hero && abs(b.recipe.hero.src) };
+		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.photo && abs(b.recipe.photo.src) };
 		else if (b.kind === 'hole') h = { title: 'About | Dalton Baker', description: b.summary, type: 'profile' };
 		else h = { title: `${b.name} | Dalton Baker`, description: b.summary };
 	}
