@@ -8,23 +8,15 @@ export default {
 	ingredients: [
 		{
 			title: 'Aromatics',
-			items: ['2 Tbsp butter', 'Green onion', 'Minced garlic']
+			items: ['2 Tbsp butter', 'Green onion', 'Minced garlic', 'Pepper', '1 tsp crushed red pepper', 'Oregano', 'Garlic']
 		},
 		{
 			title: 'Broth',
-			items: ['6 cups chicken broth', '1 (16 oz) jar alfredo sauce', '1 cup sour cream']
+			items: ['6 cups chicken broth', '1 (16 oz) jar alfredo sauce', '1 cup sour cream', 'Pecorino romano']
 		},
 		{
-			title: 'Chicken & Tortellini',
-			items: ['2–3 cups chopped chicken (1 bag of precooked fajita chicken)', '1 (20 oz) refrigerated cheese tortellini']
-		},
-		{
-			title: 'Spinach & Spices',
-			items: ['6 oz chopped spinach', 'Pepper', '1 tsp crushed red pepper', 'Oregano', 'Garlic']
-		},
-		{
-			title: 'Cheese',
-			items: ['Pecorino romano']
+			title: 'Add-ins',
+			items: ['2–3 cups chopped chicken (1 bag of precooked fajita chicken)', '1 (20 oz) refrigerated cheese tortellini', '6 oz chopped spinach']
 		}
 	],
 	steps: [
