@@ -3,11 +3,14 @@
 	let { recipe } = $props();
 
 	const stats = $derived([['Makes', recipe.makes], ['Prep', recipe.prep], ['Cooking', recipe.cook]].filter(([, v]) => v));
+
+	/** Keeps ranges like 3–4 or ½–¾ on one line: a word joiner after the dash stops the line breaking there. */
+	const keep = (text) => text.replace(/([\d¼½¾])–(?=[\d¼½¾])/g, '$1–\u2060');
 </script>
 
 {#if stats.length}
 	<dl class="rstats">
-		{#each stats as [k, v] (k)}<div><dt>{k}</dt><dd>{v}</dd></div>{/each}
+		{#each stats as [k, v] (k)}<div><dt>{k}</dt><dd>{keep(v)}</dd></div>{/each}
 	</dl>
 {/if}
 
@@ -17,7 +20,7 @@
 		<div>
 			{#if group.title}<h3>{group.title}</h3>{/if}
 			<ul>
-				{#each group.items as item, i (i)}<li>{item}</li>{/each}
+				{#each group.items as item, i (i)}<li>{keep(item)}</li>{/each}
 			</ul>
 		</div>
 	{/each}
@@ -27,7 +30,7 @@
 {#each recipe.steps as group, g (g)}
 	{#if group.title}<h3>{group.title}</h3>{/if}
 	<ol>
-		{#each group.items as item, i (i)}<li>{item}</li>{/each}
+		{#each group.items as item, i (i)}<li>{keep(item)}</li>{/each}
 	</ol>
 {/each}
 
@@ -35,10 +38,10 @@
 	<h2>{group.title}</h2>
 	{#if group.items}
 		<ul>
-			{#each group.items as item, i (i)}<li>{item}</li>{/each}
+			{#each group.items as item, i (i)}<li>{keep(item)}</li>{/each}
 		</ul>
 	{:else}
-		{#each group.body as para, i (i)}<p>{para}</p>{/each}
+		{#each group.body as para, i (i)}<p>{keep(para)}</p>{/each}
 	{/if}
 {/each}
 

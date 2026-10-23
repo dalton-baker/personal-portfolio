@@ -2,24 +2,29 @@ export default {
 	title: 'Chicken Tortellini Alfredo Soup',
 	order: 1,
 	dek: 'This one won first place in the soup and stew category at Innovative Systems’ 2023 holiday cook-off, back when I worked there!',
+	makes: 'Approximately 3½–4 quarts',
+	prep: '10–15 minutes',
+	cook: 'About 30 minutes on a stove, or 1–4 hours in a crock pot (I usually go 3–4 hours)',
 	ingredients: [
 		{
-			items: [
-				'2 Tbsp butter',
-				'Green onion',
-				'Minced garlic',
-				'6 cups chicken broth',
-				'1 (16 oz) jar alfredo sauce',
-				'1 cup sour cream',
-				'2–3 cups chopped chicken (1 bag of precooked fajita chicken)',
-				'1 (20 oz) refrigerated cheese tortellini',
-				'6 oz chopped spinach',
-				'Pepper',
-				'1 tsp crushed red pepper',
-				'Oregano',
-				'Garlic',
-				'Pecorino romano'
-			]
+			title: 'Aromatics',
+			items: ['2 Tbsp butter', 'Green onion', 'Minced garlic']
+		},
+		{
+			title: 'Broth',
+			items: ['6 cups chicken broth', '1 (16 oz) jar alfredo sauce', '1 cup sour cream']
+		},
+		{
+			title: 'Chicken & Tortellini',
+			items: ['2–3 cups chopped chicken (1 bag of precooked fajita chicken)', '1 (20 oz) refrigerated cheese tortellini']
+		},
+		{
+			title: 'Spinach & Spices',
+			items: ['6 oz chopped spinach', 'Pepper', '1 tsp crushed red pepper', 'Oregano', 'Garlic']
+		},
+		{
+			title: 'Cheese',
+			items: ['Pecorino romano']
 		}
 	],
 	steps: [

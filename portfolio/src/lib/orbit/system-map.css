@@ -226,7 +226,7 @@
 .rstats div{padding:16px 18px 18px 0}
 .rstats div+div{padding-left:18px;border-left:1px dashed rgba(241,238,247,.14)}
 .rstats dt{font:500 10.5px/1.6 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#ff2e88}
-.rstats dd{margin:6px 0 0;font:500 15px/1.45 'Geist',system-ui,sans-serif;color:#f1eef7}
+.rstats dd{margin:6px 0 0;font:500 15px/1.45 'Geist',system-ui,sans-serif;color:#f1eef7;text-wrap:pretty}
 .ringr{columns:2;column-gap:36px}
 .ringr>div{break-inside:avoid;padding-top:1px}
 /* A single, untitled group of ingredients flows across both columns. */
