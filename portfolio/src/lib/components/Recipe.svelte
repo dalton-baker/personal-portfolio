@@ -1,19 +1,21 @@
 <script>
 	/** A recipe in the reader: what it makes and how long it takes, the ingredients, the steps, then tips and notes. */
 	let { recipe } = $props();
+
+	const stats = $derived([['Makes', recipe.makes], ['Prep', recipe.prep], ['Cooking', recipe.cook]].filter(([, v]) => v));
 </script>
 
-<dl class="rstats">
-	<div><dt>Makes</dt><dd>{recipe.makes}</dd></div>
-	<div><dt>Prep</dt><dd>{recipe.prep}</dd></div>
-	<div><dt>Cooking</dt><dd>{recipe.cook}</dd></div>
-</dl>
+{#if stats.length}
+	<dl class="rstats">
+		{#each stats as [k, v] (k)}<div><dt>{k}</dt><dd>{v}</dd></div>{/each}
+	</dl>
+{/if}
 
 <h2>Ingredients</h2>
 <div class="ringr">
-	{#each recipe.ingredients as group (group.title)}
+	{#each recipe.ingredients as group, g (g)}
 		<div>
-			<h3>{group.title}</h3>
+			{#if group.title}<h3>{group.title}</h3>{/if}
 			<ul>
 				{#each group.items as item, i (i)}<li>{item}</li>{/each}
 			</ul>
@@ -22,8 +24,8 @@
 </div>
 
 <h2>Instructions</h2>
-{#each recipe.steps as group (group.title)}
-	<h3>{group.title}</h3>
+{#each recipe.steps as group, g (g)}
+	{#if group.title}<h3>{group.title}</h3>{/if}
 	<ol>
 		{#each group.items as item, i (i)}<li>{item}</li>{/each}
 	</ol>

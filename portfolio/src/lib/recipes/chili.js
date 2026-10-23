@@ -1,7 +1,7 @@
 export default {
 	title: 'Slow-Braised Beef Chili',
 	date: '2026-10-23',
-	dek: 'This was my first ever chili. It won first place at my job’s chili contest!',
+	dek: 'This was my first ever chili. It won first place at my job’s chili contest in 2026!',
 	makes: 'Approximately 5–6 quarts',
 	prep: '30–60 minutes, plus overnight bean soaking and beef dry-brining',
 	cook: 'Approximately 4–6 hours total, depending on equipment',

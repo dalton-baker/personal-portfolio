@@ -94,11 +94,11 @@ function recipeMarkdown(b) {
 		`A recipe by ${person.name}, recipe ${r.n} in ${link(b.host.name, `/${b.host.id}`)}. Web page: ${pageUrl(r.slug)}`,
 		`> ${r.dek}`,
 		...(r.hero ? [media(r.hero)] : []),
-		`- Makes: ${r.makes}\n- Prep: ${r.prep}\n- Cooking: ${r.cook}`,
+		...(r.makes || r.prep || r.cook ? [[['Makes', r.makes], ['Prep', r.prep], ['Cooking', r.cook]].filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n')] : []),
 		'## Ingredients',
-		...r.ingredients.map((g) => `### ${g.title}\n\n${items(g.items)}`),
+		...r.ingredients.map((g) => (g.title ? `### ${g.title}\n\n` : '') + items(g.items)),
 		'## Instructions',
-		...r.steps.map((g) => `### ${g.title}\n\n${items(g.items, true)}`),
+		...r.steps.map((g) => (g.title ? `### ${g.title}\n\n` : '') + items(g.items, true)),
 		...r.tips.map((g) => `## ${g.title}\n\n${items(g.items)}`)
 	].join('\n\n');
 }

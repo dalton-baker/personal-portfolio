@@ -7,9 +7,9 @@ import { formatDate } from '$lib/posts';
  *   date         'YYYY-MM-DD' it went up, also sets the recipe order
  *   dek          a sentence or two about it, shown under the title
  *   hero         optional { src, alt } photo
- *   makes, prep, cook   how much it makes and how long it takes (any text)
- *   ingredients  [{ title, items: [...] }] groups of ingredients
- *   steps        [{ title, items: [...] }] groups of numbered steps
+ *   makes, prep, cook   optional: how much it makes and how long it takes (any text)
+ *   ingredients  [{ title, items: [...] }] groups of ingredients (one group can leave out its title)
+ *   steps        [{ title, items: [...] }] groups of numbered steps (likewise)
  *   tips         optional [{ title, items: [...] }] lists after the steps (tips, notes)
  */
 

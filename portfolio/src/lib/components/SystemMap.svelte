@@ -530,7 +530,8 @@
 					<div class="rend-h">End of transmission</div>
 					{#if art.list.length > 1}
 						<div class="rnav">
-							<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>
+							<!-- With only two, previous and next are the same one: just show it as next. -->
+							{#if art.prev !== art.next}<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>{/if}
 							<a class="rnext right" href="/{art.next.slug}"><span class="rnext-k">Next moon →</span><span class="rnext-t">{art.next.title}</span></a>
 						</div>
 					{/if}

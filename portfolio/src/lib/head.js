@@ -98,9 +98,13 @@ function pageNode(slug, url, h) {
 			description: r.dek,
 			datePublished: r.date,
 			author: { '@id': PERSON_ID },
-			recipeYield: r.makes,
+			...(r.makes && { recipeYield: r.makes }),
 			recipeIngredient: r.ingredients.flatMap((g) => g.items),
-			recipeInstructions: r.steps.map((g) => ({ '@type': 'HowToSection', name: g.title, itemListElement: g.items.map((text) => ({ '@type': 'HowToStep', text })) })),
+			// Titled groups of steps become sections; an untitled group is just its steps.
+			recipeInstructions: r.steps.flatMap((g) => {
+				const steps = g.items.map((text) => ({ '@type': 'HowToStep', text }));
+				return g.title ? [{ '@type': 'HowToSection', name: g.title, itemListElement: steps }] : steps;
+			}),
 			...(r.hero && { image: abs(r.hero.src) })
 		};
 	}
