@@ -22,11 +22,10 @@ export default {
 	steps: [
 		{
 			items: [
-				'Melt butter, sauté onion and garlic — 3–4 minutes.',
+				'Melt butter, sauté onion and garlic — 3–4 minutes. Add the spices right at the end.',
 				'Add broth, alfredo sauce, and sour cream. Whisk together.',
-				'Add chicken and tortellini. Cook 10–15 minutes.',
-				'Add spinach and spices. Cook on low.',
-				'Add cheese.'
+				'Add chicken, tortellini, and cheese. Cook 10–15 minutes.',
+				'Stir in the spinach right before serving. The residual heat will cook it quickly.'
 			]
 		}
 	],
