@@ -1,5 +1,6 @@
 <script>
 	import { lightbox } from './lightbox.svelte.js';
+	import { picture } from '$lib/images';
 
 	const close = () => (lightbox.src = '');
 </script>
@@ -7,7 +8,7 @@
 {#if lightbox.src}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions (Escape is handled by SystemMap) -->
 	<div class="lb" role="dialog" aria-modal="true" tabindex="-1" aria-label={lightbox.alt} onclick={close}>
-		<img src={lightbox.src} alt={lightbox.alt} />
+		<enhanced:img src={picture(lightbox.src)} alt={lightbox.alt} sizes="100vw" />
 		<button class="lb-x" onclick={close} aria-label="Close image">
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
 		</button>
@@ -29,7 +30,10 @@
 	@keyframes lbin {
 		from { opacity: 0; }
 	}
+	/* Auto size from the photo's own shape: the optimized <img> carries width and height attributes. */
 	img {
+		width: auto;
+		height: auto;
 		max-width: 100%;
 		max-height: calc(100vh - 96px);
 		object-fit: contain;

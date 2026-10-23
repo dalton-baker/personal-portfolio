@@ -1,5 +1,9 @@
 <script>
-	/** A recipe in the reader: what it makes and how long it takes, the ingredients, the steps, tips and notes, then a photo. */
+	import Gallery from './Gallery.svelte';
+	import { lightbox } from './lightbox.svelte.js';
+	import { picture } from '$lib/images';
+
+	/** A recipe in the reader: what it makes and how long it takes, the ingredients, the steps, tips and notes, then photos. */
 	let { recipe } = $props();
 
 	const stats = $derived([['Makes', recipe.makes], ['Prep', recipe.prep], ['Cooking', recipe.cook]].filter(([, v]) => v));
@@ -45,8 +49,22 @@
 	{/if}
 {/each}
 
-{#if recipe.photo}
-	<figure class="rphoto">
-		<img src={recipe.photo.src} alt={recipe.photo.alt} width={recipe.photo.width} height={recipe.photo.height} loading="lazy" decoding="async" />
-	</figure>
+{#if recipe.photos.length}
+	<h2>Photos</h2>
+	{#if recipe.photos.length > 1}
+		<Gallery items={recipe.photos} cols={3} />
+	{:else}
+		{@const photo = recipe.photos[0]}
+		<!-- A single photo keeps its own shape, small; it enlarges like a gallery thumbnail. -->
+		<button
+			class="rphoto"
+			onclick={() => {
+				lightbox.src = photo.src;
+				lightbox.alt = photo.alt;
+			}}
+			aria-label="Enlarge: {photo.alt}"
+		>
+			<enhanced:img src={picture(photo.src)} alt={photo.alt} sizes="340px" loading="lazy" />
+		</button>
+	{/if}
 {/if}

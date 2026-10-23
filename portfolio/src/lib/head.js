@@ -1,6 +1,7 @@
 import { byId, blog } from '$lib/orbit/system.js';
 import { game } from '$lib/game';
 import { origin, person } from '$lib/site.js';
+import { photoUrl } from '$lib/images';
 
 /**
  * What goes in a map page's <head> besides the visible card: title, description, canonical address,
@@ -54,7 +55,8 @@ const THING = {
 /** Where a page's Markdown copy lives (built by $lib/server/agents.js): /about.md, and /index.md for home. */
 export const markdownPath = (slug) => `/${slug ?? 'index'}.md`;
 
-const abs = (src) => (src.startsWith('/') ? origin + src : src);
+/** A photo's full address, for previews and structured data. */
+const photo = (src) => origin + photoUrl(src);
 
 /** The thing a body is about, with its own address (the body's first outside link). */
 function thing(b) {
@@ -85,7 +87,7 @@ function pageNode(slug, url, h) {
 			datePublished: p.date.slice(0, 10),
 			author: { '@id': PERSON_ID },
 			isPartOf: { '@id': `${origin}/${blog.id}#blog` },
-			...(!p.hero.video && { image: abs(p.hero.src) })
+			...(!p.hero.video && { image: photo(p.hero.src) })
 		};
 	}
 	if (b.recipe) {
@@ -104,7 +106,7 @@ function pageNode(slug, url, h) {
 				const steps = g.items.map((text) => ({ '@type': 'HowToStep', text }));
 				return g.title ? [{ '@type': 'HowToSection', name: g.title, itemListElement: steps }] : steps;
 			}),
-			...(r.photo && { image: abs(r.photo.src) })
+			...(r.photos.length && { image: r.photos.map((p) => photo(p.src)) })
 		};
 	}
 	if (b.isBlog) {
@@ -132,8 +134,8 @@ export function pageHead(slug) {
 	else {
 		const b = byId[slug];
 		if (!b) return null;
-		if (b.post) h = { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek, type: 'article', image: !b.post.hero.video && abs(b.post.hero.src) };
-		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.photo && abs(b.recipe.photo.src) };
+		if (b.post) h = { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek, type: 'article', image: !b.post.hero.video && photo(b.post.hero.src) };
+		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.photos.length && photo(b.recipe.photos[0].src) };
 		else if (b.kind === 'hole') h = { title: 'About | Dalton Baker', description: b.summary, type: 'profile' };
 		else h = { title: `${b.name} | Dalton Baker`, description: b.summary };
 	}

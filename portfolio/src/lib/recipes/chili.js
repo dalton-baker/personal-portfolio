@@ -93,5 +93,10 @@ export default {
 				'Adjust chili powder downward slightly if cooking for people who dislike heat.'
 			]
 		}
+	],
+	photos: [
+		{ src: '/recipes/chili-finished.jpg', alt: 'The finished chili with the pinto and kidney beans folded in' },
+		{ src: '/recipes/chili-before-beans.jpg', alt: 'The chili in the multicooker before the beans go in: browned chuck, ground beef and red bell pepper in a thick, dark sauce' },
+		{ src: '/recipes/chili-packed-up.jpg', alt: 'The chili packed up in three quart containers' }
 	]
 };

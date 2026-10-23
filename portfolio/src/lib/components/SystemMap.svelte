@@ -10,6 +10,7 @@
 	import { game } from '$lib/game';
 	import Lightbox from './Lightbox.svelte';
 	import { lightbox } from './lightbox.svelte.js';
+	import { picture } from '$lib/images';
 
 	/** The URL segment: a body slug, a post slug, or null for the home page. */
 	let { slug = null } = $props();
@@ -216,6 +217,15 @@
 		if (!playing || gameClosing) return;
 		if (cameFrom === '/') history.back();
 		else goto('/', { noScroll: true });
+	}
+
+	/**
+	 * How wide a post's hero photo shows: the 784px figure on a desktop, unless the photo is tall enough that
+	 * its 760px height cap makes it narrower (so a portrait photo doesn't fetch a wider file than it needs).
+	 */
+	function heroSizes(src) {
+		const { w, h } = picture(src).img;
+		return `(min-width: 784px) ${Math.round(Math.min(784, (760 * w) / h))}px, 100vw`;
 	}
 
 	function resetReaderScroll() {
@@ -515,7 +525,7 @@
 						{#if art.hero.video}
 							<video src={art.hero.src} autoplay loop muted playsinline></video>
 						{:else}
-							<img src={art.hero.src} alt={art.hero.alt} />
+							<enhanced:img src={picture(art.hero.src)} alt={art.hero.alt} sizes={heroSizes(art.hero.src)} fetchpriority="high" />
 						{/if}
 					</figure>
 				{/if}
