@@ -5,6 +5,8 @@
 	import { OrbitEngine } from '$lib/orbit/engine.js';
 	import { all, byId, hole, orbiters, blog } from '$lib/orbit/system.js';
 	import { posts } from '$lib/posts';
+	import { recipes } from '$lib/recipes';
+	import Recipe from './Recipe.svelte';
 	import { game } from '$lib/game';
 	import Lightbox from './Lightbox.svelte';
 	import { lightbox } from './lightbox.svelte.js';
@@ -12,18 +14,20 @@
 	/** The URL segment: a body slug, a post slug, or null for the home page. */
 	let { slug = null } = $props();
 
-	const postSlug = (s) => (s && byId[s]?.post ? s : null);
+	/** Posts and recipes (The Log's moons) open in the reader. */
+	const readable = (b) => !!(b?.post || b?.recipe);
+	const postSlug = (s) => (s && readable(byId[s]) ? s : null);
 	const isMoon = (id) => byId[id]?.kind === 'moon';
 
 	let scan = $state(false);
 	let noGL = $state(false);
 	let ready = $state(false);
 	/**
-	 * A post moon picked while orbiting The Log; its post expands inside The Log's card without changing
-	 * the URL (the post's own URL opens the reader). Other giants' moons are selected through their URLs.
+	 * A post or recipe moon picked while orbiting The Log; it expands inside The Log's card without changing
+	 * the URL (its own URL opens the reader). Other giants' moons are selected through their URLs.
 	 */
 	let moonSel = $state(null);
-	/** The post open in the reader. Lags the URL while the close animation plays. */
+	/** The post or recipe open in the reader. Lags the URL while the close animation plays. */
 	let reading = $state(untrack(() => postSlug(slug)));
 	let closing = $state(false);
 	let instant = $state(true);
@@ -52,13 +56,19 @@
 	const card = $derived(sel ? byId[isMoon(sel) ? byId[sel].host.id : sel] : null);
 	const art = $derived.by(() => {
 		if (!reading) return null;
-		const p = byId[reading].post;
-		const i = posts.indexOf(p);
+		const b = byId[reading];
+		const p = b.post ?? b.recipe;
+		// Previous and next step through the posts, or through the recipes.
+		const list = b.post ? posts : recipes;
+		const i = list.indexOf(p);
 		return {
 			...p,
+			recipe: b.recipe,
+			noun: b.post ? 'Post' : 'Recipe',
 			n: String(p.n).padStart(2, '0'),
-			prev: posts[(i - 1 + posts.length) % posts.length],
-			next: posts[(i + 1) % posts.length]
+			list,
+			prev: list[(i - 1 + list.length) % list.length],
+			next: list[(i + 1) % list.length]
 		};
 	});
 
@@ -229,8 +239,8 @@
 	const plainClick = (e) => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 	/**
-	 * Moon links select the moon and expand its post in The Log's card; `toggle` (the card's list) collapses
-	 * it again on a second click. Modified clicks still open the post itself.
+	 * Moon links select the moon and expand its post or recipe in The Log's card; `toggle` (the card's list)
+	 * collapses it again on a second click. Modified clicks still open the post or recipe itself.
 	 */
 	function previewMoon(e, id, toggle = false) {
 		if (!plainClick(e)) return;
@@ -333,7 +343,7 @@
 				data-name={b.label}
 				aria-current={slug === b.id ? 'page' : undefined}
 				tabindex={b.kind === 'moon' && b.host.id !== hostId ? -1 : 0}
-				onclick={b.post ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
+				onclick={readable(b) ? (e) => previewMoon(e, b.id) : b === blog ? selectLog : undefined}
 			>
 				<span class="dotwrap" style={b.wrapStyle}>
 					{#if b.rays}<span class="rays"></span>{/if}
@@ -440,15 +450,15 @@
 					<p class="desc">{card.contact}</p>
 				{/if}
 				{@render linkButtons(card.links)}
-				{#if card.moons}
-					<div class="card-h">{card.moonsLabel}</div>
+				{#each card.moonGroups ?? [] as group (group.label)}
+					<div class="card-h">{group.label}</div>
 					<ul class="posts">
-						{#each card.moons as m (m.id)}
+						{#each group.moons as m (m.id)}
 							{@const open = sel === m.id}
 							<li class="post-item" class:on={open}>
-								{#if m.post}
+								{#if readable(m)}
 									<a class="post" href="/{m.id}" aria-expanded={open} onclick={(e) => previewMoon(e, m.id, true)}>
-										<span class="pn">{m.num}</span><span class="pt">{m.name}</span><span class="pd">{m.sub}</span>
+										<span class="pn">{m.num}</span><span class="pt">{m.name}</span>{#if m.sub}<span class="pd">{m.sub}</span>{/if}
 									</a>
 								{:else}
 									<a class="post" href={open ? `/${card.id}` : `/${m.id}`} aria-expanded={open}>
@@ -457,9 +467,9 @@
 								{/if}
 								{#if open}
 									<div class="post-more">
-										{#if m.post}
+										{#if readable(m)}
 											<p class="post-dek">{m.body}</p>
-											<a class="lnk primary" href="/{m.id}">Read post<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+											<a class="lnk primary" href="/{m.id}">{m.post ? 'Read post' : 'See recipe'}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
 										{:else}
 											{#each m.paras as para, i (i)}<p class="post-dek">{@render richText(para)}</p>{/each}
 											{#if m.facts.length}
@@ -474,7 +484,7 @@
 							</li>
 						{/each}
 					</ul>
-				{/if}
+				{/each}
 			</div>
 		</aside>
 	{/if}
@@ -493,28 +503,35 @@
 				<button class="rback" onclick={closeRead}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>Back to orbit
 				</button>
-				<span class="rcrumb">The Log // Post {art.n}</span>
+				<span class="rcrumb">The Log // {art.noun} {art.n}</span>
 				<div class="rprog"><div bind:this={progEl} class="rprog-fill"></div></div>
 			</div>
 			<div class="rcol">
-				<div class="rkicker"><b>Post {art.n}</b> · {art.displayDate} · {art.mins} min read</div>
+				<div class="rkicker"><b>{art.noun} {art.n}</b>{art.displayDate ? ` · ${art.displayDate} · ${art.mins} min read` : ''}</div>
 				<h1 class="rtitle">{art.title}</h1>
 				<p class="rdek">{art.dek}</p>
-				<figure class="rfig hero">
-					{#if art.hero.video}
-						<video src={art.hero.src} autoplay loop muted playsinline></video>
-					{:else}
-						<img src={art.hero.src} alt={art.hero.alt} />
-					{/if}
-				</figure>
+				{#if art.hero}
+					<figure class="rfig hero">
+						{#if art.hero.video}
+							<video src={art.hero.src} autoplay loop muted playsinline></video>
+						{:else}
+							<img src={art.hero.src} alt={art.hero.alt} />
+						{/if}
+					</figure>
+				{/if}
 				<div class="prose">
-					<art.component />
+					{#if art.recipe}
+						<Recipe recipe={art.recipe} />
+					{:else}
+						<art.component />
+					{/if}
 				</div>
 				<div class="rend">
 					<div class="rend-h">End of transmission</div>
-					{#if posts.length > 1}
+					{#if art.list.length > 1}
 						<div class="rnav">
-							<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>
+							<!-- With only two, previous and next are the same one: just show it as next. -->
+							{#if art.prev !== art.next}<a class="rnext" href="/{art.prev.slug}"><span class="rnext-k">← Previous moon</span><span class="rnext-t">{art.prev.title}</span></a>{/if}
 							<a class="rnext right" href="/{art.next.slug}"><span class="rnext-k">Next moon →</span><span class="rnext-t">{art.next.title}</span></a>
 						</div>
 					{/if}

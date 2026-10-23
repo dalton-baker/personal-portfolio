@@ -88,6 +88,25 @@ function pageNode(slug, url, h) {
 			...(!p.hero.video && { image: abs(p.hero.src) })
 		};
 	}
+	if (b.recipe) {
+		const r = b.recipe;
+		return {
+			'@type': 'Recipe',
+			'@id': `${url}#recipe`,
+			mainEntityOfPage: { '@type': 'WebPage', ...page },
+			name: r.title,
+			description: r.dek,
+			author: { '@id': PERSON_ID },
+			...(r.makes && { recipeYield: r.makes }),
+			recipeIngredient: r.ingredients.flatMap((g) => g.items),
+			// Titled groups of steps become sections; an untitled group is just its steps.
+			recipeInstructions: r.steps.flatMap((g) => {
+				const steps = g.items.map((text) => ({ '@type': 'HowToStep', text }));
+				return g.title ? [{ '@type': 'HowToSection', name: g.title, itemListElement: steps }] : steps;
+			}),
+			...(r.photo && { image: abs(r.photo.src) })
+		};
+	}
 	if (b.isBlog) {
 		return {
 			'@type': 'Blog',
@@ -96,7 +115,8 @@ function pageNode(slug, url, h) {
 			name: b.name,
 			description: b.summary,
 			author: { '@id': PERSON_ID },
-			blogPost: b.moons.map((m) => ({ '@type': 'BlogPosting', '@id': `${origin}/${m.id}#post`, headline: m.name, url: `${origin}/${m.id}` }))
+			blogPost: b.moons.filter((m) => m.post).map((m) => ({ '@type': 'BlogPosting', '@id': `${origin}/${m.id}#post`, headline: m.name, url: `${origin}/${m.id}` })),
+			hasPart: b.moons.filter((m) => m.recipe).map((m) => ({ '@type': 'Recipe', '@id': `${origin}/${m.id}#recipe`, name: m.name, url: `${origin}/${m.id}` }))
 		};
 	}
 	if (b.moons) return { '@type': 'CollectionPage', ...page, about: b.moons.map(thing).filter(Boolean) };
@@ -113,6 +133,7 @@ export function pageHead(slug) {
 		const b = byId[slug];
 		if (!b) return null;
 		if (b.post) h = { title: `${b.post.pageTitle} | Dalton Baker`, description: b.post.dek, type: 'article', image: !b.post.hero.video && abs(b.post.hero.src) };
+		else if (b.recipe) h = { title: `${b.recipe.title} | Dalton Baker`, description: b.recipe.dek, type: 'article', image: b.recipe.photo && abs(b.recipe.photo.src) };
 		else if (b.kind === 'hole') h = { title: 'About | Dalton Baker', description: b.summary, type: 'profile' };
 		else h = { title: `${b.name} | Dalton Baker`, description: b.summary };
 	}

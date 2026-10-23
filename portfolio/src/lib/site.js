@@ -1,7 +1,7 @@
 import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
 
 /**
- * Everything on the system map except the blog posts (those live in $lib/posts).
+ * Everything on the system map except the blog posts and recipes (those live in $lib/posts and $lib/recipes).
  *
  * Each body's `slug` is its URL: /about, /reg-x-timing, /log, ... `name` titles its card; an optional
  * shorter `label` is used for its name on the map (hover and scan labels).
@@ -17,8 +17,9 @@ import resumeUrl from '$lib/assets/DaltonBakerResume.pdf?url';
  * like Earth's; it can't be selected), `dwarf` (a tiny icy world) and `surface` (CSS background layers
  * drawn over `base`). `zoom` multiplies the camera zoom when the body is selected, for small ones.
  *
- * Giants have selectable moons, listed in their card. The Log's moons are the blog posts; other moons
- * are bodies with `kind: 'moon'` and `host` set to the giant's slug, orbiting at `mt`. A giant with
+ * Giants have selectable moons, listed in their card. The Log's moons are the blog posts and then the
+ * recipes (listed under `recipesLabel`); other moons are bodies with `kind: 'moon'` and `host` set to the
+ * giant's slug, orbiting at `mt`. A giant with
  * `rings` draws them as [inner, outer, opacity, detail] bands measured in planet radii, and its moons'
  * `mt` uses the same unit, so they can sit in the gaps; `detail` bands only fade in as the camera zooms
  * closer, keeping the overview reserved. A body with `barycenter` and one moon is a binary pair, like Pluto
@@ -144,8 +145,9 @@ export const bodies = [
 	{
 		slug: 'log', kind: 'giant', isBlog: true, name: 'The Log', category: 'Blog',
 		t: 0.6, phase: 2.9, size: 34, dark: 'rgba(40,6,40,.72)',
-		body: 'Write-ups of things I’ve built. Every moon is a post: pick one below, or tap the moons directly while you’re in orbit.',
+		body: 'Write-ups of things I’ve built, plus a few recipes. Every moon is a post or a recipe: pick one below, or tap the moons directly while you’re in orbit.',
 		moonsLabel: 'Posts in orbit',
+		recipesLabel: 'Recipes in orbit',
 		links: []
 	},
 	{

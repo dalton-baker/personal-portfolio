@@ -1,8 +1,9 @@
 import { bodies, belt } from '$lib/site.js';
 import { posts } from '$lib/posts';
+import { recipes } from '$lib/recipes';
 
 /**
- * Builds the bodies on the map: the site's bodies, their moons, and one moon of The Log per post.
+ * Builds the bodies on the map: the site's bodies, their moons, and one moon of The Log per post and recipe.
  * Each body is decorated with the inline styles its markup needs; moons are linked to their giant
  * (`moon.host`, `giant.moons`). The engine adds live position fields (px, py, sx, sy, ...) every frame.
  */
@@ -42,25 +43,29 @@ export function kep(t) {
 	return 0.15 * Math.pow(1 / (1 + t * 2.2), 1.5);
 }
 
+/** The Log's moons: the posts, then the recipes (in warmer colours, listed under their own heading). */
 function postMoons(host) {
-	const n = posts.length;
-	return posts.map((p, i) => {
+	const items = [...posts.map((p) => ['post', p]), ...recipes.map((r) => ['recipe', r])];
+	const n = items.length;
+	return items.map(([field, p], i) => {
 		// Spread the moons evenly between an inner and outer orbit.
 		const mt = n > 1 ? 0.85 + (1.05 * i) / (n - 1) : 1.3;
+		const recipe = field === 'recipe';
 		return {
 			id: p.slug,
 			kind: 'moon',
 			host: host.id,
-			num: 'P' + p.n,
+			num: (recipe ? 'R' : 'P') + p.n,
 			name: p.title,
 			date: p.displayDate,
 			body: p.dek,
-			base: '#e9e4ff',
-			dark: '#6b5e99',
+			base: recipe ? '#ffe7c4' : '#e9e4ff',
+			dark: recipe ? '#8a4b26' : '#6b5e99',
+			group: recipe ? host.recipesLabel : undefined,
 			mt,
 			phase: (0.4 + i * 1.75) % (Math.PI * 2),
 			size: MOON_SIZES[i % MOON_SIZES.length],
-			post: p
+			[field]: p
 		};
 	});
 }
@@ -95,7 +100,7 @@ function decorate(b) {
 			shadeStyle: 'background:linear-gradient(90deg,rgba(0,0,0,0) 0 47%,#55514b 47% 100%)'
 		};
 	}
-	b.aria = b.post ? 'Post: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
+	b.aria = b.post ? 'Post: ' + b.name : b.recipe ? 'Recipe: ' + b.name : b.kind === 'hole' ? 'About Dalton Baker' : b.name;
 	if (b.kind === 'giant') b.swatch ??= '#ff2e88';
 	if (!b.swatch) b.swatch = b.base;
 	let bg = '';
@@ -131,6 +136,17 @@ for (const m of all) {
 	m.host = host;
 	(host.moons ??= []).push(m);
 	m.num ??= 'S' + host.moons.length;
+}
+// The lists in a giant's card: its moons under `moonsLabel`, or under their own `group` heading (The Log's recipes).
+for (const h of all) {
+	if (!h.moons) continue;
+	h.moonGroups = [];
+	for (const m of h.moons) {
+		const label = m.group ?? h.moonsLabel;
+		let g = h.moonGroups.find((x) => x.label === label);
+		if (!g) h.moonGroups.push((g = { label, moons: [] }));
+		g.moons.push(m);
+	}
 }
 
 export const hole = all.find((b) => b.kind === 'hole');
