@@ -48,7 +48,7 @@ export default {
 			title: 'The Night Before',
 			items: [
 				'Sort and rinse the dried beans. Soak in plenty of lightly salted water in the refrigerator for 12–24 hours.',
-				'Pat the chuck roast dry. Salt all sides (roughly ¾ tsp Morton kosher salt per pound, or 1¼ tsp Diamond Crystal per pound).',
+				'Pat the chuck roast dry. Salt all sides with roughly 1 tsp kosher salt per pound.',
 				'Place the whole roast on a rack over a tray, uncovered, in the refrigerator overnight.'
 			]
 		},
