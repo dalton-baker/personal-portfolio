@@ -1,8 +1,19 @@
 <script>
 	import { lightbox } from './lightbox.svelte.js';
+	import { picture } from '$lib/images';
 
-	/** items: { src, alt } images (click to enlarge) or { src, video: true } clips. */
+	/** items: { src, alt } photos from $lib/images (click to enlarge) or { src, video: true } clips from static/. */
 	let { items, cols = 2 } = $props();
+
+	// How wide a thumbnail shows, so the browser fetches a small enough photo: the reader column is 672px
+	// (the page less 48px of padding on narrower screens) with 10px gaps, and below 560px wide two columns
+	// become one and three or four become two.
+	const SIZES = {
+		1: '(min-width: 720px) 672px, calc(100vw - 48px)',
+		2: '(min-width: 720px) 331px, (min-width: 560px) calc(50vw - 29px), calc(100vw - 48px)',
+		3: '(min-width: 720px) 217px, (min-width: 560px) calc(33vw - 23px), calc(50vw - 29px)',
+		4: '(min-width: 720px) 160px, (min-width: 560px) calc(25vw - 20px), calc(50vw - 29px)'
+	};
 </script>
 
 <div class="gallery cols-{cols}">
@@ -21,7 +32,7 @@
 				}}
 				aria-label="Enlarge: {item.alt}"
 			>
-				<img src={item.src} alt={item.alt} loading="lazy" />
+				<enhanced:img src={picture(item.src)} alt={item.alt} sizes={SIZES[cols]} loading="lazy" />
 			</button>
 		{/if}
 	{/each}

@@ -39,10 +39,10 @@ export default {
 			]
 		}
 	],
-	photo: {
-		src: '/recipes/tortellini-soup-plaque.jpg',
-		alt: 'The Innovative Systems Holiday Cook-Off Champions plaque for the soup/stew category, with Dalton Baker on the 2023 plate',
-		width: 760,
-		height: 881
-	}
+	photos: [
+		{
+			src: '/recipes/tortellini-soup-plaque.jpg',
+			alt: 'The Innovative Systems Holiday Cook-Off Champions plaque for the soup/stew category, with Dalton Baker on the 2023 plate'
+		}
+	]
 };

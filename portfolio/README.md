@@ -24,7 +24,11 @@ npm run preview   # build, then serve dist/ with wrangler
   exports its title, a short intro, what it makes, prep and cooking times, and lists of ingredients,
   steps and notes (the fields are listed in `src/lib/recipes/index.js`). Recipes are moons of The Log
   too, after the posts, listed under their own heading in its card, and open in the same reader.
-- Images and video stay in `static/`.
+- Photos live in `src/lib/images/` and are referred to by their path there, like
+  `/telescope-build/first-assembly.jpeg`. At build time `@sveltejs/enhanced-img` resizes each one to a
+  few widths and converts it to WebP (with a JPEG fallback); the widths and quality are set in
+  `src/lib/images/index.js`. Use lowercase extensions (`.jpeg`, `.jpg`, `.png`), since the plugin skips
+  `.JPG`, and keep PNGs opaque. Videos stay in `static/`.
 
 Every body, post and recipe is its own prerendered page, so links to them load straight into that view.
 

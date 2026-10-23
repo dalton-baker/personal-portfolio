@@ -1,2 +1,2 @@
-/** The image currently enlarged by a Gallery thumbnail; empty src means closed. */
+/** The photo currently enlarged by a Gallery thumbnail (its path in $lib/images); empty src means closed. */
 export const lightbox = $state({ src: '', alt: '' });

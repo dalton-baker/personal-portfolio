@@ -23,7 +23,7 @@
 	scope around them.</p>
 
 <Gallery items={[
-	{ src: '/telescope-build/original_scope.JPG', alt: 'Original Optical Craftsman telescope' },
+	{ src: '/telescope-build/original_scope.jpeg', alt: 'Original Optical Craftsman telescope' },
 	{ src: '/telescope-build/origina_scope_in_car.jpeg', alt: 'Original telescope in car' }
 ]} />
 

@@ -235,9 +235,11 @@
 .ringr h3{margin:16px 0 10px}
 .ringr ul{margin-bottom:12px;font-size:16px;line-height:1.6}
 .ringr li{margin-bottom:4px}
-/* A recipe's photo: small, at the end. */
-.prose .rphoto{max-width:340px;margin:56px auto 0}
-.rphoto img{display:block;width:100%;height:auto;background:#13111c;border:1px solid rgba(241,238,247,.12)}
+/* A recipe's single photo: small, at the end, and it enlarges when clicked. */
+.rphoto{display:block;width:100%;max-width:340px;margin:0;padding:0;border:1px solid rgba(241,238,247,.12);background:#13111c;cursor:zoom-in;transition:border-color .15s}
+.rphoto img{display:block;width:100%;height:auto}
+@media (hover:hover){.rphoto:hover{border-color:#ff2e88}}
+.rphoto:focus-visible{outline:2px solid #c8ff2e;outline-offset:2px}
 
 @media (min-width:760px){
 	.bh{cursor:crosshair}

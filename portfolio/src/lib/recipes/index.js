@@ -9,13 +9,14 @@
  *   steps        [{ title, items: [...] }] groups of numbered steps (likewise)
  *   tips         optional sections after the steps: [{ title, items: [...] }] for a list (tips, notes) or
  *                [{ title, body: [...] }] for paragraphs
- *   photo        optional { src, alt, width, height } picture at the end of the recipe
+ *   photos       optional [{ src, alt }] photos from $lib/images (by path, like '/recipes/chili-finished.jpg'),
+ *                shown at the end: one stays small, more make a gallery; the first is the link preview
  */
 
 const modules = import.meta.glob(['./*.js', '!./index.js'], { eager: true, import: 'default' });
 
 export const recipes = Object.entries(modules)
-	.map(([path, r]) => ({ tips: [], ...r, slug: path.slice(2, -'.js'.length) }))
+	.map(([path, r]) => ({ tips: [], photos: [], ...r, slug: path.slice(2, -'.js'.length) }))
 	.sort((a, b) => a.order - b.order);
 
 recipes.forEach((r, i) => {

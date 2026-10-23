@@ -9,6 +9,7 @@ import { all, byId, hole, blog } from '$lib/orbit/system.js';
 import { game } from '$lib/game';
 import { origin, person, resumePdf, resumeUrl } from '$lib/site.js';
 import { markdownPath } from '$lib/head.js';
+import { isPhoto, photoUrl } from '$lib/images';
 
 /** Every page with its own URL, in the order llms-full.txt and the sitemap list them. */
 export const slugs = [hole.id, ...all.filter((b) => b !== hole).map((b) => b.id)];
@@ -16,9 +17,10 @@ export const slugs = [hole.id, ...all.filter((b) => b !== hole).map((b) => b.id)
 const pageUrl = (slug) => `${origin}/${slug ?? ''}`;
 const mdUrl = (slug) => origin + markdownPath(slug);
 
-/** A link as Markdown sees it: pages go to their Markdown copy, site files get the full address. */
+/** A link as Markdown sees it: pages go to their Markdown copy, photos and site files get the full address. */
 function href(url) {
 	if (url === resumeUrl) return origin + resumePdf;
+	if (isPhoto(url)) return origin + photoUrl(url);
 	if (!url.startsWith('/')) return url;
 	const slug = url.slice(1).split(/[?#]/)[0];
 	return byId[slug] ? mdUrl(slug) : origin + url;
@@ -99,7 +101,7 @@ function recipeMarkdown(b) {
 		'## Instructions',
 		...r.steps.map((g) => (g.title ? `### ${g.title}\n\n` : '') + items(g.items, true)),
 		...r.tips.map((g) => `## ${g.title}\n\n${g.items ? items(g.items) : g.body.join('\n\n')}`),
-		...(r.photo ? [media(r.photo)] : [])
+		...(r.photos.length ? ['## Photos', r.photos.map(media).join('\n\n')] : [])
 	].join('\n\n');
 }
 
